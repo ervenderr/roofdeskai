@@ -616,7 +616,7 @@
       },
       "position": [
         0,
-        1120
+        1400
       ]
     },
     {
@@ -639,7 +639,7 @@
       },
       "position": [
         260,
-        1120
+        1400
       ]
     },
     {
@@ -652,7 +652,22 @@
       },
       "position": [
         520,
-        1120
+        1400
+      ]
+    },
+    {
+      "id": "note-6.-mailbox",
+      "name": "Note 6. Mailbox",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## 6. Reply polling\nEvery 15 minutes the API reads the outreach mailbox over IMAP, classifies replies and bounces, and emails you the ones that need a person.",
+        "width": 900,
+        "height": 140
+      },
+      "position": [
+        -20,
+        1280
       ]
     }
   ],
