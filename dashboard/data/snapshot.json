@@ -206,7 +206,26 @@
     "total": 31,
     "passed": 20
    }
-  ]
+  ],
+  "outreach": {
+   "prospects": {
+    "interested": 1,
+    "not_interested": 1,
+    "no_email": 2,
+    "approved": 1,
+    "sent": 1,
+    "drafted": 2,
+    "unsubscribed": 1,
+    "bounced": 1
+   },
+   "messages": {
+    "approved": 1,
+    "sent": 6,
+    "drafted": 2
+   },
+   "awaiting_approval": 2,
+   "suppressed": 3
+  }
  },
  "conversations": [
   {
@@ -2364,5 +2383,890 @@
     }
    ]
   }
+ },
+ "prospects": [
+  {
+   "id": 229,
+   "campaign_id": 87,
+   "name": "Bright Smile Dental Clinic",
+   "category": "Dentist",
+   "address": "12 Rizal St, Davao City",
+   "email": "hello@brightsmile.example.com",
+   "website": "https://brightsmile.example.com",
+   "rating": "4.6",
+   "review_count": 182,
+   "score": 100,
+   "pain_mentions": 2,
+   "status": "interested",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 238,
+   "campaign_id": 87,
+   "name": "Davao Family Dental",
+   "category": "Dentist",
+   "address": "22 Roxas Ave, Davao City",
+   "email": "hello@davaofamilydental.example.com",
+   "website": "https://davaofamilydental.example.com",
+   "rating": "4.7",
+   "review_count": 140,
+   "score": 100,
+   "pain_mentions": 2,
+   "status": "approved",
+   "created_at": "2026-10-21 01:59:17.020337+00:00"
+  },
+  {
+   "id": 237,
+   "campaign_id": 87,
+   "name": "Hilltop Veterinary Clinic",
+   "category": "Veterinarian",
+   "address": "9 Toril Rd, Davao City",
+   "email": "care@hilltopvet.example.com",
+   "website": "https://hilltopvet.example.com",
+   "rating": "4.7",
+   "review_count": 96,
+   "score": 95,
+   "pain_mentions": 2,
+   "status": "unsubscribed",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 230,
+   "campaign_id": 87,
+   "name": "Cool Breeze Aircon Services",
+   "category": "Air conditioning repair service",
+   "address": "88 Quimpo Blvd, Davao City",
+   "email": "info@coolbreeze.example.com",
+   "website": "https://coolbreeze.example.com",
+   "rating": "4.4",
+   "review_count": 64,
+   "score": 85,
+   "pain_mentions": 1,
+   "status": "bounced",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 239,
+   "campaign_id": 87,
+   "name": "AirFlow Cooling Specialists",
+   "category": "Air conditioning contractor",
+   "address": "3 Bangkal Rd, Davao City",
+   "email": "service@airflow.example.com",
+   "website": "https://airflow.example.com",
+   "rating": "4.2",
+   "review_count": 58,
+   "score": 85,
+   "pain_mentions": 1,
+   "status": "drafted",
+   "created_at": "2026-10-21 01:59:17.020337+00:00"
+  },
+  {
+   "id": 231,
+   "campaign_id": 87,
+   "name": "Island Roofing Works",
+   "category": "Roofing contractor",
+   "address": "5 Lanang Ave, Davao City",
+   "email": "islandroofing@outreach.example.com",
+   "website": null,
+   "rating": "4.1",
+   "review_count": 23,
+   "score": 65,
+   "pain_mentions": 0,
+   "status": "not_interested",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 232,
+   "campaign_id": 87,
+   "name": "Glow Salon & Spa",
+   "category": "Beauty salon",
+   "address": "31 Bajada Rd, Davao City",
+   "email": "bookings@glow.example.com",
+   "website": "https://glow.example.com",
+   "rating": "4.8",
+   "review_count": 310,
+   "score": 65,
+   "pain_mentions": 0,
+   "status": "sent",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 236,
+   "campaign_id": 87,
+   "name": "Metro Cleaners",
+   "category": "House cleaning service",
+   "address": "77 Ecoland Dr, Davao City",
+   "email": null,
+   "website": "https://metrocleaners.example.com",
+   "rating": "4.3",
+   "review_count": 41,
+   "score": 50,
+   "pain_mentions": 0,
+   "status": "no_email",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 233,
+   "campaign_id": 87,
+   "name": "Pipe Masters Plumbing",
+   "category": "Plumber",
+   "address": "4 Matina Rd, Davao City",
+   "email": "pipemasters@gmail.com",
+   "website": "https://pipemasters.example.com",
+   "rating": "3.9",
+   "review_count": 12,
+   "score": 45,
+   "pain_mentions": 1,
+   "status": "drafted",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 234,
+   "campaign_id": 87,
+   "name": "Corner Sari-Sari Store",
+   "category": "Convenience store",
+   "address": "Purok 3, Davao City",
+   "email": null,
+   "website": null,
+   "rating": "4",
+   "review_count": 3,
+   "score": 10,
+   "pain_mentions": 0,
+   "status": "no_email",
+   "created_at": "2026-10-21 01:56:49.534595+00:00"
+  }
+ ],
+ "prospect_details": {
+  "229": {
+   "prospect": {
+    "id": 229,
+    "campaign_id": 87,
+    "external_id": "demo-001",
+    "name": "Bright Smile Dental Clinic",
+    "category": "Dentist",
+    "address": "12 Rizal St, Davao City",
+    "phone": "+63 82 555 0101",
+    "email": "hello@brightsmile.example.com",
+    "website": "https://brightsmile.example.com",
+    "maps_url": null,
+    "rating": "4.6",
+    "review_count": 182,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [
+     "Great dentist but nobody answers the phone, hard to reach for appointments",
+     "Called three times and it goes to voicemail",
+     "Lovely staff"
+    ],
+    "score": 100,
+    "score_reasons": [
+     "has a business email",
+     "has a website",
+     "182 reviews (a busy business)",
+     "rated 4.6",
+     "2 reviews mention unanswered calls or messages",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 2,
+    "status": "interested",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [
+    {
+     "id": 118,
+     "prospect_id": 229,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for Bright Smile Dental Clinic",
+     "body": "Hi Bright Smile Dental Clinic team,\n\nA few customer reviews mention calls going unanswered. Many businesses like yours miss enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them, and books appointments. This way, you can focus on providing excellent care to your patients.\n\nWould you like to learn more about how our assistant can help your team?",
+     "source": "llm",
+     "status": "sent",
+     "scheduled_for": "2026-10-21 01:57:26.223917+00:00",
+     "sent_at": "2026-10-21 01:57:26.318211+00:00",
+     "error": null,
+     "created_at": "2026-10-21 01:56:59.186580+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "llm",
+     "created_at": "2026-10-21 01:56:59.186580+00:00"
+    },
+    {
+     "kind": "approved",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.223917+00:00"
+    },
+    {
+     "kind": "sent",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.329052+00:00"
+    },
+    {
+     "kind": "reply:interested",
+     "detail": null,
+     "created_at": "2026-10-21 01:57:44.103300+00:00"
+    }
+   ]
+  },
+  "238": {
+   "prospect": {
+    "id": 238,
+    "campaign_id": 87,
+    "external_id": "demo-101",
+    "name": "Davao Family Dental",
+    "category": "Dentist",
+    "address": "22 Roxas Ave, Davao City",
+    "phone": null,
+    "email": "hello@davaofamilydental.example.com",
+    "website": "https://davaofamilydental.example.com",
+    "maps_url": null,
+    "rating": "4.7",
+    "review_count": 140,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [
+     "Nobody picked up the phone for days",
+     "Hard to reach for a booking"
+    ],
+    "score": 100,
+    "score_reasons": [
+     "has a business email",
+     "has a website",
+     "140 reviews (a busy business)",
+     "rated 4.7",
+     "2 reviews mention unanswered calls or messages",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 2,
+    "status": "approved",
+    "created_at": "2026-10-21 01:59:17.020337+00:00"
+   },
+   "messages": [
+    {
+     "id": 124,
+     "prospect_id": 238,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for Davao Family Dental",
+     "body": "Hi Davao Family Dental team,\n\nA few customer reviews mention calls going unanswered. Many businesses like yours miss enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments. This helps ensure that every enquiry is handled promptly and efficiently.\n\nWould you like to learn more about how our assistant can help your team?",
+     "source": "llm",
+     "status": "approved",
+     "scheduled_for": "2026-10-21 02:01:50.642698+00:00",
+     "sent_at": null,
+     "error": null,
+     "created_at": "2026-10-21 01:59:20.628154+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "llm",
+     "created_at": "2026-10-21 01:59:20.628154+00:00"
+    },
+    {
+     "kind": "approved",
+     "detail": "step 1",
+     "created_at": "2026-10-21 02:01:50.642698+00:00"
+    }
+   ]
+  },
+  "237": {
+   "prospect": {
+    "id": 237,
+    "campaign_id": 87,
+    "external_id": "demo-008",
+    "name": "Hilltop Veterinary Clinic",
+    "category": "Veterinarian",
+    "address": "9 Toril Rd, Davao City",
+    "phone": "+63 82 555 0108",
+    "email": "care@hilltopvet.example.com",
+    "website": "https://hilltopvet.example.com",
+    "maps_url": null,
+    "rating": "4.7",
+    "review_count": 96,
+    "hours_json": {
+     "Friday": "8 AM \u2013 7 PM",
+     "Monday": "8 AM \u2013 7 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 7 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 7 PM",
+     "Wednesday": "8 AM \u2013 7 PM"
+    },
+    "review_texts": [
+     "Nobody picked up when my dog was sick, impossible to get through",
+     "They ignored my message",
+     "Great vets"
+    ],
+    "score": 95,
+    "score_reasons": [
+     "has a business email",
+     "has a website",
+     "96 reviews (a busy business)",
+     "rated 4.7",
+     "2 reviews mention unanswered calls or messages",
+     "closed evenings or weekends"
+    ],
+    "pain_mentions": 2,
+    "status": "unsubscribed",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [
+    {
+     "id": 119,
+     "prospect_id": 237,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for Hilltop Veterinary Clinic",
+     "body": "Hi Hilltop Veterinary Clinic team,\n\nA few customer reviews mention calls going unanswered. Many businesses like yours miss enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments. This helps ensure that every customer gets the help they need, and that your team can focus on what matters most.\n\nWould you like to learn more about how our assistant can support your team?",
+     "source": "llm",
+     "status": "sent",
+     "scheduled_for": "2026-10-21 01:57:26.233502+00:00",
+     "sent_at": "2026-10-21 01:57:26.318211+00:00",
+     "error": null,
+     "created_at": "2026-10-21 01:57:03.155493+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "llm",
+     "created_at": "2026-10-21 01:57:03.155493+00:00"
+    },
+    {
+     "kind": "approved",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.233502+00:00"
+    },
+    {
+     "kind": "sent",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.340474+00:00"
+    },
+    {
+     "kind": "reply:unsubscribe",
+     "detail": null,
+     "created_at": "2026-10-21 01:57:44.190829+00:00"
+    }
+   ]
+  },
+  "230": {
+   "prospect": {
+    "id": 230,
+    "campaign_id": 87,
+    "external_id": "demo-002",
+    "name": "Cool Breeze Aircon Services",
+    "category": "Air conditioning repair service",
+    "address": "88 Quimpo Blvd, Davao City",
+    "phone": "+63 82 555 0102",
+    "email": "info@coolbreeze.example.com",
+    "website": "https://coolbreeze.example.com",
+    "maps_url": null,
+    "rating": "4.4",
+    "review_count": 64,
+    "hours_json": {
+     "Friday": "8 AM \u2013 6 PM",
+     "Monday": "8 AM \u2013 6 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 6 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 6 PM",
+     "Wednesday": "8 AM \u2013 6 PM"
+    },
+    "review_texts": [
+     "Fixed my aircon fast",
+     "They never called back after the quote"
+    ],
+    "score": 85,
+    "score_reasons": [
+     "has a business email",
+     "has a website",
+     "64 reviews (a busy business)",
+     "rated 4.4",
+     "1 review mentions an unanswered call",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 1,
+    "status": "bounced",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [
+    {
+     "id": 120,
+     "prospect_id": 230,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for Cool Breeze Aircon Services",
+     "body": "Hi Cool Breeze Aircon Services team,\n\nAs a local business in Davao City, you may be missing some customer enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments.\n\nThis assistant can help you respond to customers right away, even when you're not available, and ensure that no potential business goes unanswered.\n\nWould you like to learn more about how this assistant can help your business?",
+     "source": "llm",
+     "status": "sent",
+     "scheduled_for": "2026-10-21 01:57:26.241323+00:00",
+     "sent_at": "2026-10-21 01:57:26.318211+00:00",
+     "error": null,
+     "created_at": "2026-10-21 01:57:07.485932+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "llm",
+     "created_at": "2026-10-21 01:57:07.485932+00:00"
+    },
+    {
+     "kind": "approved",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.241323+00:00"
+    },
+    {
+     "kind": "sent",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.345570+00:00"
+    },
+    {
+     "kind": "bounce",
+     "detail": null,
+     "created_at": "2026-10-21 01:57:44.240926+00:00"
+    }
+   ]
+  },
+  "239": {
+   "prospect": {
+    "id": 239,
+    "campaign_id": 87,
+    "external_id": "demo-102",
+    "name": "AirFlow Cooling Specialists",
+    "category": "Air conditioning contractor",
+    "address": "3 Bangkal Rd, Davao City",
+    "phone": null,
+    "email": "service@airflow.example.com",
+    "website": "https://airflow.example.com",
+    "maps_url": null,
+    "rating": "4.2",
+    "review_count": 58,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [
+     "They never called back about my quote"
+    ],
+    "score": 85,
+    "score_reasons": [
+     "has a business email",
+     "has a website",
+     "58 reviews (a busy business)",
+     "rated 4.2",
+     "1 review mentions an unanswered call",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 1,
+    "status": "drafted",
+    "created_at": "2026-10-21 01:59:17.020337+00:00"
+   },
+   "messages": [
+    {
+     "id": 125,
+     "prospect_id": 239,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for AirFlow Cooling Specialists",
+     "body": "Hi AirFlow Cooling Specialists team,\n\nAs a business in Davao City, you may be missing some customer enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments.\n\nThis assistant can help you respond to customers immediately, even when you're not available, and ensure that no potential business is lost.\n\nWould you like to learn more about how this assistant can help your business?",
+     "source": "llm",
+     "status": "drafted",
+     "scheduled_for": null,
+     "sent_at": null,
+     "error": null,
+     "created_at": "2026-10-21 01:59:24.753915+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "llm",
+     "created_at": "2026-10-21 01:59:24.753915+00:00"
+    }
+   ]
+  },
+  "231": {
+   "prospect": {
+    "id": 231,
+    "campaign_id": 87,
+    "external_id": "demo-003",
+    "name": "Island Roofing Works",
+    "category": "Roofing contractor",
+    "address": "5 Lanang Ave, Davao City",
+    "phone": "+63 82 555 0103",
+    "email": "islandroofing@outreach.example.com",
+    "website": null,
+    "maps_url": null,
+    "rating": "4.1",
+    "review_count": 23,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [
+     "Solid work"
+    ],
+    "score": 65,
+    "score_reasons": [
+     "has a business email",
+     "23 reviews (a busy business)",
+     "rated 4.1",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 0,
+    "status": "not_interested",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [
+    {
+     "id": 121,
+     "prospect_id": 231,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for Island Roofing Works",
+     "body": "Hi Island Roofing Works team,\n\nAs a local business in Davao City, you may be missing some customer enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments.\n\nThis assistant can help you respond to customers right away, even when you're not available, and ensure that no lead goes unnoticed.\n\nWould you like to learn more about how this assistant can help your business?",
+     "source": "llm",
+     "status": "sent",
+     "scheduled_for": "2026-10-21 01:57:26.248958+00:00",
+     "sent_at": "2026-10-21 01:57:26.318211+00:00",
+     "error": null,
+     "created_at": "2026-10-21 01:57:11.646205+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "llm",
+     "created_at": "2026-10-21 01:57:11.646205+00:00"
+    },
+    {
+     "kind": "approved",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.248958+00:00"
+    },
+    {
+     "kind": "sent",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.350344+00:00"
+    },
+    {
+     "kind": "reply:not_interested",
+     "detail": null,
+     "created_at": "2026-10-21 01:57:44.919890+00:00"
+    }
+   ]
+  },
+  "232": {
+   "prospect": {
+    "id": 232,
+    "campaign_id": 87,
+    "external_id": "demo-004",
+    "name": "Glow Salon & Spa",
+    "category": "Beauty salon",
+    "address": "31 Bajada Rd, Davao City",
+    "phone": "+63 82 555 0104",
+    "email": "bookings@glow.example.com",
+    "website": "https://glow.example.com",
+    "maps_url": null,
+    "rating": "4.8",
+    "review_count": 310,
+    "hours_json": {
+     "Friday": "10 AM\u20139 PM",
+     "Monday": "10 AM\u20138 PM",
+     "Sunday": "9 AM\u20136 PM",
+     "Tuesday": "10 AM\u20138 PM",
+     "Saturday": "9 AM\u20139 PM",
+     "Thursday": "10 AM\u20138 PM",
+     "Wednesday": "10 AM\u20138 PM"
+    },
+    "review_texts": [
+     "Best haircut ever"
+    ],
+    "score": 65,
+    "score_reasons": [
+     "has a business email",
+     "has a website",
+     "310 reviews (a busy business)",
+     "rated 4.8",
+     "target category"
+    ],
+    "pain_mentions": 0,
+    "status": "sent",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [
+    {
+     "id": 122,
+     "prospect_id": 232,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for Glow Salon & Spa",
+     "body": "Hi Glow Salon & Spa team,\n\nAs a business in Davao City, you may be missing some customer enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments.\n\nThis assistant can help you respond to customers right away, even when you're not available, and ensure that you don't miss any potential bookings.\n\nWould you like to learn more about how this assistant works and how it can benefit your business?",
+     "source": "llm",
+     "status": "sent",
+     "scheduled_for": "2026-10-21 01:57:26.256912+00:00",
+     "sent_at": "2026-10-17 01:57:26.318211+00:00",
+     "error": null,
+     "created_at": "2026-10-21 01:57:16.102578+00:00"
+    },
+    {
+     "id": 123,
+     "prospect_id": 232,
+     "step": 2,
+     "channel": "email",
+     "subject": "Re: A quick idea for Glow Salon & Spa",
+     "body": "Hi Glow Salon & Spa team,\n\nJust floating my earlier note back to the top in case it got buried. Happy to show how it works in a few minutes if that would be useful.\n\nIf not, no worries at all.",
+     "source": "template",
+     "status": "sent",
+     "scheduled_for": "2026-10-21 01:58:01.599444+00:00",
+     "sent_at": "2026-10-21 01:58:01.653717+00:00",
+     "error": null,
+     "created_at": "2026-10-21 01:57:55.498267+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "llm",
+     "created_at": "2026-10-21 01:57:16.102578+00:00"
+    },
+    {
+     "kind": "approved",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.256912+00:00"
+    },
+    {
+     "kind": "sent",
+     "detail": "step 1",
+     "created_at": "2026-10-21 01:57:26.354433+00:00"
+    },
+    {
+     "kind": "reply:out_of_office",
+     "detail": null,
+     "created_at": "2026-10-21 01:57:44.291301+00:00"
+    },
+    {
+     "kind": "followup_drafted",
+     "detail": "step 2",
+     "created_at": "2026-10-21 01:57:55.498267+00:00"
+    },
+    {
+     "kind": "approved",
+     "detail": "step 2",
+     "created_at": "2026-10-21 01:58:01.599444+00:00"
+    },
+    {
+     "kind": "sent",
+     "detail": "step 2",
+     "created_at": "2026-10-21 01:58:01.654650+00:00"
+    }
+   ]
+  },
+  "236": {
+   "prospect": {
+    "id": 236,
+    "campaign_id": 87,
+    "external_id": "demo-007",
+    "name": "Metro Cleaners",
+    "category": "House cleaning service",
+    "address": "77 Ecoland Dr, Davao City",
+    "phone": "+63 82 555 0107",
+    "email": null,
+    "website": "https://metrocleaners.example.com",
+    "maps_url": null,
+    "rating": "4.3",
+    "review_count": 41,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [],
+    "score": 50,
+    "score_reasons": [
+     "has a website",
+     "41 reviews (a busy business)",
+     "rated 4.3",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 0,
+    "status": "no_email",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [],
+   "events": []
+  },
+  "233": {
+   "prospect": {
+    "id": 233,
+    "campaign_id": 87,
+    "external_id": "demo-005",
+    "name": "Pipe Masters Plumbing",
+    "category": "Plumber",
+    "address": "4 Matina Rd, Davao City",
+    "phone": "+63 82 555 0105",
+    "email": "pipemasters@gmail.com",
+    "website": "https://pipemasters.example.com",
+    "maps_url": null,
+    "rating": "3.9",
+    "review_count": 12,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [
+     "No response to my message for two days"
+    ],
+    "score": 45,
+    "score_reasons": [
+     "free-mail address (a person's inbox: review before contacting)",
+     "has a website",
+     "1 review mentions an unanswered call",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 1,
+    "status": "drafted",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [
+    {
+     "id": 126,
+     "prospect_id": 233,
+     "step": 1,
+     "channel": "email",
+     "subject": "A quick idea for Pipe Masters Plumbing",
+     "body": "Hi Pipe Masters Plumbing team,\n\nI came across Pipe Masters Plumbing, a plumber in Davao City. Many plumber businesses lose enquiries that arrive when nobody is free to reply. We built an AI assistant that answers customer enquiries instantly, qualifies them and books appointments.\n\nWould it be worth a quick look at how it could work for you?",
+     "source": "template",
+     "status": "drafted",
+     "scheduled_for": null,
+     "sent_at": null,
+     "error": null,
+     "created_at": "2026-10-21 01:59:32.565901+00:00"
+    }
+   ],
+   "events": [
+    {
+     "kind": "drafted",
+     "detail": "template",
+     "created_at": "2026-10-21 01:59:32.565901+00:00"
+    }
+   ]
+  },
+  "234": {
+   "prospect": {
+    "id": 234,
+    "campaign_id": 87,
+    "external_id": "demo-006",
+    "name": "Corner Sari-Sari Store",
+    "category": "Convenience store",
+    "address": "Purok 3, Davao City",
+    "phone": null,
+    "email": null,
+    "website": null,
+    "maps_url": null,
+    "rating": "4",
+    "review_count": 3,
+    "hours_json": null,
+    "review_texts": [],
+    "score": 10,
+    "score_reasons": [
+     "rated 4"
+    ],
+    "pain_mentions": 0,
+    "status": "no_email",
+    "created_at": "2026-10-21 01:56:49.534595+00:00"
+   },
+   "messages": [],
+   "events": []
+  }
+ },
+ "queue": [
+  {
+   "id": 125,
+   "prospect_id": 239,
+   "step": 1,
+   "subject": "A quick idea for AirFlow Cooling Specialists",
+   "body": "Hi AirFlow Cooling Specialists team,\n\nAs a business in Davao City, you may be missing some customer enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments.\n\nThis assistant can help you respond to customers immediately, even when you're not available, and ensure that no potential business is lost.\n\nWould you like to learn more about how this assistant can help your business?",
+   "source": "llm",
+   "created_at": "2026-10-21 01:59:24.753915+00:00",
+   "name": "AirFlow Cooling Specialists",
+   "email": "service@airflow.example.com",
+   "score": 85
+  },
+  {
+   "id": 126,
+   "prospect_id": 233,
+   "step": 1,
+   "subject": "A quick idea for Pipe Masters Plumbing",
+   "body": "Hi Pipe Masters Plumbing team,\n\nI came across Pipe Masters Plumbing, a plumber in Davao City. Many plumber businesses lose enquiries that arrive when nobody is free to reply. We built an AI assistant that answers customer enquiries instantly, qualifies them and books appointments.\n\nWould it be worth a quick look at how it could work for you?",
+   "source": "template",
+   "created_at": "2026-10-21 01:59:32.565901+00:00",
+   "name": "Pipe Masters Plumbing",
+   "email": "pipemasters@gmail.com",
+   "score": 45
+  }
+ ],
+ "outreach_metrics": {
+  "prospects": {
+   "interested": 1,
+   "not_interested": 1,
+   "no_email": 2,
+   "approved": 1,
+   "sent": 1,
+   "drafted": 2,
+   "unsubscribed": 1,
+   "bounced": 1
+  },
+  "messages": {
+   "approved": 1,
+   "sent": 6,
+   "drafted": 2
+  },
+  "awaiting_approval": 2,
+  "suppressed": 3
  }
 }

@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import type { ConversationDetail, ConversationRow, Metrics } from "./types"
+import type { ConversationDetail, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem } from "./types"
 
 const API = process.env.API_URL
 const KEY = process.env.ADMIN_API_KEY ?? ""
@@ -9,7 +9,10 @@ const KEY = process.env.ADMIN_API_KEY ?? ""
  *  Otherwise the pages read data/snapshot.json, which is how the static demo is hosted. */
 export const isLive = Boolean(API)
 
-type Snapshot = { metrics: Metrics; conversations: ConversationRow[]; details: Record<string, ConversationDetail> }
+type Snapshot = {
+  metrics: Metrics; conversations: ConversationRow[]; details: Record<string, ConversationDetail>
+  prospects: Prospect[]; prospect_details: Record<string, ProspectDetail>; queue: QueueItem[]; outreach_metrics: OutreachMetrics
+}
 
 function snapshot(): Snapshot {
   return JSON.parse(fs.readFileSync(path.join(process.cwd(), "data", "snapshot.json"), "utf8"))
@@ -26,3 +29,18 @@ export const getConversations = async (): Promise<ConversationRow[]> => (isLive 
 export const getConversation = async (id: string): Promise<ConversationDetail | null> =>
   isLive ? api<ConversationDetail>(`/conversations/${id}`).catch(() => null) : (snapshot().details[id] ?? null)
 export const snapshotIds = (): string[] => Object.keys(snapshot().details)
+
+export const getProspects = async (status?: string): Promise<Prospect[]> =>
+  isLive ? api(`/admin/prospects${status ? `?status=${encodeURIComponent(status)}` : ""}`) : snapshot().prospects.filter((p) => !status || p.status === status)
+export const getProspect = async (id: string): Promise<ProspectDetail | null> =>
+  isLive ? api<ProspectDetail>(`/admin/prospects/${id}`).catch(() => null) : (snapshot().prospect_details[id] ?? null)
+export const prospectIds = (): string[] => Object.keys(snapshot().prospect_details ?? {})
+export const getQueue = async (): Promise<QueueItem[]> => (isLive ? api("/admin/outreach/queue") : snapshot().queue)
+export const getOutreachMetrics = async (): Promise<OutreachMetrics> => (isLive ? api("/admin/outreach/metrics") : snapshot().outreach_metrics)
+
+/** Approve or reject a draft. Server-side only (the admin key never reaches the browser); live mode only. */
+export async function reviewDraft(id: number, action: "approve" | "reject"): Promise<void> {
+  if (!isLive) throw new Error("the static demo is read-only")
+  const res = await fetch(`${API}/admin/outreach/${id}/${action}`, { method: "POST", headers: { "X-Admin-Key": KEY } })
+  if (!res.ok) throw new Error(`API ${action} returned ${res.status}`)
+}

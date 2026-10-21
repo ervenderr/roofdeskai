@@ -25,3 +25,20 @@ export type ConversationRow = {
 export type Message = { role: "user" | "assistant"; content: string; created_at: string }
 export type ToolCall = { tool_name: string; args_json: unknown; result_json: unknown; ok: boolean; latency_ms: number; created_at: string }
 export type ConversationDetail = { conversation: ConversationRow; messages: Message[]; tool_calls: ToolCall[] }
+
+export type Prospect = {
+  id: number; campaign_id: number; name: string; category: string | null; address: string | null; email: string | null
+  website: string | null; rating: number | string | null; review_count: number | null; score: number
+  pain_mentions: number; status: string; created_at: string
+}
+export type OutreachMessage = {
+  id: number; prospect_id: number; step: number; subject: string; body: string; source: string
+  status: string; scheduled_for: string | null; sent_at: string | null; created_at: string
+}
+export type ProspectDetail = {
+  prospect: Prospect & { phone: string | null; maps_url: string | null; score_reasons: string[]; hours_json: Record<string, string> | null }
+  messages: OutreachMessage[]
+  events: { kind: string; detail: string | null; created_at: string }[]
+}
+export type QueueItem = { id: number; prospect_id: number; step: number; subject: string; body: string; source: string; name: string; email: string; score: number }
+export type OutreachMetrics = { prospects: Record<string, number>; messages: Record<string, number>; awaiting_approval: number; suppressed: number }

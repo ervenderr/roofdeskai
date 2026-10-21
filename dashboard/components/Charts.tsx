@@ -54,7 +54,7 @@ export function FunnelChart({ stages }: { stages: { name: string; value: number 
             <YAxis type="category" dataKey="name" width={80} tick={tick} axisLine={false} tickLine={false} />
             <Tooltip content={<Tip />} cursor={{ fill: "var(--chip)" }} />
             <Bar isAnimationActive={false} dataKey="value" name="Leads" radius={[0, 4, 4, 0]} label={{ position: "right", fill: "var(--ink)", fontSize: 13 }}>
-              {stages.map((_, i) => <Cell key={i} fill={`var(--ord-${i + 1})`} />)}
+              {stages.map((_, i) => <Cell key={i} fill={`var(--ord-${stages.length === 3 ? [1, 3, 5][i] : i + 1})`} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>

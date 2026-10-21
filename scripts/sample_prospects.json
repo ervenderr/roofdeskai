@@ -1,0 +1,260 @@
+[
+ {
+  "title": "Bright Smile Dental Clinic",
+  "category": "Dentist",
+  "address": "12 Rizal St, Davao City",
+  "phone": "+63 82 555 0101",
+  "website": "https://brightsmile.example.com",
+  "emails": [
+   "hello@brightsmile.example.com"
+  ],
+  "review_rating": 4.6,
+  "review_count": 182,
+  "place_id": "demo-001",
+  "open_hours": {
+   "Monday": "8 AM – 5 PM",
+   "Tuesday": "8 AM – 5 PM",
+   "Wednesday": "8 AM – 5 PM",
+   "Thursday": "8 AM – 5 PM",
+   "Friday": "8 AM – 5 PM",
+   "Saturday": "Closed",
+   "Sunday": "Closed"
+  },
+  "user_reviews": [
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Great dentist but nobody answers the phone, hard to reach for appointments",
+    "When": "a month ago"
+   },
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Called three times and it goes to voicemail",
+    "When": "a month ago"
+   },
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Lovely staff",
+    "When": "a month ago"
+   }
+  ]
+ },
+ {
+  "title": "Cool Breeze Aircon Services",
+  "category": "Air conditioning repair service",
+  "address": "88 Quimpo Blvd, Davao City",
+  "phone": "+63 82 555 0102",
+  "website": "https://coolbreeze.example.com",
+  "emails": [
+   "info@coolbreeze.example.com",
+   "jobs@coolbreeze.example.com"
+  ],
+  "review_rating": 4.4,
+  "review_count": 64,
+  "place_id": "demo-002",
+  "open_hours": {
+   "Monday": "8 AM – 6 PM",
+   "Tuesday": "8 AM – 6 PM",
+   "Wednesday": "8 AM – 6 PM",
+   "Thursday": "8 AM – 6 PM",
+   "Friday": "8 AM – 6 PM",
+   "Saturday": "Closed",
+   "Sunday": "Closed"
+  },
+  "user_reviews": [
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Fixed my aircon fast",
+    "When": "a month ago"
+   },
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "They never called back after the quote",
+    "When": "a month ago"
+   }
+  ]
+ },
+ {
+  "title": "Island Roofing Works",
+  "category": "Roofing contractor",
+  "address": "5 Lanang Ave, Davao City",
+  "phone": "+63 82 555 0103",
+  "website": "",
+  "emails": [
+   "islandroofing@outreach.example.com"
+  ],
+  "review_rating": 4.1,
+  "review_count": 23,
+  "place_id": "demo-003",
+  "open_hours": {
+   "Monday": "8 AM – 5 PM",
+   "Tuesday": "8 AM – 5 PM",
+   "Wednesday": "8 AM – 5 PM",
+   "Thursday": "8 AM – 5 PM",
+   "Friday": "8 AM – 5 PM",
+   "Saturday": "Closed",
+   "Sunday": "Closed"
+  },
+  "user_reviews": [
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Solid work",
+    "When": "a month ago"
+   }
+  ]
+ },
+ {
+  "title": "Glow Salon & Spa",
+  "category": "Beauty salon",
+  "address": "31 Bajada Rd, Davao City",
+  "phone": "+63 82 555 0104",
+  "website": "https://glow.example.com",
+  "emails": [
+   "bookings@glow.example.com"
+  ],
+  "review_rating": 4.8,
+  "review_count": 310,
+  "place_id": "demo-004",
+  "open_hours": {
+   "Monday": "10 AM–8 PM",
+   "Tuesday": "10 AM–8 PM",
+   "Wednesday": "10 AM–8 PM",
+   "Thursday": "10 AM–8 PM",
+   "Friday": "10 AM–9 PM",
+   "Saturday": "9 AM–9 PM",
+   "Sunday": "9 AM–6 PM"
+  },
+  "user_reviews": [
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Best haircut ever",
+    "When": "a month ago"
+   }
+  ]
+ },
+ {
+  "title": "Pipe Masters Plumbing",
+  "category": "Plumber",
+  "address": "4 Matina Rd, Davao City",
+  "phone": "+63 82 555 0105",
+  "website": "https://pipemasters.example.com",
+  "emails": [
+   "pipemasters@gmail.com"
+  ],
+  "review_rating": 3.9,
+  "review_count": 12,
+  "place_id": "demo-005",
+  "open_hours": {
+   "Monday": "8 AM – 5 PM",
+   "Tuesday": "8 AM – 5 PM",
+   "Wednesday": "8 AM – 5 PM",
+   "Thursday": "8 AM – 5 PM",
+   "Friday": "8 AM – 5 PM",
+   "Saturday": "Closed",
+   "Sunday": "Closed"
+  },
+  "user_reviews": [
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "No response to my message for two days",
+    "When": "a month ago"
+   }
+  ]
+ },
+ {
+  "title": "Corner Sari-Sari Store",
+  "category": "Convenience store",
+  "address": "Purok 3, Davao City",
+  "phone": "",
+  "website": "",
+  "emails": [],
+  "review_rating": 4.0,
+  "review_count": 3,
+  "place_id": "demo-006"
+ },
+ {
+  "title": "Bright Smile Dental Clinic",
+  "category": "Dentist",
+  "address": "12 Rizal St, Davao City",
+  "emails": [
+   "hello@brightsmile.example.com"
+  ],
+  "place_id": "demo-001"
+ },
+ {
+  "title": "",
+  "category": "Broken row",
+  "place_id": "demo-bad"
+ },
+ {
+  "title": "Metro Cleaners",
+  "category": "House cleaning service",
+  "address": "77 Ecoland Dr, Davao City",
+  "phone": "+63 82 555 0107",
+  "website": "https://metrocleaners.example.com",
+  "emails": [
+   "not-an-email"
+  ],
+  "review_rating": 4.3,
+  "review_count": 41,
+  "place_id": "demo-007",
+  "open_hours": {
+   "Monday": "8 AM – 5 PM",
+   "Tuesday": "8 AM – 5 PM",
+   "Wednesday": "8 AM – 5 PM",
+   "Thursday": "8 AM – 5 PM",
+   "Friday": "8 AM – 5 PM",
+   "Saturday": "Closed",
+   "Sunday": "Closed"
+  }
+ },
+ {
+  "title": "Hilltop Veterinary Clinic",
+  "category": "Veterinarian",
+  "address": "9 Toril Rd, Davao City",
+  "phone": "+63 82 555 0108",
+  "website": "https://hilltopvet.example.com",
+  "emails": [
+   "care@hilltopvet.example.com"
+  ],
+  "review_rating": 4.7,
+  "review_count": 96,
+  "place_id": "demo-008",
+  "open_hours": {
+   "Monday": "8 AM – 7 PM",
+   "Tuesday": "8 AM – 7 PM",
+   "Wednesday": "8 AM – 7 PM",
+   "Thursday": "8 AM – 7 PM",
+   "Friday": "8 AM – 7 PM",
+   "Saturday": "Closed",
+   "Sunday": "Closed"
+  },
+  "user_reviews": [
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Nobody picked up when my dog was sick, impossible to get through",
+    "When": "a month ago"
+   },
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "They ignored my message",
+    "When": "a month ago"
+   },
+   {
+    "Name": "A Customer",
+    "Rating": 3,
+    "Description": "Great vets",
+    "When": "a month ago"
+   }
+  ]
+ }
+]

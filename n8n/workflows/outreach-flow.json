@@ -1,0 +1,494 @@
+{
+  "id": "outreach-flow",
+  "name": "Outreach flow (find, draft, send, reply)",
+  "active": true,
+  "nodes": [
+    {
+      "id": "note-1.-import-prospects",
+      "name": "Note 1. Import prospects",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## 1. Import prospects\nPOST scraper rows to /webhook/outreach-import. They are deduplicated, scored and stored.",
+        "width": 760,
+        "height": 110
+      },
+      "position": [
+        -20,
+        -70
+      ]
+    },
+    {
+      "id": "import-webhook",
+      "name": "Import webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outreach-import",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "outreach-import"
+    },
+    {
+      "id": "import-into-campaign",
+      "name": "Import into campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/campaigns/{{ $json.body.campaign_id }}/import",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({rows: $json.body.rows}) }}"
+      },
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "id": "import-result",
+      "name": "Import result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "id": "note-2.-draft-emails",
+      "name": "Note 2. Draft emails",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## 2. Draft emails\nEvery 10 minutes the AI drafts the next prospects. Nothing is sent: drafts wait for your approval\n(unless a campaign has auto-approve on). You get one email when new drafts appear.",
+        "width": 900,
+        "height": 130
+      },
+      "position": [
+        -20,
+        230
+      ]
+    },
+    {
+      "id": "every-10-min",
+      "name": "Every 10 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/10 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        320
+      ]
+    },
+    {
+      "id": "draft-emails",
+      "name": "Draft emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/outreach/draft-pending?limit=5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        260,
+        320
+      ]
+    },
+    {
+      "id": "new-drafts",
+      "name": "New drafts?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nif (!j.drafted) return [];  // nothing new to approve: stay quiet\nreturn [{ json: j }];"
+      },
+      "position": [
+        520,
+        320
+      ]
+    },
+    {
+      "id": "tell-me-to-review",
+      "name": "Tell me to review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'Outreach: ' + $json.drafted + ' new drafts to review', Text: $json.awaiting_approval + ' draft(s) are waiting for your approval in the dashboard (Outreach page).'}) }}"
+      },
+      "position": [
+        780,
+        320
+      ]
+    },
+    {
+      "id": "note-3.-follow-ups-and-sendin",
+      "name": "Note 3. Follow-ups and sendin",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## 3. Follow-ups and sending\nEvery 15 minutes: queue follow-ups (3 days, then 7 days after the last email, max 3 emails), then send what is approved.\nThe API enforces the daily cap, send window and suppression list; this flow only triggers it.",
+        "width": 900,
+        "height": 140
+      },
+      "position": [
+        -20,
+        500
+      ]
+    },
+    {
+      "id": "every-15-min",
+      "name": "Every 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        600
+      ]
+    },
+    {
+      "id": "queue-follow-ups",
+      "name": "Queue follow-ups",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/outreach/schedule-followups",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        260,
+        600
+      ]
+    },
+    {
+      "id": "send-due-emails",
+      "name": "Send due emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/outreach/send-due",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        520,
+        600
+      ]
+    },
+    {
+      "id": "note-4.-replies,-bounces,-uns",
+      "name": "Note 4. Replies, bounces, uns",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## 4. Replies, bounces, unsubscribes\nPOST the inbound email to /webhook/outreach-reply. An unsubscribe or bounce stops the sequence immediately (no AI involved).\nInterested replies and questions email you.",
+        "width": 900,
+        "height": 140
+      },
+      "position": [
+        -20,
+        760
+      ]
+    },
+    {
+      "id": "inbound-reply-webhook",
+      "name": "Inbound reply webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outreach-reply",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        860
+      ],
+      "webhookId": "outreach-reply"
+    },
+    {
+      "id": "normalize-reply",
+      "name": "Normalize reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body ?? $input.first().json;\nconst raw = b.from ?? b.sender ?? b.email ?? '';\nconst m = String(raw).match(/[^\\s<>\"']+@[^\\s<>\"']+\\.[^\\s<>\"']+/);\nif (!m) throw new Error('reply payload needs a sender address');\nconst type = String(b.type ?? 'reply').toLowerCase();\nconst kind = ['bounce', 'unsubscribe'].includes(type) ? type : 'reply';\nreturn [{ json: { email: m[0].toLowerCase(), kind, body: String(b.text ?? b['body-plain'] ?? b.body ?? '').slice(0, 10000) } }];"
+      },
+      "position": [
+        260,
+        860
+      ]
+    },
+    {
+      "id": "classify-and-update-status",
+      "name": "Classify and update status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/webhooks/outreach-event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "position": [
+        520,
+        860
+      ]
+    },
+    {
+      "id": "reply-result",
+      "name": "Reply result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "position": [
+        780,
+        780
+      ]
+    },
+    {
+      "id": "needs-a-human",
+      "name": "Needs a human?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nif (!j.matched || !j.needs_human) return [];  // unsubscribes, bounces and auto-replies need no human\nreturn [{ json: j }];"
+      },
+      "position": [
+        780,
+        940
+      ]
+    },
+    {
+      "id": "alert-me",
+      "name": "Alert me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: $json.name + ' replied (' + $json.label + ')', Text: 'Prospect: ' + $json.name + '\\nClassified as: ' + $json.label + '\\nStatus: ' + $json.status + '\\nReply to them from your own inbox.'}) }}"
+      },
+      "position": [
+        1040,
+        940
+      ]
+    }
+  ],
+  "connections": {
+    "Import webhook": {
+      "main": [
+        [
+          {
+            "node": "Import into campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Import into campaign": {
+      "main": [
+        [
+          {
+            "node": "Import result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 10 min": {
+      "main": [
+        [
+          {
+            "node": "Draft emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft emails": {
+      "main": [
+        [
+          {
+            "node": "New drafts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New drafts?": {
+      "main": [
+        [
+          {
+            "node": "Tell me to review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 min": {
+      "main": [
+        [
+          {
+            "node": "Queue follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue follow-ups": {
+      "main": [
+        [
+          {
+            "node": "Send due emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inbound reply webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize reply": {
+      "main": [
+        [
+          {
+            "node": "Classify and update status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify and update status": {
+      "main": [
+        [
+          {
+            "node": "Reply result",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Needs a human?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs a human?": {
+      "main": [
+        [
+          {
+            "node": "Alert me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

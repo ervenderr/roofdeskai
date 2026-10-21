@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
+from . import outreach
 from .agent import handle_turn
 from .config import settings
 from .db import engine
@@ -97,6 +98,7 @@ def metrics():
         "cost_per_conversation": float(llm["cost"]) / total if total else 0,
         "daily": daily,
         "eval_runs": runs,
+        "outreach": outreach.metrics(),
     }
 
 

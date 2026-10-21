@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from .admin import router as admin_router
+from .outreach_routes import router as outreach_router
 from .agent import conversation_token, handle_turn, token_matches
 from .config import settings
 from .db import engine
@@ -26,6 +27,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="LeadPilot", lifespan=lifespan)
 app.include_router(admin_router)
+app.include_router(outreach_router)
 
 
 class ChatIn(BaseModel):

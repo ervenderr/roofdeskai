@@ -66,3 +66,5 @@ FROM generate_series(date_trunc('day', now()) + interval '1 day',
                      date_trunc('day', now()) + interval '14 days', interval '1 day') d,
      unnest(ARRAY[9, 11, 14, 16]) h
 WHERE extract(isodow FROM d) < 6;
+
+-- Outbound prospecting tables: outreach.sql runs right after this file (alphabetical order).

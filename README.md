@@ -69,16 +69,53 @@ Conversation states: `GREETING → COLLECT → (BOOK → DONE | NURTURE | DISQUA
 
 ### n8n flow
 
-`n8n/workflows/` holds four exported workflows, all imported and activated automatically by `docker compose up`.
+`n8n/workflows/` holds five exported workflows, all imported and activated automatically by `docker compose up`.
 
 - **Lead flow:** webhook, normalize the SMS/GHL payload, call the agent, send the reply immediately, then branch on the outcome: booked sends a confirmation email, escalated runs the Escalation alert workflow, nurture is left to the nightly scheduler.
 - **Follow-up scheduler** (nightly): nurture leads with no activity for 48 hours get a follow-up email, at most 3 per lead.
 - **Escalation alert:** emails a human with a link to the transcript.
 - **Daily report:** emails a summary of `/metrics`.
+- **Outreach flow:** one canvas with four lanes for outbound prospecting (below).
 
 All logic lives in the FastAPI service; n8n only triggers and sends. The project runs without it.
 
 **License note:** n8n uses the Sustainable Use License (fair-code, not OSI open source). It is free to self-host for your own use, as here. If you need strictly open source, **Activepieces** (MIT core) is the alternative. Everything else here is MIT, BSD, Apache 2.0 or PostgreSQL License.
+
+## Outbound: find, contact, follow up
+
+The same agent pattern runs the other direction: it finds local businesses, drafts a personalised first email, sends it after approval, follows up, and reads the replies. A prospect who answers "interested" is flagged for a human.
+
+![Outreach page](docs/img/outreach.png)
+
+```
+Scraper rows (Google Maps) → import + dedupe → score → AI drafts email → you approve → send (cap, hours, opt-out)
+                                                                              ↓
+                       interested / question → alert you ← classify reply ← replies, bounces, unsubscribes
+                       no reply → follow-up after 3 days, again after 7 (max 3 emails)
+```
+
+Statuses: `scored → drafted → approved → sent → replied → interested → booked`, with the dead ends `not_interested`, `unsubscribed`, `bounced`, `skipped`, `no_email`. An illegal move raises an error.
+
+**The model proposes, the code decides, again.**
+- The model writes only the email body. The code writes the subject and adds the signature, postal address and opt-out line, so neither the model nor a human edit can remove them.
+- Draft checks in code: no numbers that are not in the scraped facts, no links, no guarantees or prices, no claims about other customers, no review mention unless at least two reviews actually mention unanswered calls. A rejected draft gets one retry, then a fixed template.
+- Unsubscribes work with no model involved (a regex), and a suppression list is checked in code before every send, again at send time.
+- Daily cap per campaign, send window (weekdays 9 to 5 local), and a refusal to send at all without a postal address configured.
+- Follow-ups are fixed templates, never model-written. Free-mail addresses (gmail and similar) score lower and are flagged as personal data.
+- Campaigns default to manual approval. Auto-approve is a per-campaign switch.
+
+`make eval-outreach` checks the copywriter on first-try output: **7/8 safe and well-formed with the current prompt, versus 0/8 with the first one** (`evals/reports/outreach-copy.v2.md`). Failures are in [`docs/failure-analysis.md`](docs/failure-analysis.md).
+
+Try it without scraping anything, using the 10 fictional sample businesses (emails go to Mailpit, nothing leaves your machine):
+```bash
+ID=$(curl -s -X POST localhost:8000/admin/campaigns -H 'X-Admin-Key: dev-admin-key' -H 'content-type: application/json' \
+     -d '{"name":"Demo"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")
+python3 -c "import json;print(json.dumps({'campaign_id':$ID,'rows':json.load(open('scripts/sample_prospects.json'))}))" |
+  curl -s -X POST localhost:5679/webhook/outreach-import -H 'content-type: application/json' --data @-
+# drafts appear in the dashboard under Outreach (live mode); approve them, then watch Mailpit at :8025
+```
+
+**Not built yet (Phase 2):** real sending (Resend), real inbound email (replies arrive by webhook today), and handing an interested prospect to a booking agent configured for sales calls (the booking agent is still the roofing one). The scraper itself has not been run; the importer was written against its documented field names and checked on a synthetic file, so check it on a real export.
 
 ## How I check the output
 
@@ -111,6 +148,7 @@ ollama pull llama3.1:8b && ollama pull all-minilm
 cp .env.example .env            # optional: add free-tier API keys for fallback providers
 docker compose up -d --build    # Postgres, API, Mailpit, n8n
 make eval                       # about 20 to 25 minutes on a laptop; writes evals/reports/latest.md
+make eval-outreach              # the outbound copywriter check, about a minute
 ```
 
 | Service | URL |

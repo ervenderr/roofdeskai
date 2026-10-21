@@ -10,3 +10,5 @@ test:
 	docker compose exec api python -m pytest -q
 eval:
 	docker compose exec -e GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) api python -m evals.runner
+eval-outreach:
+	docker compose exec api python -m evals.outreach_runner

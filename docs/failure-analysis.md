@@ -59,3 +59,27 @@ A separate reviewer agent read the code cold. The evals could not have caught th
 
 ### Caveat
 80/80 was reached by iterating against these same 80 scenarios, written by me, on one 8B model. Expect lower on unseen phrasing. A held-out set and a second model are the honest next test.
+
+
+## Outbound copywriter (Phase 1)
+
+Eval: `evals/outreach_runner.py`, 8 fictional prospects, first-try output, no retries. Report: `evals/reports/outreach-copy.v2.md`.
+
+### 10. First prompt: 0/8 first try, but the retry hid it
+- **What happened:** the first draft prompt (JSON with subject and body) failed the checks on every prospect: reviews mentioned with no review signal, numbers not in the facts, sender introduced twice, no paragraphs. The drafts I read in the dashboard looked fine only because the retry loop fixed them.
+- **Lesson:** measure first-try output, not the output after retries, or the retry loop covers up a weak prompt.
+
+### 11. A second prompt got worse: the model stopped returning JSON
+- **What happened:** adding a four-block structure to the prompt made the model write the plain email and ignore "reply with JSON" (0/8 parseable).
+- **Root cause:** asking an 8B model for structured copy and structured output at once.
+- **Change:** the model now writes only the plain-text body. The code writes the subject and the signature, and strips any sign-off the model adds. 0/8 became 5/8, then 7/8.
+
+### 12. Invented social proof got past the first checks
+- **What happened:** a draft said "it's used by veterinarians in various cities." Nothing in the facts supports that, and my first checks only looked at numbers and links.
+- **Change:** claim patterns (used by, trusted by, our customers, proven, awards, and similar) are rejected.
+- **Follow-up bug:** the new rule matched "your customers" because "your" contains "our". Fixed with a word boundary and a test for both directions.
+
+### 13. Smaller catches
+- The guard rejected "24/7" as a number not in the facts. That is correct: we cannot promise it.
+- My eval deduplicated by keeping the last duplicate row, which was a stripped copy with no reviews, so one scenario failed for a reason that had nothing to do with the model.
+- `draft_pending` and `send_due` acted on every prospect in the database. They are now scoped by campaign, which also makes the tests isolated.

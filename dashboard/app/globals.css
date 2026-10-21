@@ -3,7 +3,7 @@
   --surface: #fcfcfb; --card: #ffffff; --line: #e6e5e1; --grid: #eeede9;
   --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #7b7a75;
   --series-1: #2a78d6; --series-2: #eb6834;
-  --ord-1: #86b6ef; --ord-2: #3987e5; --ord-3: #1c5cab;
+  --ord-1: #86b6ef; --ord-2: #5598e7; --ord-3: #2a78d6; --ord-4: #1c5cab; --ord-5: #104281;
   --good: #0f7b4f; --warn: #a15c00; --bad: #b3261e; --chip: #f1f0ec;
 }
 @media (prefers-color-scheme: dark) {
@@ -12,7 +12,7 @@
     --surface: #121211; --card: #1a1a19; --line: #2c2c2a; --grid: #262624;
     --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
     --series-1: #3987e5; --series-2: #d95926;
-    --ord-1: #184f95; --ord-2: #2a78d6; --ord-3: #6da7ec;
+    --ord-1: #184f95; --ord-2: #256abf; --ord-3: #2a78d6; --ord-4: #5598e7; --ord-5: #86b6ef;
     --good: #4cc38a; --warn: #e0a64a; --bad: #f08a82; --chip: #242422;
   }
 }
@@ -21,7 +21,7 @@
   --surface: #121211; --card: #1a1a19; --line: #2c2c2a; --grid: #262624;
   --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #8f8e86;
   --series-1: #3987e5; --series-2: #d95926;
-  --ord-1: #184f95; --ord-2: #2a78d6; --ord-3: #6da7ec;
+  --ord-1: #184f95; --ord-2: #256abf; --ord-3: #2a78d6; --ord-4: #5598e7; --ord-5: #86b6ef;
   --good: #4cc38a; --warn: #e0a64a; --bad: #f08a82; --chip: #242422;
 }
 * { box-sizing: border-box; }
@@ -57,6 +57,16 @@ tbody tr:hover { background: var(--chip); }
 .pill.plain::before { background: var(--ink-3); }
 .legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.chips a { font-size: 13px; padding: 4px 12px; border-radius: 999px; background: var(--chip); color: var(--ink-2); text-decoration: none; }
+.chips a.on { background: var(--ink); color: var(--surface); }
+.draft { margin-bottom: 12px; }
+.draft .head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 6px; }
+.draft pre { white-space: pre-wrap; font: inherit; margin: 8px 0 12px; color: var(--ink); }
+.btn { font: inherit; font-size: 13px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.btn.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+.row { display: flex; gap: 8px; }
+.reasons { color: var(--ink-2); font-size: 13px; margin: 4px 0 0; padding-left: 18px; }
 .thread { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
 .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; white-space: pre-wrap; }
 .msg.user { align-self: flex-end; background: var(--series-1); color: #fff; }

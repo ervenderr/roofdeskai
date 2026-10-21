@@ -11,6 +11,15 @@ class Settings(BaseSettings):
     admin_api_key: str = ""  # empty disables every admin endpoint
     escalation_webhook_url: str = ""
     public_url: str = "http://localhost:8000"
+    # --- outbound outreach ---
+    mailpit_url: str = "http://mailpit:8025"
+    sender_name: str = "The LeadPilot team"
+    sender_email: str = "hello@leadpilot.example"
+    sender_address: str = ""  # physical address for the email footer (required to send); set SENDER_ADDRESS
+    offer_summary: str = "an AI assistant that answers customer enquiries instantly, qualifies them and books appointments"
+    outreach_enforce_window: bool = True
+    outreach_send_hours: str = "9-17"  # local hours, weekdays only
+    outreach_timezone: str = "Asia/Manila"
     groq_api_key: str = ""
     nvidia_api_key: str = ""
     openrouter_api_key: str = ""
