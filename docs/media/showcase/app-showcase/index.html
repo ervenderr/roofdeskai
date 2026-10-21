@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>RoofDesk AI Showcase</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --bg: #0d1b2a;
+        --bg2: #16283a;
+        --chalk: #6ea1ff;
+        --chalk-deep: #1d5bd8;
+        --orange: #f2790f;
+        --green: #4ade80;
+        --ink: #f4f7fb;
+        --dim: #8aa0b8;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        font-family: system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        background: linear-gradient(135deg, var(--bg2) 0%, var(--bg) 70%);
+      }
+      .glow { position: absolute; border-radius: 50%; filter: blur(140px); opacity: 0.45; }
+      #glow-a { width: 800px; height: 800px; left: -260px; top: -240px; background: #1d5bd8; }
+      #glow-b { width: 560px; height: 560px; right: -160px; bottom: -200px; background: #f2790f; opacity: 0.18; }
+      .scene { position: absolute; inset: 0; }
+      .stage { position: absolute; inset: 0; }
+
+      .headline {
+        position: absolute; left: 110px; top: 330px; width: 700px;
+        font-size: 86px; line-height: 1.03; font-weight: 800; letter-spacing: -0.035em;
+      }
+      .headline .ln { display: block; }
+      .headline em { font-style: normal; color: var(--chalk); }
+      .caption { position: absolute; left: 110px; top: 640px; width: 640px; font-size: 32px; line-height: 1.4; color: var(--dim); }
+
+      .win {
+        position: absolute; left: 830px; top: 200px; width: 1010px; border-radius: 18px; overflow: hidden;
+        background: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.08), 0 50px 120px rgba(0,0,0,0.6);
+      }
+      .win .bar { height: 40px; background: #1e2c3d; display: flex; align-items: center; padding-left: 16px; gap: 9px; }
+      .win .bar i { width: 13px; height: 13px; border-radius: 50%; background: #3b4b60; display: block; }
+      .win .bar span { margin-left: 18px; font-size: 18px; color: #d3deec; }
+      .win .shots { position: relative; width: 1010px; height: 631px; }
+      .win img { position: absolute; left: 0; top: 0; width: 1010px; height: 631px; display: block; }
+      .win.mail { left: 1000px; top: 120px; width: 700px; }
+      .win.mail .shots { width: 700px; height: 507px; }
+      .win.mail img { width: 700px; height: 507px; }
+
+      .chip {
+        position: absolute; padding: 20px 34px; border-radius: 999px; font-size: 34px; font-weight: 750;
+        background: rgba(8, 16, 28, 0.94); border: 3px solid rgba(255,255,255,0.16);
+        box-shadow: 0 24px 60px rgba(0,0,0,0.55); white-space: nowrap;
+      }
+      .chip.green { color: var(--green); border-color: rgba(74,222,128,0.55); }
+      .chip.sky { color: var(--chalk); border-color: rgba(110,161,255,0.6); }
+      .chip.orange { color: #ffa24d; border-color: rgba(242,121,15,0.6); }
+
+      /* hook */
+      .hook-line { position: absolute; left: 140px; right: 140px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-size: 104px; }
+      #h1 { top: 270px; color: #5d7189; }
+      #h2 { top: 410px; color: #90a4bb; }
+      #h3 { top: 550px; color: #ffa24d; }
+      #h4 { top: 730px; font-size: 140px; color: var(--ink); }
+      #h4 em { font-style: normal; color: var(--chalk); }
+
+      /* trust scene */
+      .pill-row { position: absolute; left: 110px; right: 110px; top: 560px; display: flex; flex-wrap: wrap; gap: 22px; }
+      .pill {
+        padding: 24px 40px; border-radius: 999px; font-size: 40px; font-weight: 700;
+        background: rgba(255,255,255,0.07); border: 3px solid rgba(255,255,255,0.16);
+      }
+      #t-note { position: absolute; left: 110px; top: 830px; width: 1300px; font-size: 30px; color: var(--dim); }
+
+      /* end card */
+      #end-logo { position: absolute; left: 160px; top: 300px; width: 300px; height: 300px; }
+      #end-name { position: absolute; left: 520px; top: 290px; font-size: 150px; font-weight: 800; letter-spacing: -0.04em; }
+      #end-sub { position: absolute; left: 524px; top: 470px; font-size: 52px; font-weight: 600; color: var(--chalk); }
+      #end-url { position: absolute; left: 524px; top: 580px; font-size: 46px; font-weight: 700; color: var(--ink); }
+      #end-credit { position: absolute; left: 524px; top: 670px; font-size: 36px; color: var(--dim); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="37">
+      <div class="glow" id="glow-a"></div>
+      <div class="glow" id="glow-b"></div>
+
+      <!-- 1 hook -->
+      <section id="s1" class="clip scene" data-start="0" data-duration="4.3" data-track-index="1">
+        <div class="stage" id="s1-stage">
+          <div class="hook-line" id="h1">A storm hits.</div>
+          <div class="hook-line" id="h2">Customers message you.</div>
+          <div class="hook-line" id="h3">You're up on a roof.</div>
+          <div class="hook-line" id="h4">RoofDesk AI <em>replies.</em></div>
+        </div>
+      </section>
+
+      <!-- 2 live chat -->
+      <section id="s2" class="clip scene" data-start="3.9" data-duration="8.7" data-track-index="2">
+        <div class="stage" id="s2-stage">
+          <div class="headline"><span class="ln">Qualifies the lead</span><span class="ln"><em>books the job</em></span></div>
+          <div class="caption">Live on roofdeskai.com. The assistant qualifies owner, address and timeline, then offers inspection slots.</div>
+          <div class="win" id="s2-win">
+            <div class="bar"><i></i><i></i><i></i><span>roofdeskai.com</span></div>
+            <div class="shots">
+              <img id="s2-a" src="assets/chat-02-chat.jpg" alt="" />
+              <img id="s2-b" src="assets/chat-04-chat.jpg" alt="" />
+              <img id="s2-c" src="assets/chat-09-chat.jpg" alt="" />
+            </div>
+          </div>
+          <div class="chip green" id="s2-chip" style="left: 150px; top: 820px">Booked: Thu Oct 22, 09:00 AM</div>
+        </div>
+      </section>
+
+      <!-- 3 dashboard overview -->
+      <section id="s3" class="clip scene" data-start="12.2" data-duration="6.4" data-track-index="3">
+        <div class="stage" id="s3-stage">
+          <div class="headline"><span class="ln">Every chat,</span><span class="ln"><em>measured</em></span></div>
+          <div class="caption">Resolution rate, latency, funnel and an eval scorecard. Static demo with synthetic data.</div>
+          <div class="win" id="s3-win">
+            <div class="bar"><i></i><i></i><i></i><span>Dashboard · static demo</span></div>
+            <div class="shots"><img src="assets/dash-overview.jpg" alt="" /></div>
+          </div>
+          <div class="chip sky" id="s3-chip" style="left: 150px; top: 820px">80/80 scenarios passed</div>
+        </div>
+      </section>
+
+      <!-- 4 prospects -->
+      <section id="s4" class="clip scene" data-start="18.2" data-duration="5.2" data-track-index="4">
+        <div class="stage" id="s4-stage">
+          <div class="headline"><span class="ln">Finds local</span><span class="ln"><em>businesses</em></span></div>
+          <div class="caption">A Google Maps scraper feeds a scored list. Fictional businesses shown.</div>
+          <div class="win" id="s4-win">
+            <div class="bar"><i></i><i></i><i></i><span>Prospects · static demo</span></div>
+            <div class="shots"><img src="assets/dash-prospects.jpg" alt="" /></div>
+          </div>
+          <div class="chip sky" id="s4-chip" style="left: 150px; top: 820px">Scored by missed-enquiry risk</div>
+        </div>
+      </section>
+
+      <!-- 5 email -->
+      <section id="s5" class="clip scene" data-start="23" data-duration="5.2" data-track-index="5">
+        <div class="stage" id="s5-stage">
+          <div class="headline"><span class="ln">Drafts the email</span><span class="ln"><em>you approve</em></span></div>
+          <div class="caption">Guarded copy, an opt-out added by code, and capped sending from your own mailbox.</div>
+          <div class="win mail" id="s5-win">
+            <div class="bar"><i></i><i></i><i></i><span>Outreach email</span></div>
+            <div class="shots"><img src="assets/email.jpg" alt="" /></div>
+          </div>
+          <div class="chip orange" id="s5-chip" style="left: 150px; top: 820px">Reviewed by a person before it sends</div>
+        </div>
+      </section>
+
+      <!-- 6 trust -->
+      <section id="s6" class="clip scene" data-start="27.8" data-duration="5.6" data-track-index="6">
+        <div class="stage" id="s6-stage">
+          <div class="headline" style="width: 1500px"><span class="ln">The model proposes.</span><span class="ln"><em>The code decides.</em></span></div>
+          <div class="pill-row" id="s6-pills">
+            <div class="pill">80-scenario eval</div>
+            <div class="pill">138 automated tests</div>
+            <div class="pill">Opt-out handled in code</div>
+            <div class="pill">LLM provider failover</div>
+            <div class="pill">Live on Railway</div>
+          </div>
+          <div id="t-note">The eval is self-written: a regression suite, not an independent benchmark.</div>
+        </div>
+      </section>
+
+      <!-- 7 end card -->
+      <section id="s7" class="clip scene" data-start="33" data-duration="4" data-track-index="7">
+        <div class="stage" id="s7-stage">
+          <img id="end-logo" src="assets/logo.svg" alt="" />
+          <div id="end-name">RoofDesk AI</div>
+          <div id="end-sub">An AI receptionist for roofing contractors</div>
+          <div id="end-url">roofdeskai.com</div>
+          <div id="end-credit">Built by Erven Idjad</div>
+        </div>
+      </section>
+
+      <audio id="bgm" src="assets/bgm.mp3" data-start="0" data-duration="37" data-track-index="20" data-volume="0.85"></audio>
+      <audio id="whoosh1" src="assets/whoosh.mp3" data-start="3.8" data-duration="0.6" data-track-index="21" data-volume="0.35"></audio>
+      <audio id="whoosh2" src="assets/whoosh.mp3" data-start="12.1" data-duration="0.6" data-track-index="22" data-volume="0.35"></audio>
+      <audio id="whoosh3" src="assets/whoosh.mp3" data-start="18.1" data-duration="0.6" data-track-index="23" data-volume="0.35"></audio>
+      <audio id="whoosh4" src="assets/whoosh.mp3" data-start="22.9" data-duration="0.6" data-track-index="24" data-volume="0.35"></audio>
+      <audio id="whoosh5" src="assets/whoosh.mp3" data-start="27.7" data-duration="0.6" data-track-index="25" data-volume="0.35"></audio>
+      <audio id="whoosh6" src="assets/whoosh.mp3" data-start="32.9" data-duration="0.6" data-track-index="26" data-volume="0.35"></audio>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      tl.to("#glow-a", { x: 200, y: 160, duration: 37, ease: "none" }, 0);
+      tl.to("#glow-b", { x: -180, y: -140, duration: 37, ease: "none" }, 0);
+
+      // 1 hook
+      tl.fromTo("#h1", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.2);
+      tl.fromTo("#h2", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.85);
+      tl.fromTo("#h3", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 1.5);
+      tl.fromTo("#h4", { scale: 0.75, opacity: 0, transformOrigin: "0% 50%" }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.6)" }, 2.3);
+      tl.to("#s1-stage", { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, 3.9);
+
+      // scene helper: headline + caption in, window slides in, chip pops, exit
+      function scene(id, t0, dur, chipAt) {
+        tl.fromTo(`#${id} .headline .ln`, { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "expo.out", stagger: 0.12 }, t0 + 0.15);
+        tl.fromTo(`#${id} .caption`, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, t0 + 0.55);
+        tl.fromTo(`#${id}-win`, { x: 140, opacity: 0, scale: 0.96 }, { x: 0, opacity: 1, scale: 1, duration: 0.9, ease: "power4.out" }, t0 + 0.2);
+        tl.fromTo(`#${id}-chip`, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, chipAt ?? t0 + 1.4);
+        tl.to(`#${id}-stage`, { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, t0 + dur - 0.4);
+      }
+      scene("s2", 3.9, 8.7, 9.5); // the booking chip waits for the booking frame
+      scene("s3", 12.2, 6.4);
+      scene("s4", 18.2, 5.2);
+      scene("s5", 23, 5.2);
+
+      // chat frames cross-fade: first reply, qualifying questions, booking
+      tl.set("#s2-b", { opacity: 0 }, 0);
+      tl.set("#s2-c", { opacity: 0 }, 0);
+      tl.to("#s2-b", { opacity: 1, duration: 0.5, ease: "none" }, 6.6);
+      tl.to("#s2-c", { opacity: 1, duration: 0.5, ease: "none" }, 9.3);
+
+      // 6 trust
+      tl.fromTo("#s6 .headline .ln", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "expo.out", stagger: 0.12 }, 27.95);
+      tl.fromTo("#s6-pills .pill", { y: 50, opacity: 0, scale: 0.88 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.8)", stagger: 0.12 }, 28.7);
+      tl.fromTo("#t-note", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 30.4);
+      tl.to("#s6-stage", { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, 33);
+
+      // 7 end card
+      tl.fromTo("#end-logo", { scale: 0.5, opacity: 0, rotation: -10 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)" }, 33.1);
+      tl.fromTo("#end-name", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 33.35);
+      tl.fromTo("#end-sub", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 33.6);
+      tl.fromTo("#end-url", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 33.85);
+      tl.fromTo("#end-credit", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 34.1);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
