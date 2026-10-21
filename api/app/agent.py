@@ -6,7 +6,8 @@ from datetime import datetime
 
 from sqlalchemy import text
 
-from . import llm, policy, tools
+from . import llm, mailer, policy, tools
+from .config import settings
 from .db import engine
 from .schemas import Turn
 
@@ -96,6 +97,7 @@ def _decide(cid: int, message: str) -> str:
                                 tools.book_appointment)
             if ok:
                 _set_state(cid, "DONE", "booked")
+                _notify_booking(lead_id, _fmt(res["start"]))
                 return f"You're booked for {_fmt(res['start'])}. We'll see you then!"
             return _offer_slots(cid, lead_id, "Sorry, that time isn't available. ")
         return _answer(cid, turn, is_question, faq, message, "Which of those openings works for you? Just say first, second, and so on.")
@@ -186,6 +188,27 @@ def _escalate(cid: int, reason: str) -> str:
     if not ok:  # never promise a handoff that was not recorded
         raise RuntimeError("escalation could not be recorded")
     return CLOSED_REPLY["ESCALATE"]
+
+
+def _notify_booking(lead_id: int, when: str) -> None:
+    """Email the owner, and the lead if they gave an address. A failed email never blocks the booking."""
+    lead = _row("SELECT name, phone, email, address, service_type FROM leads WHERE id=:i", lead_id)
+    messages = []
+    if settings.owner_email:
+        messages.append((settings.owner_email, f"New booking: {lead['name']} ({when})",
+                         f"{lead['name']} booked a free roof inspection for {when}.\nPhone: {lead['phone'] or '-'}\n"
+                         f"Email: {lead['email'] or '-'}\nAddress: {lead['address']}\nNeed: {lead['service_type']}"))
+    if lead["email"]:
+        messages.append((lead["email"], f"Your inspection is booked: {when}",
+                         f"Hi {lead['name']},\n\nYour free roof inspection is booked for {when}.\n\n"
+                         "This was a demo of RoofDesk AI with a sample company (Summit Roofing). No one will visit, "
+                         "and nothing was scheduled.\n\nTo try RoofDesk AI for your own business, reply to this email.\n\n"
+                         f"{settings.sender_name}\n{settings.sender_address}"))
+    for to, subject, body in messages:
+        try:
+            mailer.send(to, subject, body)
+        except mailer.MailError:
+            log.exception("booking saved but an email failed")
 
 
 def _fmt(iso: str) -> str:
