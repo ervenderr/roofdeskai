@@ -31,13 +31,17 @@ def _button(subject: str, color: str) -> str:
 def render(body: str, subject: str, step: int, points: list[str]) -> str:
     color = settings.brand_color
     unsub = f"mailto:{settings.sender_email}?subject=unsubscribe"
-    extras = (_services(points, color) + _button(subject, color)) if step == 1 and points else ""
+    paras = [x for x in body.strip().split("\n\n") if x.strip()]
+    if step == 1 and points and len(paras) > 1:  # services before the closing question, button after it
+        content = _paragraphs("\n\n".join(paras[:-1])) + _services(points, color) + _paragraphs(paras[-1]) + _button(subject, color)
+    else:
+        content = _paragraphs(body) + (_services(points, color) + _button(subject, color) if step == 1 and points else "")
     return (f'<!doctype html><html><body style="margin:0;padding:0;background:{BG}">'
             f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:24px 12px"><tr><td align="center">'
             f'<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;'
             f'border-radius:10px;overflow:hidden;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">'
             f'<tr><td style="background:{color};padding:16px 28px;font-size:17px;font-weight:bold;color:#ffffff">{escape(settings.sender_name)}</td></tr>'
-            f'<tr><td style="padding:26px 28px 8px">{_paragraphs(body)}{extras}</td></tr>'
+            f'<tr><td style="padding:26px 28px 8px">{content}</td></tr>'
             f'<tr><td style="padding:16px 28px 22px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.6;color:{MUTED}">'
             f'<strong>{escape(settings.sender_name)}</strong><br>{escape(settings.sender_address)}<br>'
             f'Not interested? Reply &ldquo;unsubscribe&rdquo; or <a href="{escape(unsub)}" style="color:{MUTED}">click here</a> and I won&rsquo;t contact you again.'

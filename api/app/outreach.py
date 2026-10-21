@@ -17,9 +17,9 @@ log = logging.getLogger("leadpilot.outreach")
 
 MAX_STEPS = 3
 FOLLOWUP_DELAY_DAYS = {2: 3, 3: 7}  # days after the previous send
-COPY_PROMPT, REPLY_PROMPT = "outreach-copy.v2", "outreach-reply.v1"
+COPY_PROMPT, REPLY_PROMPT = "outreach-copy.v3", "outreach-reply.v1"
 BANNED = re.compile(r"guarantee|100\s?%|free trial|risk[- ]free|act now|limited time|\$\s?\d|\d\s?%|#1|best in|"
-                    r"as (we )?discussed|we spoke|our (call|chat|conversation)|following up on our|http|www\.|@|"
+                    r"as (we )?discussed|(we|i)('ve| have)? (noticed|seen|observed)|you (likely|probably)|we spoke|our (call|chat|conversation)|following up on our|http|www\.|@|"
                     r"used by|trusted by|loved by|proven|case stud|award|years of experience|\b(our|other|many|several) "
                     r"(clients|customers)|clients like|(we|we've) (have )?(worked|helped)|helped (other|many)", re.I)
 UNSUB_RE = re.compile(r"\b(unsubscribe|remove me|take me off|stop (emailing|contacting|sending)|do not (contact|email)|"
@@ -45,9 +45,14 @@ def localize(text_: str, locale: str) -> str:
     return re.sub(r"\b([Ee])nquir(y|ies)\b", lambda m: ("I" if m.group(1) == "E" else "i") + "nquir" + m.group(2), text_)
 
 
+def short_name(name: str) -> str:
+    """'Acme Roofs - Austin' -> 'Acme Roofs': listing names often carry a location or tagline after a separator."""
+    return re.split(r"\s+[-|\u2013\u2014]\s+", name, maxsplit=1)[0].strip() or name
+
+
 def facts_for(p: dict) -> dict:
     city = p.get("city") or ((p.get("address") or "").split(",")[-1].strip() if "," in (p.get("address") or "") else None)
-    f = {"name": p["name"], "category": p.get("category") or "local business", "city": city,
+    f = {"name": short_name(p["name"]), "category": p.get("category") or "local business", "city": city,
          "review_signal": (p.get("pain_mentions") or 0) >= 2, "has_website": bool(p.get("website"))}
     if p.get("rating"):
         f["rating"] = float(p["rating"])
@@ -147,7 +152,8 @@ def with_footer(body: str, step: int = 2, locale: str = "en-PH") -> str:
     The first email also gets the fixed 'what it does' list (follow-ups stay short)."""
     if step == 1 and settings.service_points:
         points = "\n".join(f"  • {localize(pt, locale)}" for pt in settings.service_points)
-        body = f"{body}\n\nWhat it does:\n{points}"
+        head, _, closing = body.rpartition("\n\n")  # the list goes before the closing question
+        body = f"{head}\n\nWhat it does:\n{points}\n\n{closing}" if head else f"{body}\n\nWhat it does:\n{points}"
     return (f"{body}\n\n--\n{settings.sender_name}\n{settings.sender_address}\n"
             "Not interested? Reply \"unsubscribe\" and I won't contact you again.")
 

@@ -447,3 +447,21 @@ def test_first_email_gets_service_list_and_followups_do_not():
     assert "What it does:" in first and "  • Replies to customer inquiries instantly" in first
     assert "What it does:" not in outreach.with_footer("Hi team,", 2)
     assert first.rstrip().endswith('"unsubscribe" and I won\'t contact you again.')
+
+
+def test_guard_rejects_invented_observations():
+    facts = outreach.facts_for({"id": 1, "name": "Acme Roofing", "category": "Roofing contractor", "city": "Austin"})
+    for line in ("we've noticed inquiries go unanswered", "I noticed you miss calls", "you likely get many inquiries", "you probably miss leads"):
+        d = outreach.Draft(subject="Hello there", body=f"Hi Acme Roofing team,\n\nAs a business in Austin, {line}.\n\nWant a demo?")
+        assert "contains a banned claim, link or contact detail" in outreach.check_draft(d, facts), line
+
+
+def test_business_name_is_trimmed_for_greetings():
+    assert outreach.facts_for({"id": 1, "name": "Acme Roofs - Austin"})["name"] == "Acme Roofs"
+    assert outreach.facts_for({"id": 1, "name": "Austin Roofing Company | Texas Certified"})["name"] == "Austin Roofing Company"
+    assert outreach.facts_for({"id": 1, "name": "Quality Exteriors"})["name"] == "Quality Exteriors"
+
+
+def test_service_list_goes_before_the_closing_question():
+    out = outreach.with_footer("Hi team,\n\nWe built a thing.\n\nWant a demo?", 1)
+    assert out.index("What it does:") < out.index("Want a demo?") < out.index("--\n")

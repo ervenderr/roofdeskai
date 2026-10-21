@@ -84,3 +84,9 @@ def test_settings_repr_masks_secrets(monkeypatch):
     monkeypatch.setattr(settings, "admin_api_key", "admin-secret")
     shown = repr(settings)
     assert "hunter2-secret" not in shown and "admin-secret" not in shown and "smtp_host" in shown
+
+
+def test_html_puts_services_before_question_and_button_after(monkeypatch):
+    from . import email_html
+    out = email_html.render("Hi team,\n\nWe built a thing.\n\nWant a demo?", "Subj", 1, ["Does a thing"])
+    assert out.index("What it does") < out.index("Want a demo?") < out.index("walkthrough")
