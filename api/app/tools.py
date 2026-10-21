@@ -21,7 +21,25 @@ class ToolError(Exception):
     pass
 
 
+SLOT_HOURS = (9, 11, 14, 16)
+SLOT_DAYS_AHEAD = 14
+
+
+def ensure_slots() -> None:
+    """Top up weekday slots (9/11/14/16) for the next 14 days; safe to repeat, so the calendar never runs dry."""
+    with engine.begin() as c:
+        c.execute(text(
+            "INSERT INTO slots (start_time, end_time) "
+            "SELECT d + make_interval(hours => h), d + make_interval(hours => h + 1) "
+            "FROM generate_series(date_trunc('day', now()) + interval '1 day', "
+            "date_trunc('day', now()) + make_interval(days => :n), interval '1 day') d, unnest(:hours) h "
+            "WHERE extract(isodow FROM d) < 6 "
+            "AND NOT EXISTS (SELECT 1 FROM slots s WHERE s.start_time = d + make_interval(hours => h))"),
+            {"n": SLOT_DAYS_AHEAD, "hours": list(SLOT_HOURS)})
+
+
 def get_available_slots(limit: int = 5) -> dict:
+    ensure_slots()
     with engine.connect() as c:
         rows = c.execute(
             text("SELECT id, start_time FROM slots WHERE NOT is_booked AND start_time > now() "

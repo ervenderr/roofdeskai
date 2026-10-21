@@ -142,3 +142,13 @@ def test_a_failing_email_never_blocks_the_booking(monkeypatch):
     cid, _ = agent.handle_turn(MSG)
     _, reply = agent.handle_turn("the first", cid)
     assert "booked" in reply and tuple(state(cid)) == ("DONE", "booked")
+
+
+def test_slots_are_topped_up_when_the_calendar_runs_short():
+    with engine.begin() as c:
+        c.execute(text("DELETE FROM slots WHERE NOT is_booked AND start_time > now() + interval '3 days'"))
+    tools.get_available_slots()
+    with engine.connect() as c:
+        last = c.execute(text("SELECT max(start_time) > now() + interval '10 days' FROM slots")).scalar()
+        dupes = c.execute(text("SELECT count(*) FROM (SELECT start_time FROM slots GROUP BY 1 HAVING count(*) > 1) x")).scalar()
+    assert last and dupes == 0
