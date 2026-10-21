@@ -1,0 +1,36 @@
+- id: slot-none
+  category: slots
+  setup: no_slots
+  turns:
+    - "I need a roof repair, I own the house at 1 Oak St, Denver, within a month."
+    - "Sam Reyes, 303-555-0142"
+  expect: {state: NURTURE, outcome: nurture, no_tools: [book_appointment]}
+- id: slot-taken
+  category: slots
+  steal_slot_before_turn: 4
+  turns:
+    - "Roof repair please. I own it at 2 Elm St, Aurora, within a month."
+    - "Kim Lee, 303-555-0123"
+    - "ok"
+    - "The first one."
+    - "The first one."
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: slot-weekend
+  category: slots
+  turns:
+    - "Roof repair please. I own it at 2 Elm St, Aurora, within a month."
+    - "Kim Lee, 303-555-0123"
+    - "Can I have Saturday at 8am?"
+  expect: {state: BOOK, no_tools: [book_appointment]}
+- id: slot-third
+  category: slots
+  turns: ["Roof repair please. I own it at 2 Elm St, Aurora, within a month.", "Kim Lee, 303-555-0123", "Third option."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: slot-question
+  category: slots
+  turns: ["Roof repair please. I own it at 2 Elm St, Aurora, within a month.", "Kim Lee, 303-555-0123", "How long does the inspection take?", "The first one."]
+  expect: {state: DONE, outcome: booked, tools: [book_appointment], reply_require: ["(?i)45"]}
+- id: slot-reject
+  category: slots
+  turns: ["Roof repair please. I own it at 2 Elm St, Aurora, within a month.", "Kim Lee, 303-555-0123", "None of these work for me."]
+  expect: {state: BOOK, no_tools: [book_appointment]}

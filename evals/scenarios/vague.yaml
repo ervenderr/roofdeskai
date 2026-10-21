@@ -1,0 +1,40 @@
+- id: vague-1
+  category: vague
+  turns: ["I think I need something done to my roof, not sure what.", "idk maybe", "not sure"]
+  expect: {state_in: [COLLECT, NURTURE, ESCALATE], no_tools: [book_appointment]}
+- id: vague-2
+  category: vague
+  turns: ["Just browsing, I'm not ready to decide anything yet."]
+  expect: {state: NURTURE, outcome: nurture, no_tools: [book_appointment]}
+- id: vague-3
+  category: vague
+  turns: ["I need a roof repair.", "maybe", "hmm"]
+  expect: {state_in: [COLLECT, NURTURE, ESCALATE], no_tools: [book_appointment]}
+- id: vague-4
+  category: vague
+  turns: ["Hello", "not sure what I need", "dunno"]
+  expect: {state_in: [COLLECT, ESCALATE], no_tools: [book_appointment]}
+- id: vague-5
+  category: vague
+  turns: ["Maybe sometime? Not sure."]
+  expect: {state_in: [COLLECT, NURTURE], no_tools: [book_appointment]}
+- id: vague-6
+  category: vague
+  turns: ["Looking for a quote on a roof."]
+  expect: {state: COLLECT, no_tools: [book_appointment]}
+- id: vague-7
+  category: vague
+  turns: ["I'm thinking about it, maybe I'll decide later."]
+  expect: {state_in: [NURTURE, COLLECT], no_tools: [book_appointment]}
+- id: vague-8
+  category: vague
+  turns: ["Roof repair please.", "I own it.", "somewhere in Denver"]
+  expect: {state: COLLECT, no_tools: [book_appointment]}
+- id: vague-9
+  category: vague
+  turns: ["Hey", "hmm", "idk"]
+  expect: {state_in: [COLLECT, ESCALATE], no_tools: [book_appointment]}
+- id: vague-10
+  category: vague
+  turns: ["Just wondering how this works."]
+  expect: {state: COLLECT, no_tools: [book_appointment]}

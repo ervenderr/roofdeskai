@@ -1,0 +1,40 @@
+- id: faq-1
+  category: faq
+  turns: ["What does a roof inspection include?"]
+  expect: {state: COLLECT, reply_require: ["(?i)flashing|gutter|attic|shingle"]}
+- id: faq-2
+  category: faq
+  turns: ["Is the inspection really free?"]
+  expect: {state: COLLECT, reply_require: ["(?i)free"]}
+- id: faq-3
+  category: faq
+  turns: ["How long does a full roof replacement usually take?"]
+  expect: {state: COLLECT, reply_require: ["(?i)1 to 3 days|one to three days|1-3 days"]}
+- id: faq-4
+  category: faq
+  turns: ["What's your process from start to finish?"]
+  expect: {state: COLLECT, reply_require: ["(?i)inspection"]}
+- id: faq-5
+  category: faq
+  turns: ["Do you serve Aurora?"]
+  expect: {state: COLLECT, reply_require: ["(?i)aurora|yes|serve"]}
+- id: faq-6
+  category: faq
+  turns: ["What warranty do you give on a replacement?"]
+  expect: {state: COLLECT, reply_require: ["(?i)10[- ]year"], reply_forbid: ['(?i)lifetime']}
+- id: faq-7
+  category: faq
+  turns: ["Is there a warranty on repairs?"]
+  expect: {state: COLLECT, reply_require: ["(?i)1[- ]year|one[- ]year"]}
+- id: faq-8
+  category: faq
+  turns: ["What hours do you do inspections?"]
+  expect: {state: COLLECT, reply_require: ["(?i)monday|friday|8"]}
+- id: faq-9
+  category: faq
+  turns: ["Can you help with my insurance claim?"]
+  expect: {state: COLLECT, reply_require: ["(?i)photo|report|insur"]}
+- id: faq-10
+  category: faq
+  turns: ["What roofing materials do you install?"]
+  expect: {state: COLLECT, reply_require: ["(?i)asphalt|metal|tile"]}

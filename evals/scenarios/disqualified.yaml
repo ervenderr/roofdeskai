@@ -1,0 +1,40 @@
+- id: disq-renter
+  category: disqualified
+  turns: ["I need my roof repaired.", "I'm renting actually. 10 Oak St, Denver.", "Next month."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-area
+  category: disqualified
+  turns: ["Roof replacement please.", "I own it, 14 Congress Ave, Austin.", "Within 2 months."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-timeline
+  category: disqualified
+  turns: ["I want an inspection.", "I own it at 3 Pine St, Aurora.", "Probably in about a year, 12 months."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-service
+  category: disqualified
+  turns: ["I need my gutters cleaned and my windows washed.", "I own it, 5 Oak Dr, Denver.", "This week."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-tenant
+  category: disqualified
+  turns: ["I need a roof repair.", "I'm a tenant, my landlord owns the building. 8 Fern St, Denver.", "Next month."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-boulder
+  category: disqualified
+  turns: ["Roof replacement please.", "I own the house at 12 Vale Rd, Boulder.", "Within 2 months."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-8months
+  category: disqualified
+  turns: ["I want a roof repair.", "I own it, 5 Lake Dr, Aurora.", "Probably in 8 months."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-solar
+  category: disqualified
+  turns: ["I want solar panels installed and my gutters replaced.", "I own it, 6 Sun St, Denver.", "Within a month."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-leasing
+  category: disqualified
+  turns: ["Can you inspect my roof?", "I'm leasing the place, 14 Reed Ln, Lakewood.", "This month."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: disq-twofacts
+  category: disqualified
+  turns: ["I'm renting a house at 20 Moss St, Denver and the roof leaks, need a repair next month."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}

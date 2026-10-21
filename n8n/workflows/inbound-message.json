@@ -1,0 +1,343 @@
+{
+  "id": "inbound-message",
+  "name": "Lead flow (inbound to outcome)",
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "note-##-lead-flow",
+      "name": "Note ## Lead flow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## Lead flow\nSMS / GHL-style payload -> agent (FastAPI) -> reply goes back right away.\nThe outcome then branches: booked -> confirmation email, escalated -> alert a human (sub-workflow), nurture -> picked up by the nightly Follow-up scheduler.",
+        "width": 760,
+        "height": 160
+      },
+      "position": [
+        -20,
+        -260
+      ]
+    },
+    {
+      "id": "inbound-webhook",
+      "name": "Inbound webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbound-message",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "inbound-message"
+    },
+    {
+      "id": "normalize-payload",
+      "name": "Normalize payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body ?? $input.first().json;\nconst message = b.body ?? b.message ?? b.text;\nconst contact = b.contactId ?? b.contact_id ?? b.phone ?? b.from;\nif (!message || !contact) throw new Error('payload needs a message and a contact id');\nreturn [{ json: { contact_id: String(contact), message: String(message), channel: b.type === 'Email' ? 'email' : 'sms' } }];"
+      },
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "id": "call-agent",
+      "name": "Call agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/webhooks/inbound",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      },
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "id": "send-reply",
+      "name": "Send reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({conversation_id: $json.conversation_id, reply: $json.reply}) }}"
+      },
+      "position": [
+        740,
+        -140
+      ]
+    },
+    {
+      "id": "route-by-outcome",
+      "name": "Route by outcome",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "booked",
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "booked",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "booked"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "escalated",
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "escalated",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "escalated"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "nurture",
+                    "leftValue": "={{ $json.outcome }}",
+                    "rightValue": "nurture",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "nurture"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "still talking"
+        }
+      },
+      "position": [
+        740,
+        100
+      ]
+    },
+    {
+      "id": "has-email",
+      "name": "Has email?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nif (!j.email) return [];  // no email on file: nothing to confirm by email\nreturn [{ json: j }];"
+      },
+      "position": [
+        1000,
+        -20
+      ]
+    },
+    {
+      "id": "email-booking-confirmation",
+      "name": "Email booking confirmation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: $json.email}], Subject: 'Your roof inspection is booked', Text: 'Hi ' + ($json.name || 'there') + ',\\n\\nYour free roof inspection is booked for ' + new Date($json.appointment_start).toUTCString() + '.\\n\\nSummit Roofing'}) }}"
+      },
+      "position": [
+        1240,
+        -20
+      ]
+    },
+    {
+      "id": "alert-a-human",
+      "name": "Alert a human",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "escalation-alert",
+          "mode": "id"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "position": [
+        1000,
+        120
+      ]
+    },
+    {
+      "id": "leave-to-follow-up-scheduler",
+      "name": "Leave to follow-up scheduler",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        1000,
+        260
+      ]
+    },
+    {
+      "id": "conversation-continues",
+      "name": "Conversation continues",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        1000,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Inbound webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize payload": {
+      "main": [
+        [
+          {
+            "node": "Call agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call agent": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route by outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by outcome": {
+      "main": [
+        [
+          {
+            "node": "Has email?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Alert a human",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Leave to follow-up scheduler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Conversation continues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has email?": {
+      "main": [
+        [
+          {
+            "node": "Email booking confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

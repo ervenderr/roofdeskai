@@ -1,0 +1,105 @@
+{
+  "id": "escalation-alert",
+  "name": "Escalation alert",
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "webhook-(web-chat)",
+      "name": "Webhook (web chat)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "escalation-alert",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "escalation-alert"
+    },
+    {
+      "id": "called-by-lead-flow",
+      "name": "Called by lead flow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "id": "normalize-alert",
+      "name": "Normalize alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst b = j.body ?? j;\nreturn [{ json: { reason: b.reason ?? b.escalation_reason, conversation_id: b.conversation_id, link: b.link } }];"
+      },
+      "position": [
+        260,
+        100
+      ]
+    },
+    {
+      "id": "notify-human",
+      "name": "Notify human",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: 'human@summitroofing.test'}], Subject: 'Escalation (' + $json.reason + '): conversation ' + $json.conversation_id, Text: 'A conversation needs a human. Reason: ' + $json.reason + '\\nTranscript: ' + $json.link}) }}"
+      },
+      "position": [
+        520,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (web chat)": {
+      "main": [
+        [
+          {
+            "node": "Normalize alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Called by lead flow": {
+      "main": [
+        [
+          {
+            "node": "Normalize alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize alert": {
+      "main": [
+        [
+          {
+            "node": "Notify human",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

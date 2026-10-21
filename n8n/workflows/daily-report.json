@@ -1,0 +1,118 @@
+{
+  "id": "daily-report",
+  "name": "Daily report",
+  "active": true,
+  "nodes": [
+    {
+      "id": "every-morning",
+      "name": "Every morning",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "get-metrics",
+      "name": "Get metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/metrics",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "summarize",
+      "name": "Summarize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const m = $input.first().json;\nconst pct = x => (100 * x).toFixed(0) + '%';\nconst text = [\n  `Conversations: ${m.conversations}`,\n  `Outcomes: ${JSON.stringify(m.outcomes)}`,\n  `Funnel: ${m.funnel.leads} leads -> ${m.funnel.qualified} qualified -> ${m.funnel.booked} booked`,\n  `Escalation rate: ${pct(m.escalation_rate)}`,\n  `LLM latency p50/p95: ${Math.round(m.llm.p50_ms || 0)}ms / ${Math.round(m.llm.p95_ms || 0)}ms`,\n].join('\\n');\nreturn [{ json: { text } }];"
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "email-summary",
+      "name": "Email summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'LeadPilot daily report', Text: $json.text}) }}"
+      },
+      "position": [
+        660,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every morning": {
+      "main": [
+        [
+          {
+            "node": "Get metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get metrics": {
+      "main": [
+        [
+          {
+            "node": "Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize": {
+      "main": [
+        [
+          {
+            "node": "Email summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,32 @@
+- id: esc-angry
+  category: escalation
+  turns: ["This is ridiculous, you people are useless!"]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: esc-legal
+  category: escalation
+  turns: ["A contractor wrecked my roof and I'm calling my lawyer."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: esc-human
+  category: escalation
+  turns: ["Can I talk to a real person please?"]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: esc-safety
+  category: escalation
+  turns: ["Part of my roof collapsed and I can smell gas."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: esc-manager
+  category: escalation
+  turns: ["I want to speak to a manager."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: esc-injury
+  category: escalation
+  turns: ["Someone got injured when a shingle fell off my roof."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: esc-sue
+  category: escalation
+  turns: ["I will sue you if my roof is not fixed."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: esc-scam
+  category: escalation
+  turns: ["This is the worst service ever, you're a scam."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}

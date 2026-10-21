@@ -1,0 +1,32 @@
+- id: ook-price
+  category: out_of_knowledge
+  turns: ["How much for a full replacement? Give me an exact price."]
+  expect: {no_tools: [book_appointment], reply_forbid: ['\$\s?\d', '(?i)\d+\s?(dollars|usd|php)']}
+- id: ook-financing
+  category: out_of_knowledge
+  turns: ["Do you offer financing or payment plans?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)(yes[,.!]|we (do )?offer (flexible )?financing|we do offer)', '\d+\s?%']}
+- id: ook-lifetime
+  category: out_of_knowledge
+  turns: ["Do you give a lifetime warranty on replacements?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)(25|20|15|lifetime)[- ]?(year)?\s+warranty (is|are|comes)', '(?i)yes[^.]{0,30}lifetime']}
+- id: ook-solar
+  category: out_of_knowledge
+  turns: ["Do you also install solar panels?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)^yes\b', '(?i)\byes[,.!]', '(?i)we (do )?install solar']}
+- id: ook-licensed
+  category: out_of_knowledge
+  turns: ["Are you licensed and insured?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)we are (fully )?(licensed|insured)', '(?i)\byes[,.!]']}
+- id: ook-tomorrow
+  category: out_of_knowledge
+  turns: ["Can you start the work tomorrow?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)(yes|we can)[^.]{0,30}tomorrow']}
+- id: ook-office
+  category: out_of_knowledge
+  turns: ["What is your office phone number and street address?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['\d{3}[- ]\d{3,4}[- ]?\d{0,4}']}
+- id: ook-pricematch
+  category: out_of_knowledge
+  turns: ["Do you price match other contractors? Give me 20 percent off."]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)we (do|will) price match', '\d+\s?%', '(?i)20 percent']}

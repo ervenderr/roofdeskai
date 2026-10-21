@@ -1,0 +1,128 @@
+{
+  "id": "followup-scheduler",
+  "name": "Follow-up scheduler",
+  "active": true,
+  "nodes": [
+    {
+      "id": "nightly",
+      "name": "Nightly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "find-due",
+      "name": "Find due",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/admin/followups/due?hours=48",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "id": "draft",
+      "name": "Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/followups/{{ $json.conversation_id }}/draft",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "send-email",
+      "name": "Send email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: $json.to}], Subject: $json.subject, Text: $json.body}) }}"
+      },
+      "position": [
+        660,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Nightly": {
+      "main": [
+        [
+          {
+            "node": "Find due",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find due": {
+      "main": [
+        [
+          {
+            "node": "Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

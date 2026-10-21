@@ -1,0 +1,61 @@
+# Failure analysis
+
+Model: `llama3.1:8b` (local, Ollama), temperature 0. 31 scenarios. Baseline report: `evals/reports/baseline-agent.v1.md`.
+
+| Run | Prompt | Pass | Notes |
+|---|---|---|---|
+| 1 | agent.v1 | 20/31 | model wrote replies, picked slots, extracted loosely |
+| 2 | agent.v2 + code-chosen questions + code slot pick + address rule | 29/31 | two wrongful disqualifications |
+| 3 | + grounding guard | 31/31 | |
+
+## 1. Empty `reply` escalated a healthy conversation
+- **What happened:** `qual-1` escalated at turn 3 with `validation_failure`. The model returned `"reply": ""` and the schema required one, so both attempts failed.
+- **Root cause:** the reply is not needed when the code decides the next step; I had made it mandatory anyway.
+- **Change:** `reply` is optional; the code writes the next question (`policy.next_question`).
+
+## 2. The model re-asked known questions and could not choose a slot
+- **What happened:** `qual-3/4/5`, `ooo-1/2`, `slot-taken` failed. Model-written replies asked for facts already given, and `chosen_slot_id` was rarely returned.
+- **Root cause:** free-form generation and slot selection were left to an 8B model.
+- **Change:** code picks the next question; code resolves "first/second/3" only against the slot ids it offered (`policy.pick_slot`, stored in `conversations.offered_slot_ids`). Prompt v2, temperature 0. 20/31 -> 29/31.
+
+## 3. Address without a city disqualified a lead
+- **What happened:** `slot-none`: the model extracted "1 Oak St" (dropped "Denver"); the area check read it as out of area.
+- **Change:** an address with no city part is `incomplete` and the code asks for the city.
+
+## 4. The model invented facts, causing wrongful disqualification
+- **What happened:** `qual-1` and `vague-1` ended in DISQUALIFY. On a message saying nothing about ownership or timing, the model returned `is_owner=false`, `timeline_months=0`, and `service_type=other`.
+- **Root cause:** extraction hallucination; DISQUALIFY is terminal, so one fabricated field ends the conversation.
+- **Change:** `policy.ground` drops any extracted value the customer's message does not support. 29/31 -> 31/31.
+
+## 5. Independent code review (found before any eval did)
+A separate reviewer agent read the code cold. The evals could not have caught these:
+- A stray "one" or "2" in a longer message could pick a slot. `pick_slot` now only accepts short messages without negation.
+- A double-submit could roll DONE back to BOOK. `appointments.lead_id` is now UNIQUE and DONE/booked can't be overwritten.
+- Grounding was too loose ("other" service, bare digits as a timeline). Tightened; addresses are parsed by city, not substring.
+- "Sue" (a name) and "Court" (a street) triggered legal escalation. Patterns narrowed; safety/legal now reach a human even after the chat is closed.
+- A failed escalation write still told the customer a human would follow up. It now raises instead.
+- Not fixed yet: `/chat` has no per-conversation auth (any integer id works); fix with a token at deploy time.
+
+## Week 3: 80 scenarios (baseline `evals/reports/baseline-80-agent.v2.md`: 74/80, final: 80/80)
+
+### 6. `not_ready` over-triggered, sending people to NURTURE
+- **What happened:** `vague-4/9/10` and `slot-reject` ended in NURTURE after "Hello", "hmm", "Just wondering how this works" and "None of these work for me".
+- **Root cause:** the model sets `not_ready=true` whenever it is unsure. Same failure class as #4: a model flag drove a state change.
+- **Change:** `not_ready` only counts if the customer's own words say so (`policy.not_ready_grounded`). 74 -> 78/80.
+
+### 7. Invented credentials: "Yes, we are licensed and insured"
+- **What happened:** `ook-licensed`. The numeric claim check could not see a non-numeric claim.
+- **Change:** an FAQ answer must reuse the FAQ's words (`policy.answer_supported`). Echoing the customer's own question does not count as support (a unit test caught that bug in my first version).
+
+### 8. Questions went unanswered
+- **What happened:** `slot-question`. The model did not set `is_question`, so its answer was discarded. When it did answer, it sometimes returned an empty reply.
+- **Change:** the code detects questions itself, and an empty answer triggers one focused FAQ-only call (`prompts/faq-answer.v1.md`).
+
+### 9. My own guard broke a passing scenario
+- **What happened:** the new overlap guard rejected "Yes, we serve Aurora." because the FAQ says "serves". `faq-5` regressed. Fixed by matching plain inflections. Lesson: every new guard needs the full suite re-run.
+
+### Metric fix
+- Escalation precision read 8/12 because four vague scenarios deliberately allow ESCALATE after two failed turns (spec rule). Allowed escalations are no longer counted as false alarms.
+
+### Caveat
+80/80 was reached by iterating against these same 80 scenarios, written by me, on one 8B model. Expect lower on unseen phrasing. A held-out set and a second model are the honest next test.

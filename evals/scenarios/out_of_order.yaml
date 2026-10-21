@@ -1,0 +1,44 @@
+- id: ooo-1
+  category: out_of_order
+  turns:
+    - "I live at 22 Aspen Way, Centennial."
+    - "I'm the owner. I need a roof replacement."
+    - "Within 2 months. Name's Kim Lee, 303-555-0123"
+    - "First one."
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ooo-2
+  category: out_of_order
+  turns:
+    - "My number is 303-555-0177, name is Ravi Rao."
+    - "I own my place at 8 Spruce St, Denver and want a repair."
+    - "As soon as possible, within a month."
+    - "The first slot."
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ooo-3
+  category: out_of_order
+  turns:
+    - "It needs to be done in the next 2 months. I own the house."
+    - "Inspection please, 31 Willow Dr, Aurora."
+    - "Ana Lopez, ana@example.com"
+    - "Option 1"
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ooo-4
+  category: out_of_order
+  turns: ["Kai Tan, kai@example.com", "I own 70 Rose Rd, Aurora, need a replacement within 3 months.", "First one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ooo-5
+  category: out_of_order
+  turns: ["Within a month please.", "Repair, I own the house.", "It's 4 Linden Ave, Denver.", "Eli Ross, 303-555-0144", "Second one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ooo-6
+  category: out_of_order
+  turns: ["I own it.", "30 Birch Way, Littleton.", "Inspection, within 2 months.", "Zoe Lin, 720-555-0121", "Third option."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ooo-7
+  category: out_of_order
+  turns: ["Call me at 303-555-0133, I'm Max Reed.", "Replacement. 44 Alder St, Arvada, I own it, in 4 months.", "The first one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ooo-8
+  category: out_of_order
+  turns: ["It's an emergency leak, I need it fixed within a week.", "I own it at 18 Cedar Rd, Denver.", "Pat Kim, pat@example.com", "First."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
