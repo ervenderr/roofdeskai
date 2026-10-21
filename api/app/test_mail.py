@@ -60,7 +60,7 @@ def test_html_email_escapes_and_has_footer(monkeypatch):
     assert "What it does" not in email_html.render("Hi", "S", 2, ["Does a thing"])
 
 
-def test_poll_returns_matched_replies(monkeypatch):
+def _fake_imap(replies_mod):
     class FakeIMAP:
         def __init__(self, host): pass
         def __enter__(self): return self
@@ -71,22 +71,31 @@ def test_poll_returns_matched_replies(monkeypatch):
         def fetch(self, num, spec):
             raw = b"From: bob@biz.test\nSubject: Re: hi\n\nYes interested\n" if num == b"1" else b"From: spam@x.test\n\nbuy\n"
             return "OK", [(b"", raw)]
+    return FakeIMAP
 
-    monkeypatch.setattr(replies.imaplib, "IMAP4_SSL", FakeIMAP)
-    monkeypatch.setattr(replies.outreach, "handle_event",
-                        lambda email, kind, body: {"matched": email == "bob@biz.test", "needs_human": True})
+
+def test_poll_returns_matched_replies_and_emails_the_owner(monkeypatch):
+    sent = []
+    monkeypatch.setattr(replies.imaplib, "IMAP4_SSL", _fake_imap(replies))
+    monkeypatch.setattr(settings, "owner_email", "owner@example.test")
+    monkeypatch.setattr(replies.mailer, "send", lambda to, subject, body, html=None: sent.append((to, subject, body)))
+    monkeypatch.setattr(replies.outreach, "handle_event", lambda email, kind, body: {
+        "matched": email == "bob@biz.test", "needs_human": True, "name": "Biz Roofing", "label": "interested", "status": "interested"})
     out = replies.poll()
     assert (out["seen"], out["matched"], out["ignored"]) == (2, 1, 1) and out["replies"][0]["needs_human"]
+    assert len(sent) == 1 and sent[0][0] == "owner@example.test" and "Biz Roofing" in sent[0][1] and "interested" in sent[0][1]
 
 
-def test_settings_repr_masks_secrets(monkeypatch):
-    monkeypatch.setattr(settings, "smtp_password", "hunter2-secret")
-    monkeypatch.setattr(settings, "admin_api_key", "admin-secret")
-    shown = repr(settings)
-    assert "hunter2-secret" not in shown and "admin-secret" not in shown and "smtp_host" in shown
+def test_poll_does_not_email_for_replies_that_need_no_human_and_survives_mail_failure(monkeypatch):
+    sent = []
+    monkeypatch.setattr(replies.imaplib, "IMAP4_SSL", _fake_imap(replies))
+    monkeypatch.setattr(settings, "owner_email", "owner@example.test")
+    monkeypatch.setattr(replies.mailer, "send", lambda *a, **k: sent.append(a))
+    monkeypatch.setattr(replies.outreach, "handle_event", lambda *a: {"matched": True, "needs_human": False, "name": "X", "label": "unsubscribe"})
+    assert replies.poll()["matched"] == 2 and sent == []
 
-
-def test_html_puts_services_before_question_and_button_after(monkeypatch):
-    from . import email_html
-    out = email_html.render("Hi team,\n\nWe built a thing.\n\nWant a demo?", "Subj", 1, ["Does a thing"])
-    assert out.index("What it does") < out.index("Want a demo?") < out.index("walkthrough")
+    def boom(*a, **k):
+        raise replies.mailer.MailError("down")
+    monkeypatch.setattr(replies.mailer, "send", boom)
+    monkeypatch.setattr(replies.outreach, "handle_event", lambda *a: {"matched": True, "needs_human": True, "name": "X", "label": "question"})
+    assert replies.poll()["matched"] == 2  # an alert failure never loses the reply

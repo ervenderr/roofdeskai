@@ -8,7 +8,7 @@ from email import policy
 from email.message import Message
 from email.utils import parseaddr
 
-from . import outreach
+from . import mailer, outreach
 from .config import settings
 
 log = logging.getLogger("leadpilot.replies")
@@ -42,6 +42,19 @@ def parse(raw: bytes) -> tuple[str, str, str] | None:
     return sender, "reply", _text(msg)
 
 
+def notify_owner(outcome: dict) -> None:
+    """Email the owner about a reply that needs a person. A failed alert never loses the reply."""
+    if not settings.owner_email:
+        return
+    subject = f"{outcome.get('name', 'A prospect')} replied ({outcome.get('label')})".replace("\n", " ")[:100]
+    body = (f"Prospect: {outcome.get('name')}\nClassified as: {outcome.get('label')}\nStatus: {outcome.get('status')}\n\n"
+            "Reply to them from your outreach mailbox.")
+    try:
+        mailer.send(settings.owner_email, subject, body)
+    except mailer.MailError:
+        log.exception("reply saved but the owner alert failed")
+
+
 def poll() -> dict:
     result = {"seen": 0, "matched": 0, "ignored": 0, "replies": []}
     with imaplib.IMAP4_SSL(settings.imap_host) as imap:
@@ -55,7 +68,9 @@ def poll() -> dict:
             outcome = outreach.handle_event(*parsed) if parsed else {}
             if outcome.get("matched"):
                 result["matched"] += 1
-                result["replies"].append(outcome)  # n8n alerts you on the ones that need a human
+                result["replies"].append(outcome)
+                if outcome.get("needs_human"):
+                    notify_owner(outcome)
             else:
                 result["ignored"] += 1
     log.info("reply poll: %s", result)
