@@ -4,7 +4,7 @@
 """
 import json
 
-from app import admin, outreach_routes
+from app import admin, outreach, outreach_routes
 
 
 def main() -> None:
@@ -21,6 +21,7 @@ def main() -> None:
     sent = sum(1 for d in details.values() for m in d["messages"] if m["status"] == "sent")
     outreach_metrics = {"prospects": by_status, "messages": {"sent": sent, "drafted": len(queue)}, "awaiting_approval": len(queue),
                         "suppressed": sum(by_status.get(k, 0) for k in ("unsubscribed", "bounced", "not_interested"))}
+    calls = [c for c in outreach.call_list(limit=500) if c["campaign_id"] in demo]
     metrics = admin.metrics()
     metrics.pop("outreach", None)  # counts every campaign, including real ones
     out = {
@@ -31,6 +32,7 @@ def main() -> None:
         "prospect_details": details,
         "queue": queue,
         "outreach_metrics": outreach_metrics,
+        "calls": calls,
     }
     print(json.dumps(out, default=str, indent=1))
 

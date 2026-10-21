@@ -510,6 +510,94 @@
         1040,
         940
       ]
+    },
+    {
+      "id": "note-5.-call-list",
+      "name": "Note 5. Call list",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## 5. Phone call list\nMost prospects have no usable email, so every weekday at 9:00 you get the top 5 businesses to phone (highest score first), with talking points built from their scraped facts.\nFull list: GET /admin/call-list.csv",
+        "width": 900,
+        "height": 130
+      },
+      "position": [
+        -20,
+        1060
+      ]
+    },
+    {
+      "id": "weekdays-9am",
+      "name": "Weekdays 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        1160
+      ]
+    },
+    {
+      "id": "get-top-5-to-call",
+      "name": "Get top 5 to call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/admin/call-list?limit=5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        260,
+        1160
+      ]
+    },
+    {
+      "id": "format-call-sheet",
+      "name": "Format call sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nif (!rows.length) return [];  // nobody to call today: stay quiet\nconst lines = rows.map((r, i) => `${i + 1}. ${r.name} (score ${r.score})\\n   Phone: ${r.phone}${r.city ? ' \u00b7 ' + r.city : ''}\\n   ` + r.talking_points.join('\\n   '));\nreturn [{ json: { count: rows.length, text: lines.join('\\n\\n') + '\\n\\nOpener: ' + rows[0].opener + '\\n\\nLog the outcome in the dashboard (Calls page).' } }];"
+      },
+      "position": [
+        520,
+        1160
+      ]
+    },
+    {
+      "id": "email-me-the-call-sheet",
+      "name": "Email me the call sheet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'Call sheet: ' + $json.count + ' businesses to phone today', Text: $json.text}) }}"
+      },
+      "position": [
+        780,
+        1160
+      ]
     }
   ],
   "connections": {
@@ -688,6 +776,39 @@
         [
           {
             "node": "Tell me about the scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekdays 9am": {
+      "main": [
+        [
+          {
+            "node": "Get top 5 to call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get top 5 to call": {
+      "main": [
+        [
+          {
+            "node": "Format call sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format call sheet": {
+      "main": [
+        [
+          {
+            "node": "Email me the call sheet",
             "type": "main",
             "index": 0
           }

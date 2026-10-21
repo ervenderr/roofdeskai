@@ -18,9 +18,11 @@ TIME_RE = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)", re.I)
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday")
 
 # Allowed status moves. Unsubscribe and bounce are accepted from any state (see set_status).
+# A phone call can settle a prospect at any stage, so interested / not_interested are allowed from the early ones too.
 FLOW = {
-    "scored": {"drafted", "skipped"}, "no_email": {"skipped"},
-    "drafted": {"approved", "skipped"}, "approved": {"sent", "drafted", "skipped"},
+    "scored": {"drafted", "skipped", "interested", "not_interested"}, "no_email": {"skipped", "interested", "not_interested"},
+    "drafted": {"approved", "skipped", "interested", "not_interested"},
+    "approved": {"sent", "drafted", "skipped", "interested", "not_interested"},
     "sent": {"replied", "interested", "not_interested", "bounced"},
     "replied": {"interested", "not_interested", "booked"}, "interested": {"booked", "not_interested"},
     "booked": set(), "not_interested": set(), "skipped": set(), "unsubscribed": set(), "bounced": set(),
@@ -94,6 +96,40 @@ def after_hours_gap(hours: dict | None) -> bool:
         return True
     closes = [_close_hour(low[d]) for d in WEEKDAYS if d in low]
     return sum(1 for c in closes if c is not None and c <= 18) >= 3
+
+
+DAY_ORDER = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+CALL_OUTCOMES = {"no_answer", "callback", "wrong_number", "interested", "not_interested", "do_not_contact"}
+
+
+def closed_days(hours: dict | None) -> list[str]:
+    low = {d.lower(): v for d, v in (hours or {}).items()}
+    return [d for d in DAY_ORDER if "closed" in low.get(d.lower(), "").lower()]
+
+
+def talking_points(p: dict) -> list[str]:
+    """Plain-language reasons to call, built only from the scraped facts (no model, nothing invented)."""
+    pts = []
+    closed = closed_days(p.get("hours") or p.get("hours_json"))
+    if closed:
+        pts.append(f"Closed on {', '.join(closed)}: enquiries arriving then go unanswered.")
+    elif after_hours_gap(p.get("hours") or p.get("hours_json")):
+        pts.append("Closes early on weekdays, so evening enquiries wait until the next day.")
+    if (p.get("pain_mentions") or 0) >= 1:
+        pts.append("A customer review mentions an unanswered call or message.")
+    if (p.get("review_count") or 0) >= 50:
+        pts.append(f"Busy: {p['review_count']} reviews" + (f", rated {float(p['rating']):.1f}." if p.get("rating") else "."))
+    if not p.get("website"):
+        pts.append("No website, so customers can only reach them by phone or social media.")
+    elif not p.get("email"):
+        pts.append("Has a website but no public email.")
+    return pts[:4]
+
+
+def opener(p: dict) -> str:
+    return (f"Hi, is this {p['name']}? I'll be quick: when your team is busy or you are closed, who answers customer "
+            "enquiries? We built an AI assistant that replies instantly and books appointments. Would a ten minute "
+            "look be worth it?")
 
 
 def score(p: dict) -> tuple[int, list[str]]:

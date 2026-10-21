@@ -362,6 +362,49 @@ def handle_event(email: str, kind: str, body: str = "") -> dict:
             "needs_human": label in ("interested", "question", "other")}
 
 
+def record_call(pid: int, outcome: str, note: str = "") -> dict:
+    """Log a phone call. A firm yes/no settles the prospect and stops any email; a no also suppresses their address."""
+    if outcome not in prospects.CALL_OUTCOMES:
+        raise ValueError(f"outcome must be one of {sorted(prospects.CALL_OUTCOMES)}")
+    with engine.begin() as c:
+        row = c.execute(text("SELECT email FROM prospects WHERE id=:i FOR UPDATE"), {"i": pid}).first()
+        if not row:
+            raise LookupError("prospect not found")
+        c.execute(text("UPDATE prospects SET call_outcome=:o, call_note=:n, called_at=now() WHERE id=:i"),
+                  {"o": outcome, "n": note[:500] or None, "i": pid})
+        _event(c, pid, f"call:{outcome}", note[:200] or None)
+        if outcome in ("interested", "not_interested", "do_not_contact"):
+            _cancel_pending(c, pid)
+            if outcome != "interested" and row.email:
+                suppress(c, row.email, outcome)
+            try:
+                prospects.set_status(pid, "interested" if outcome == "interested" else "not_interested", c)
+            except ValueError:  # already unsubscribed, bounced or booked: keep that
+                log.info("prospect %s: kept status after a %s call", pid, outcome)
+        status = c.execute(text("SELECT status FROM prospects WHERE id=:i"), {"i": pid}).scalar()
+    return {"prospect_id": pid, "outcome": outcome, "status": status}
+
+
+def call_list(campaign_id: int | None = None, scope: str = "no_email", limit: int = 100) -> list[dict]:
+    """Prospects worth phoning: have a phone, are still open, and were not settled by an earlier call.
+    scope 'no_email' (default) is the ones email cannot reach; 'all' adds everyone still in play."""
+    statuses = ("no_email",) if scope == "no_email" else ("no_email", "scored", "drafted", "approved", "sent", "replied")
+    with engine.connect() as c:
+        rows = [dict(r) for r in c.execute(text(
+            """SELECT id, campaign_id, name, category, city, address, phone, email, website, maps_url, rating, review_count,
+                      pain_mentions, hours_json, score, status, call_outcome, call_note, called_at
+               FROM prospects
+               WHERE COALESCE(phone, '') <> '' AND status = ANY(:st)
+                 AND (call_outcome IS NULL OR call_outcome IN ('no_answer', 'callback'))
+                 AND (CAST(:cid AS INT) IS NULL OR campaign_id = :cid)
+               ORDER BY score DESC, id LIMIT :n"""), {"st": list(statuses), "cid": campaign_id, "n": limit}).mappings()]
+    for r in rows:
+        r["talking_points"] = prospects.talking_points(r)
+        r["opener"] = prospects.opener(r)
+        r.pop("hours_json")
+    return rows
+
+
 def metrics() -> dict:
     with engine.connect() as c:
         by_status = {r[0]: r[1] for r in c.execute(text("SELECT status, count(*) FROM prospects GROUP BY status"))}

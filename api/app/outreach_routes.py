@@ -1,5 +1,8 @@
 """Outbound prospecting endpoints. Admin-key protected, like the rest of the admin API."""
-from fastapi import APIRouter, Depends, HTTPException
+import csv
+import io
+
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy import text
 
@@ -40,6 +43,11 @@ class ScrapeIn(BaseModel):
         if any(not 3 <= len(q.strip()) <= 120 for q in v):
             raise ValueError("each query must be 3 to 120 characters, e.g. 'dentist in Davao City'")
         return v
+
+
+class CallIn(BaseModel):
+    outcome: str = Field(pattern="^(no_answer|callback|wrong_number|interested|not_interested|do_not_contact)$")
+    note: str = Field("", max_length=500)
 
 
 class EditIn(BaseModel):
@@ -188,3 +196,33 @@ def list_scrapes():
 @router.post("/admin/scrapes/sync")
 def sync_scrapes():
     return scrapes.sync_runs()
+
+
+CALL_CSV_COLUMNS = ["score", "name", "category", "phone", "city", "address", "website", "maps_url", "rating", "review_count",
+                    "call_outcome", "talking_points", "opener"]
+
+
+@router.get("/admin/call-list")
+def get_call_list(campaign_id: int | None = None, scope: str = "no_email", limit: int = 100):
+    if scope not in ("no_email", "all"):
+        raise HTTPException(422, "scope must be no_email or all")
+    return outreach.call_list(campaign_id, scope, min(limit, 500))
+
+
+@router.get("/admin/call-list.csv")
+def get_call_list_csv(campaign_id: int | None = None, scope: str = "no_email"):
+    rows = get_call_list(campaign_id, scope, 500)
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=CALL_CSV_COLUMNS, extrasaction="ignore")
+    w.writeheader()
+    for r in rows:
+        w.writerow({**r, "talking_points": " | ".join(r["talking_points"])})
+    return Response(buf.getvalue(), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=call-list.csv"})
+
+
+@router.post("/admin/prospects/{pid}/call")
+def log_call(pid: int, body: CallIn):
+    try:
+        return outreach.record_call(pid, body.outcome, body.note)
+    except LookupError:
+        raise HTTPException(404, "prospect not found")

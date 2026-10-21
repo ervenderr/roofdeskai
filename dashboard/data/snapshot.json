@@ -2487,6 +2487,21 @@
    "created_at": "2026-10-21 01:56:49.534595+00:00"
   },
   {
+   "id": 647,
+   "campaign_id": 87,
+   "name": "Harbor View Dental Studio",
+   "category": "Dentist",
+   "address": "7 Sasa Wharf Rd, Davao City",
+   "email": null,
+   "website": "https://harborviewdental.example.com",
+   "rating": "4.5",
+   "review_count": 73,
+   "score": 50,
+   "pain_mentions": 0,
+   "status": "no_email",
+   "created_at": "2026-10-21 03:07:51.948111+00:00"
+  },
+  {
    "id": 233,
    "campaign_id": 87,
    "name": "Pipe Masters Plumbing",
@@ -2500,6 +2515,36 @@
    "pain_mentions": 1,
    "status": "drafted",
    "created_at": "2026-10-21 01:56:49.534595+00:00"
+  },
+  {
+   "id": 646,
+   "campaign_id": 87,
+   "name": "Sunrise Pediatric Clinic",
+   "category": "Pediatrician",
+   "address": "14 Mabini St, Davao City",
+   "email": null,
+   "website": null,
+   "rating": "4.8",
+   "review_count": 210,
+   "score": 35,
+   "pain_mentions": 0,
+   "status": "no_email",
+   "created_at": "2026-10-21 03:07:51.948111+00:00"
+  },
+  {
+   "id": 648,
+   "campaign_id": 87,
+   "name": "Kapitan Aircon Services",
+   "category": "Air conditioning repair service",
+   "address": "2 Tulip Dr, Davao City",
+   "email": null,
+   "website": null,
+   "rating": "4.2",
+   "review_count": 19,
+   "score": 30,
+   "pain_mentions": 0,
+   "status": "no_email",
+   "created_at": "2026-10-21 03:07:51.948111+00:00"
   },
   {
    "id": 234,
@@ -2559,7 +2604,10 @@
     "pain_mentions": 2,
     "status": "interested",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -2640,7 +2688,10 @@
     "pain_mentions": 2,
     "status": "sent",
     "created_at": "2026-10-21 01:59:17.020337+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -2716,7 +2767,10 @@
     "pain_mentions": 2,
     "status": "unsubscribed",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -2797,7 +2851,10 @@
     "pain_mentions": 1,
     "status": "bounced",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -2877,7 +2934,10 @@
     "pain_mentions": 1,
     "status": "drafted",
     "created_at": "2026-10-21 01:59:17.020337+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -2940,7 +3000,10 @@
     "pain_mentions": 0,
     "status": "not_interested",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -3018,7 +3081,10 @@
     "pain_mentions": 0,
     "status": "sent",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -3123,7 +3189,59 @@
     "pain_mentions": 0,
     "status": "no_email",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": "no_answer",
+    "call_note": "rang 6 times",
+    "called_at": "2026-10-21 03:08:07.789879+00:00"
+   },
+   "messages": [],
+   "events": [
+    {
+     "kind": "call:no_answer",
+     "detail": "rang 6 times",
+     "created_at": "2026-10-21 03:08:07.789879+00:00"
+    }
+   ]
+  },
+  "647": {
+   "prospect": {
+    "id": 647,
+    "campaign_id": 87,
+    "external_id": "demo-202",
+    "name": "Harbor View Dental Studio",
+    "category": "Dentist",
+    "address": "7 Sasa Wharf Rd, Davao City",
+    "phone": "+63 82 555 0202",
+    "email": null,
+    "website": "https://harborviewdental.example.com",
+    "maps_url": null,
+    "rating": "4.5",
+    "review_count": 73,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "9 AM\u20131 PM",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [],
+    "score": 50,
+    "score_reasons": [
+     "has a website",
+     "73 reviews (a busy business)",
+     "rated 4.5",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 0,
+    "status": "no_email",
+    "created_at": "2026-10-21 03:07:51.948111+00:00",
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [],
    "events": []
@@ -3165,7 +3283,10 @@
     "pain_mentions": 1,
     "status": "drafted",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [
     {
@@ -3188,6 +3309,92 @@
      "kind": "drafted",
      "detail": "template",
      "created_at": "2026-10-21 01:59:32.565901+00:00"
+    }
+   ]
+  },
+  "646": {
+   "prospect": {
+    "id": 646,
+    "campaign_id": 87,
+    "external_id": "demo-201",
+    "name": "Sunrise Pediatric Clinic",
+    "category": "Pediatrician",
+    "address": "14 Mabini St, Davao City",
+    "phone": "+63 82 555 0201",
+    "email": null,
+    "website": null,
+    "maps_url": null,
+    "rating": "4.8",
+    "review_count": 210,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Sunday": "Closed",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Saturday": "Closed",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [],
+    "score": 35,
+    "score_reasons": [
+     "210 reviews (a busy business)",
+     "rated 4.8",
+     "closed evenings or weekends"
+    ],
+    "pain_mentions": 0,
+    "status": "no_email",
+    "created_at": "2026-10-21 03:07:51.948111+00:00",
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
+   },
+   "messages": [],
+   "events": []
+  },
+  "648": {
+   "prospect": {
+    "id": 648,
+    "campaign_id": 87,
+    "external_id": "demo-203",
+    "name": "Kapitan Aircon Services",
+    "category": "Air conditioning repair service",
+    "address": "2 Tulip Dr, Davao City",
+    "phone": "+63 82 555 0203",
+    "email": null,
+    "website": null,
+    "maps_url": null,
+    "rating": "4.2",
+    "review_count": 19,
+    "hours_json": {
+     "Friday": "8 AM \u2013 5 PM",
+     "Monday": "8 AM \u2013 5 PM",
+     "Tuesday": "8 AM \u2013 5 PM",
+     "Thursday": "8 AM \u2013 5 PM",
+     "Wednesday": "8 AM \u2013 5 PM"
+    },
+    "review_texts": [],
+    "score": 30,
+    "score_reasons": [
+     "rated 4.2",
+     "closed evenings or weekends",
+     "target category"
+    ],
+    "pain_mentions": 0,
+    "status": "no_email",
+    "created_at": "2026-10-21 03:07:51.948111+00:00",
+    "city": null,
+    "call_outcome": "callback",
+    "call_note": "Owner is out until Thursday",
+    "called_at": "2026-10-21 03:07:51.975567+00:00"
+   },
+   "messages": [],
+   "events": [
+    {
+     "kind": "call:callback",
+     "detail": "Owner is out until Thursday",
+     "created_at": "2026-10-21 03:07:51.975567+00:00"
     }
    ]
   },
@@ -3214,7 +3421,10 @@
     "pain_mentions": 0,
     "status": "no_email",
     "created_at": "2026-10-21 01:56:49.534595+00:00",
-    "city": null
+    "city": null,
+    "call_outcome": null,
+    "call_note": null,
+    "called_at": null
    },
    "messages": [],
    "events": []
@@ -3254,7 +3464,7 @@
    "bounced": 1,
    "drafted": 2,
    "not_interested": 1,
-   "no_email": 2
+   "no_email": 5
   },
   "messages": {
    "sent": 7,
@@ -3262,5 +3472,109 @@
   },
   "awaiting_approval": 2,
   "suppressed": 3
- }
+ },
+ "calls": [
+  {
+   "id": 236,
+   "campaign_id": 87,
+   "name": "Metro Cleaners",
+   "category": "House cleaning service",
+   "city": null,
+   "address": "77 Ecoland Dr, Davao City",
+   "phone": "+63 82 555 0107",
+   "email": null,
+   "website": "https://metrocleaners.example.com",
+   "maps_url": null,
+   "rating": "4.3",
+   "review_count": 41,
+   "pain_mentions": 0,
+   "score": 50,
+   "status": "no_email",
+   "call_outcome": "no_answer",
+   "call_note": "rang 6 times",
+   "called_at": "2026-10-21 03:08:07.789879+00:00",
+   "talking_points": [
+    "Closed on Saturday, Sunday: enquiries arriving then go unanswered.",
+    "Has a website but no public email."
+   ],
+   "opener": "Hi, is this Metro Cleaners? I'll be quick: when your team is busy or you are closed, who answers customer enquiries? We built an AI assistant that replies instantly and books appointments. Would a ten minute look be worth it?"
+  },
+  {
+   "id": 647,
+   "campaign_id": 87,
+   "name": "Harbor View Dental Studio",
+   "category": "Dentist",
+   "city": null,
+   "address": "7 Sasa Wharf Rd, Davao City",
+   "phone": "+63 82 555 0202",
+   "email": null,
+   "website": "https://harborviewdental.example.com",
+   "maps_url": null,
+   "rating": "4.5",
+   "review_count": 73,
+   "pain_mentions": 0,
+   "score": 50,
+   "status": "no_email",
+   "call_outcome": null,
+   "call_note": null,
+   "called_at": null,
+   "talking_points": [
+    "Closed on Sunday: enquiries arriving then go unanswered.",
+    "Busy: 73 reviews, rated 4.5.",
+    "Has a website but no public email."
+   ],
+   "opener": "Hi, is this Harbor View Dental Studio? I'll be quick: when your team is busy or you are closed, who answers customer enquiries? We built an AI assistant that replies instantly and books appointments. Would a ten minute look be worth it?"
+  },
+  {
+   "id": 646,
+   "campaign_id": 87,
+   "name": "Sunrise Pediatric Clinic",
+   "category": "Pediatrician",
+   "city": null,
+   "address": "14 Mabini St, Davao City",
+   "phone": "+63 82 555 0201",
+   "email": null,
+   "website": null,
+   "maps_url": null,
+   "rating": "4.8",
+   "review_count": 210,
+   "pain_mentions": 0,
+   "score": 35,
+   "status": "no_email",
+   "call_outcome": null,
+   "call_note": null,
+   "called_at": null,
+   "talking_points": [
+    "Closed on Saturday, Sunday: enquiries arriving then go unanswered.",
+    "Busy: 210 reviews, rated 4.8.",
+    "No website, so customers can only reach them by phone or social media."
+   ],
+   "opener": "Hi, is this Sunrise Pediatric Clinic? I'll be quick: when your team is busy or you are closed, who answers customer enquiries? We built an AI assistant that replies instantly and books appointments. Would a ten minute look be worth it?"
+  },
+  {
+   "id": 648,
+   "campaign_id": 87,
+   "name": "Kapitan Aircon Services",
+   "category": "Air conditioning repair service",
+   "city": null,
+   "address": "2 Tulip Dr, Davao City",
+   "phone": "+63 82 555 0203",
+   "email": null,
+   "website": null,
+   "maps_url": null,
+   "rating": "4.2",
+   "review_count": 19,
+   "pain_mentions": 0,
+   "score": 30,
+   "status": "no_email",
+   "call_outcome": "callback",
+   "call_note": "Owner is out until Thursday",
+   "called_at": "2026-10-21 03:07:51.975567+00:00",
+   "talking_points": [
+    "Closes early on weekdays, so evening enquiries wait until the next day.",
+    "No website, so customers can only reach them by phone or social media."
+   ],
+   "opener": "Hi, is this Kapitan Aircon Services? I'll be quick: when your team is busy or you are closed, who answers customer enquiries? We built an AI assistant that replies instantly and books appointments. Would a ten minute look be worth it?"
+  }
+ ]
 }

@@ -38,3 +38,8 @@ CREATE TABLE IF NOT EXISTS scrape_runs (
   status TEXT NOT NULL DEFAULT 'running',  -- running, imported, failed
   result_json JSONB, error TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), finished_at TIMESTAMPTZ
 );
+
+-- Phone follow-up for prospects email cannot reach.
+ALTER TABLE prospects ADD COLUMN IF NOT EXISTS call_outcome TEXT;  -- no_answer, callback, wrong_number, interested, not_interested, do_not_contact
+ALTER TABLE prospects ADD COLUMN IF NOT EXISTS call_note TEXT;
+ALTER TABLE prospects ADD COLUMN IF NOT EXISTS called_at TIMESTAMPTZ;

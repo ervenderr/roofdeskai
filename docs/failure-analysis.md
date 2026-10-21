@@ -102,3 +102,11 @@ Eval: `evals/outreach_runner.py`, 8 fictional prospects, first-try output, no re
 
 ### 17. Real data must not reach the public demo
 - The static snapshot is built from the same database. It now exports only campaigns flagged `public_demo`; a check confirmed none of the 30 real businesses appear in it.
+
+
+## Call list
+
+### 18. A test that expired in the morning
+- **What happened:** after adding the call-list tests, three older outreach tests started failing with nothing related changed. They had passed all day.
+- **Root cause:** the tests used a fixed clock of 03:00 UTC on the day I wrote them, while approval stamps the message with the real database clock. Once real time passed 03:00 UTC, an approved message was scheduled "in the future" and never sent.
+- **Change:** the fixed clock is now a Wednesday in 2030. That bug was in the committed tests, so anyone running them after 03:00 UTC that day would have seen failures that looked like product bugs.

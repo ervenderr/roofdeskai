@@ -49,3 +49,9 @@ export type ScrapeRun = {
   result_json: { imported: number; duplicates: number; no_email: number; invalid: number } | null; error: string | null
   created_at: string; finished_at: string | null
 }
+
+export type CallItem = {
+  id: number; name: string; category: string | null; city: string | null; phone: string; score: number; status: string
+  website: string | null; maps_url: string | null; rating: number | string | null; review_count: number | null
+  call_outcome: string | null; call_note: string | null; talking_points: string[]; opener: string
+}

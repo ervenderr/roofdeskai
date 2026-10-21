@@ -1,6 +1,6 @@
 "use server"
 import { revalidatePath } from "next/cache"
-import { reviewDraft, startScrapeRun } from "@/lib/data"
+import { logCallOutcome, reviewDraft, startScrapeRun } from "@/lib/data"
 
 export async function approveDraft(id: number) {
   await reviewDraft(id, "approve")
@@ -19,4 +19,9 @@ export async function startScrape(_prev: string | null, form: FormData): Promise
   })
   revalidatePath("/outreach")
   return message
+}
+
+export async function logCall(id: number, form: FormData) {
+  await logCallOutcome(id, String(form.get("outcome")), String(form.get("note") ?? ""))
+  revalidatePath("/calls")
 }

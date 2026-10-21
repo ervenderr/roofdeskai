@@ -12,7 +12,7 @@ from .config import settings
 from .db import engine
 from .main import app
 
-NOW = datetime(2026, 10, 21, 3, 0, tzinfo=timezone.utc)  # Wed 11:00 in Manila: inside the send window
+NOW = datetime(2030, 10, 23, 3, 0, tzinfo=timezone.utc)  # a future Wednesday, 11:00 in Manila: inside the send window and never in the past
 SAMPLE = next(p for p in (Path(__file__).parents[1] / "scripts" / "sample_prospects.json",
                          Path(__file__).parents[2] / "scripts" / "sample_prospects.json") if p.exists())  # container vs host
 GOOD_COPY = {"subject": "A quick idea for Acme Dental", "body": (
@@ -245,9 +245,9 @@ def test_suppressed_prospect_is_never_emailed(monkeypatch):
 
 def test_send_window_and_missing_address(monkeypatch):
     monkeypatch.setattr(settings, "outreach_enforce_window", True)
-    saturday = datetime(2026, 10, 24, 3, 0, tzinfo=timezone.utc)
+    saturday = NOW + timedelta(days=3)
     assert outreach.send_due(saturday)["window_open"] is False
-    assert outreach.in_send_window(NOW) and not outreach.in_send_window(datetime(2026, 10, 21, 16, 0, tzinfo=timezone.utc))
+    assert outreach.in_send_window(NOW) and not outreach.in_send_window(NOW.replace(hour=16))
     monkeypatch.setattr(settings, "sender_address", "")
     with pytest.raises(RuntimeError):
         outreach.send_due(NOW)

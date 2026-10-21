@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="wrap">
           <header className="top">
             <Link href="/" className="brand">LeadPilot</Link>
-            <nav><Link href="/">Overview</Link><Link href="/conversations">Conversations</Link><Link href="/prospects">Prospects</Link><Link href="/outreach">Outreach</Link></nav>
+            <nav><Link href="/">Overview</Link><Link href="/conversations">Conversations</Link><Link href="/prospects">Prospects</Link><Link href="/outreach">Outreach</Link><Link href="/calls">Calls</Link></nav>
             <span className="badge">{isLive ? "Live API" : "Static demo · synthetic data"}</span>
           </header>
           {children}

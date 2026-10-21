@@ -75,7 +75,7 @@ Conversation states: `GREETING → COLLECT → (BOOK → DONE | NURTURE | DISQUA
 - **Follow-up scheduler** (nightly): nurture leads with no activity for 48 hours get a follow-up email, at most 3 per lead.
 - **Escalation alert:** emails a human with a link to the transcript.
 - **Daily report:** emails a summary of `/metrics`.
-- **Outreach flow:** one canvas with four lanes for outbound prospecting (below).
+- **Outreach flow:** one canvas with six lanes for outbound prospecting (below): scrape, import, draft, send and follow up, replies, and a daily call sheet.
 
 All logic lives in the FastAPI service; n8n only triggers and sends. The project runs without it.
 
@@ -130,6 +130,16 @@ Google's terms restrict scraping, so the API caps queries at 30 per day and only
 **What a real run showed** (one search, 20 dental clinics in one city; details in `docs/failure-analysis.md`):
 - Only **5 of 20 had an email even with website crawling on, and 4 of those 5 were personal inboxes** (gmail and similar). Email outreach reaches few businesses in this niche. Phone and Facebook are where they live, and cold messages there are restricted.
 - **0 of 20 had a "calls go unanswered" review pattern.** The scraper returns about 5 reviews per business (mostly five-star), and its extended-reviews option returned nothing extra here. Opening hours and web presence are the more reliable signals, and review complaints that did appear were about scheduling mix-ups and long waits.
+
+### Phone call list (for the prospects email cannot reach)
+
+Most scraped businesses have no usable email, so the same prospect table drives a call list: businesses with a phone number and no email, best score first. Each comes with plain talking points built only from their public listing (closed on Sundays, busy, no website) and a fixed opener. No model is involved, so nothing can be invented.
+
+![Calls page](docs/img/calls.png)
+
+- **Dashboard:** the Calls page (live mode) logs the outcome: no answer, call back, wrong number, interested, not interested, or do not contact. A firm yes or no settles the prospect and cancels any pending email, and a no also suppresses their email address.
+- **CSV:** `curl -H 'X-Admin-Key: dev-admin-key' localhost:8000/admin/call-list.csv -o call-list.csv`
+- **n8n:** on weekdays at 9:00 the Outreach flow emails you the top 5 to phone, with their talking points.
 
 **Not built yet (Phase 2):** real sending (Resend), real inbound email (replies arrive by webhook today), and handing an interested prospect to a booking agent configured for sales calls (the booking agent is still the roofing one). The scraper itself has not been run; the importer was written against its documented field names and checked on a synthetic file, so check it on a real export.
 

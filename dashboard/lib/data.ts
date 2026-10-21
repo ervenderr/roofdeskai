@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import type { Campaign, ConversationDetail, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem, ScrapeRun } from "./types"
+import type { CallItem, Campaign, ConversationDetail, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem, ScrapeRun } from "./types"
 
 const API = process.env.API_URL
 const KEY = process.env.ADMIN_API_KEY ?? ""
@@ -12,6 +12,7 @@ export const isLive = Boolean(API)
 type Snapshot = {
   metrics: Metrics; conversations: ConversationRow[]; details: Record<string, ConversationDetail>
   prospects: Prospect[]; prospect_details: Record<string, ProspectDetail>; queue: QueueItem[]; outreach_metrics: OutreachMetrics
+  calls: CallItem[]
 }
 
 function snapshot(): Snapshot {
@@ -58,4 +59,15 @@ export async function startScrapeRun(input: { campaign_id: number; queries: stri
   const body = await res.json().catch(() => ({}))
   const detail = typeof body.detail === "string" ? body.detail : "Check the form values."
   return `Could not start the scrape (${res.status}): ${detail}`
+}
+
+export const getCalls = async (): Promise<CallItem[]> => (isLive ? api("/admin/call-list") : (snapshot().calls ?? []))
+
+/** Log a phone call outcome. Server-side only; live mode only. */
+export async function logCallOutcome(id: number, outcome: string, note: string): Promise<void> {
+  if (!isLive) throw new Error("the static demo is read-only")
+  const res = await fetch(`${API}/admin/prospects/${id}/call`, {
+    method: "POST", headers: { "X-Admin-Key": KEY, "content-type": "application/json" }, body: JSON.stringify({ outcome, note }),
+  })
+  if (!res.ok) throw new Error(`API call log returned ${res.status}`)
 }
