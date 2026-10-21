@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy import text
@@ -48,6 +49,11 @@ class ChatOut(BaseModel):
     conversation_id: int
     conversation_token: str
     reply: str
+
+
+@app.get("/showcase", include_in_schema=False)
+def showcase():
+    return RedirectResponse("/showcase.html")  # a short link to share
 
 
 @app.get("/health")
