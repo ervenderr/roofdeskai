@@ -35,10 +35,12 @@ def address_status(address: str | None) -> str:
     if not address or not re.search(r"\d", address):  # a street address needs a number
         return "incomplete"
     parts = [p.strip().lower() for p in address.split(",")]
-    if any(p in SERVICE_AREA for p in parts[1:]) or (len(parts) == 1 and _tokens(address) & set(SERVICE_AREA)):
+    # a service-area city as a word in any comma part after the street ("Denver", "Denver CO", "Aurora CO 80012")
+    if any(set(re.findall(r"[a-z]+", p)) & set(SERVICE_AREA) for p in parts[1:]) or (len(parts) == 1 and _tokens(address) & set(SERVICE_AREA)):
         return "in"
     # a later comma part that is plain letters (not "Apt 4", "CO 80202", a bare state code) reads as a city
-    if any(re.fullmatch(r"[a-z .'-]{3,}", p) and not re.match(r"(apt|unit|suite|ste|floor)\b", p) for p in parts[1:]):
+    cities = [re.sub(r"(\s+[a-z]{2})?(\s+\d{5}(-\d{4})?)?$", "", p) for p in parts[1:]]  # drop a trailing state and ZIP
+    if any(re.fullmatch(r"[a-z .'-]{3,}", p) and not re.match(r"(apt|unit|suite|ste|floor)\b", p) for p in cities):
         return "out"
     return "incomplete"
 

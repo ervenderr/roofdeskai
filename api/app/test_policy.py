@@ -136,3 +136,11 @@ def test_answer_guard_accepts_inflections_but_not_new_claims():
     assert policy.answer_supported("Yes, we serve Aurora.", faq)
     assert policy.answer_supported("A replacement has a 10-year workmanship warranty.", faq)
     assert not policy.answer_supported("We are licensed and insured.", ["We provide a photo report for your insurer."])
+
+
+def test_address_status_handles_state_without_a_comma_and_zip_codes():
+    from .policy import address_status
+    for addr in ("412 Oak Lane, Denver CO", "412 Oak Lane, Aurora CO 80012", "412 Oak Lane, Denver, CO", "120 Main St, Lakewood Colorado"):
+        assert address_status(addr) == "in", addr
+    for addr in ("412 Oak Lane, Austin TX", "412 Aurora Ave, Austin TX", "9 Elm St, Boulder CO 80302"):
+        assert address_status(addr) == "out", addr
