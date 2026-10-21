@@ -21,7 +21,7 @@ class Provider:
 # Priority order. Keyless providers other than local/OVH are skipped. All are OpenAI-compatible.
 # Open-weight models only; limits per github.com/mnfst/awesome-free-llm-apis.
 PROVIDERS = [
-    Provider("local", settings.local_llm_url, "ollama", settings.local_llm_model),
+    Provider("local", settings.local_llm_url, "ollama" if settings.local_llm_url else "", settings.local_llm_model),  # empty LOCAL_LLM_URL turns it off (hosted deploy)
     Provider("groq", "https://api.groq.com/openai/v1", settings.groq_api_key, "openai/gpt-oss-20b"),
     Provider("nvidia", "https://integrate.api.nvidia.com/v1", settings.nvidia_api_key, "openai/gpt-oss-20b"),
     Provider("openrouter", "https://openrouter.ai/api/v1", settings.openrouter_api_key,
