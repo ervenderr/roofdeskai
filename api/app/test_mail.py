@@ -77,3 +77,10 @@ def test_poll_returns_matched_replies(monkeypatch):
                         lambda email, kind, body: {"matched": email == "bob@biz.test", "needs_human": True})
     out = replies.poll()
     assert (out["seen"], out["matched"], out["ignored"]) == (2, 1, 1) and out["replies"][0]["needs_human"]
+
+
+def test_settings_repr_masks_secrets(monkeypatch):
+    monkeypatch.setattr(settings, "smtp_password", "hunter2-secret")
+    monkeypatch.setattr(settings, "admin_api_key", "admin-secret")
+    shown = repr(settings)
+    assert "hunter2-secret" not in shown and "admin-secret" not in shown and "smtp_host" in shown

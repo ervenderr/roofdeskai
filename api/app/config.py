@@ -3,7 +3,15 @@ from pathlib import Path
 from pydantic_settings import BaseSettings
 
 
+SECRET_HINTS = ("password", "key")
+
+
 class Settings(BaseSettings):
+    def __repr_args__(self):
+        """Mask secrets so a failing assert, traceback or log line never prints them."""
+        for name, value in super().__repr_args__():
+            yield name, "**********" if value and any(h in name for h in SECRET_HINTS) else value
+
     database_url: str
     local_llm_url: str = "http://host.docker.internal:11434/v1"
     local_llm_model: str = "llama3.1:8b"
