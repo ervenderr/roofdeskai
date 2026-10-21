@@ -6,7 +6,7 @@ from datetime import datetime
 
 from sqlalchemy import text
 
-from . import llm, mailer, policy, tools
+from . import llm, mailer, policy, speech, tools
 from .config import settings
 from .db import engine
 from .schemas import Turn
@@ -34,6 +34,7 @@ def handle_turn(message: str, cid: int | None = None, external_id: str | None = 
     """Process one user message; returns (conversation_id, reply). Raises LookupError for an unknown conversation.
     `external_id` (e.g. an SMS contact) finds or creates the conversation instead of `cid`."""
     cid = _open(cid, external_id, channel)
+    message = speech.normalize(message)
     _save(cid, "user", message)
     reply = _decide(cid, message)
     _save(cid, "assistant", reply)
