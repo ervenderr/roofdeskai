@@ -43,3 +43,7 @@ CREATE TABLE IF NOT EXISTS scrape_runs (
 ALTER TABLE prospects ADD COLUMN IF NOT EXISTS call_outcome TEXT;  -- no_answer, callback, wrong_number, interested, not_interested, do_not_contact
 ALTER TABLE prospects ADD COLUMN IF NOT EXISTS call_note TEXT;
 ALTER TABLE prospects ADD COLUMN IF NOT EXISTS called_at TIMESTAMPTZ;
+
+-- Per-campaign market: send window and day boundaries use the campaign's timezone; locale picks spelling.
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS timezone TEXT NOT NULL DEFAULT 'Asia/Manila';
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS locale TEXT NOT NULL DEFAULT 'en-PH';

@@ -110,3 +110,18 @@ Eval: `evals/outreach_runner.py`, 8 fictional prospects, first-try output, no re
 - **What happened:** after adding the call-list tests, three older outreach tests started failing with nothing related changed. They had passed all day.
 - **Root cause:** the tests used a fixed clock of 03:00 UTC on the day I wrote them, while approval stamps the message with the real database clock. Once real time passed 03:00 UTC, an approved message was scheduled "in the future" and never sent.
 - **Change:** the fixed clock is now a Wednesday in 2030. That bug was in the committed tests, so anyone running them after 03:00 UTC that day would have seen failures that looked like product bugs.
+
+
+## US run (20 roofing contractors, Austin TX)
+
+### 19. The scraper's "emails" included image filenames
+- **What happened:** reviewing the queued drafts, one was addressed to `flags@2x.png`. A second prospect had `chosen-sprite@2x.png`. The scraper's website crawl matched image filenames that look like emails, and my validator only checked the format.
+- **Impact:** the second one was a US roofer that would have been emailed at an image file, and both inflated the "has a business email" score.
+- **Change:** `usable_email` rejects asset extensions (png, jpg, svg, css, js and so on), placeholder domains, error-tracker domains and HTML-escaped fragments, and import falls back to the next valid address. Existing rows were cleaned and rescored. After the fix Austin has 9 real business emails out of 20.
+
+### 20. The send window was hard-coded to Manila time
+- **What happened:** the window and the daily cap used one global timezone. For an Austin campaign that meant sending at 8 PM to 4 AM Central.
+- **Change:** timezone and locale are per campaign. A test pins the same instant as inside Manila's window and outside Chicago's.
+
+### 21. What the market change showed
+Austin: 9 of 20 business-domain emails, all with websites, busy (74 to 1,500 reviews). Davao: 1 business-domain email in 20. The engine is the same; the channel fit is not. Missed-call reviews were still rare in Austin (1 of 20), so the generic opening carries most drafts.

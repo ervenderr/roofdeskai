@@ -89,3 +89,12 @@ def test_escalation_alert_only_fires_for_web_chat(client, monkeypatch):
     web, _ = agent.handle_turn("let me speak to a real person")
     sms, _ = agent.handle_turn("let me speak to a real person", external_id="sms:alert-test", channel="sms")
     assert [s["conversation_id"] for s in sent] == [web]
+
+
+def test_campaign_timezone_and_locale_are_validated(monkeypatch):
+    monkeypatch.setattr(settings, "admin_api_key", "k")
+    client, H2 = TestClient(app), {"X-Admin-Key": "k"}
+    ok = client.post("/admin/campaigns", json={"name": "US", "timezone": "America/Chicago", "locale": "en-US"}, headers=H2)
+    assert ok.status_code == 200
+    assert client.post("/admin/campaigns", json={"name": "x", "timezone": "Mars/Base"}, headers=H2).status_code == 422
+    assert client.post("/admin/campaigns", json={"name": "x", "locale": "fr-FR"}, headers=H2).status_code == 422

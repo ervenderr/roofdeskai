@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     scrape_queries_per_day: int = 30  # be a polite client: Google's terms restrict scraping, so keep volume small
     # --- outbound outreach ---
     mailpit_url: str = "http://mailpit:8025"
+    mail_transport: str = "mailpit"  # mailpit (dev) | smtp (your own mailbox; Resend bans cold outreach)
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587  # STARTTLS
+    smtp_user: str = ""
+    smtp_password: str = ""  # Gmail app password
+    imap_host: str = "imap.gmail.com"
     sender_name: str = "The LeadPilot team"
     sender_email: str = "hello@leadpilot.example"
     sender_address: str = ""  # physical address for the email footer (required to send); set SENDER_ADDRESS

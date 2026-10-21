@@ -1,12 +1,14 @@
 """Outbound prospecting endpoints. Admin-key protected, like the rest of the admin API."""
 import csv
+import imaplib
 import io
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy import text
 
-from . import outreach, prospects, scraper, scrapes
+from . import outreach, prospects, replies, scraper, scrapes
 from .admin import _rows, require_admin
 from .db import engine
 
@@ -19,6 +21,17 @@ class CampaignIn(BaseModel):
     city: str | None = Field(None, max_length=100)
     auto_approve: bool = False
     daily_cap: int = Field(20, ge=1, le=500)
+    timezone: str = Field("Asia/Manila", max_length=64)  # IANA name; the send window and daily cap follow it
+    locale: str = Field("en-PH", pattern="^en-(US|PH)$")
+
+    @field_validator("timezone")
+    @classmethod
+    def real_timezone(cls, v):
+        try:
+            ZoneInfo(v)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("timezone must be an IANA name such as America/Chicago")
+        return v
 
 
 class CampaignPatch(BaseModel):
@@ -64,8 +77,9 @@ class EventIn(BaseModel):
 @router.post("/admin/campaigns")
 def create_campaign(body: CampaignIn):
     with engine.begin() as c:
-        cid = c.execute(text("INSERT INTO campaigns (name, category, city, auto_approve, daily_cap) "
-                             "VALUES (:name, :category, :city, :auto_approve, :daily_cap) RETURNING id"), body.model_dump()).scalar_one()
+        cid = c.execute(text("INSERT INTO campaigns (name, category, city, auto_approve, daily_cap, timezone, locale) "
+                             "VALUES (:name, :category, :city, :auto_approve, :daily_cap, :timezone, :locale) RETURNING id"),
+                      body.model_dump()).scalar_one()
     return {"id": cid}
 
 
@@ -164,6 +178,14 @@ def send_due(campaign_id: int | None = None):
         return outreach.send_due(campaign_id=campaign_id)
     except RuntimeError as e:
         raise HTTPException(409, str(e))
+
+
+@router.post("/admin/outreach/poll-replies")
+def poll_replies():
+    try:
+        return replies.poll()
+    except (imaplib.IMAP4.error, OSError) as e:
+        raise HTTPException(502, f"mailbox poll failed: {type(e).__name__}")
 
 
 @router.get("/admin/outreach/metrics")

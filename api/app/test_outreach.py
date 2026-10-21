@@ -40,10 +40,10 @@ def llm_returns(monkeypatch, *outputs: str):
                                                  "completion_tokens": 1, "latency_ms": 1})
 
 
-def campaign(auto=False, cap=20) -> int:
+def campaign(auto=False, cap=20, tz="Asia/Manila", locale="en-PH") -> int:
     with engine.begin() as c:
-        return c.execute(text("INSERT INTO campaigns (name, auto_approve, daily_cap) VALUES ('t', :a, :c) RETURNING id"),
-                         {"a": auto, "c": cap}).scalar_one()
+        return c.execute(text("INSERT INTO campaigns (name, auto_approve, daily_cap, timezone, locale) "
+                              "VALUES ('t', :a, :c, :tz, :l) RETURNING id"), {"a": auto, "c": cap, "tz": tz, "l": locale}).scalar_one()
 
 
 def prospect(cid: int, name="Acme Dental", email=None, **extra) -> tuple[int, str]:
@@ -79,10 +79,10 @@ def sent_prospect(monkeypatch, auto=True, cap=20, **kw) -> tuple[int, str, int]:
 # --- import and scoring -----------------------------------------------------------------------------
 
 def test_normalize_reads_scraper_row_defensively():
-    p = prospects.normalize({"title": " Bright Smile ", "emails": ["bad", "Hello@Example.COM"], "review_rating": "4.6",
+    p = prospects.normalize({"title": " Bright Smile ", "emails": ["bad", "Hello@Acme.CO"], "review_rating": "4.6",
                              "review_count": "182", "place_id": "p1", "complete_address": {"street": "1 A St", "city": "Davao"},
                              "open_hours": {"Monday": ["8 AM–5 PM"]}, "user_reviews": [{"Description": "ok"}, "plain", {}]})
-    assert p["name"] == "Bright Smile" and p["email"] == "hello@example.com" and p["rating"] == 4.6
+    assert p["name"] == "Bright Smile" and p["email"] == "hello@acme.co" and p["rating"] == 4.6
     assert p["address"] == "1 A St, Davao" and p["review_texts"] == ["ok", "plain"] and p["external_id"] == "p1"
     assert prospects.normalize({"title": ""}) is None
     assert prospects.normalize({"title": "X", "review_rating": "n/a"})["rating"] is None
@@ -243,14 +243,48 @@ def test_suppressed_prospect_is_never_emailed(monkeypatch):
     assert email not in sent and msgs(pid) == [(1, "cancelled")]
 
 
-def test_send_window_and_missing_address(monkeypatch):
+def approved_message(monkeypatch, tz: str, locale="en-PH") -> tuple[int, int]:
+    llm_returns(monkeypatch, GOOD_COPY["body"])
+    monkeypatch.setattr(outreach, "_log_llm", lambda *a: None)
+    cid = campaign(auto=True, tz=tz, locale=locale)
+    pid, _ = prospect(cid)
+    outreach.draft_pending(50, cid)
+    return cid, pid
+
+
+def test_send_window_follows_the_campaigns_timezone(monkeypatch):
     monkeypatch.setattr(settings, "outreach_enforce_window", True)
-    saturday = NOW + timedelta(days=3)
-    assert outreach.send_due(saturday)["window_open"] is False
-    assert outreach.in_send_window(NOW) and not outreach.in_send_window(NOW.replace(hour=16))
+    # NOW is Wed 11:00 in Manila but Tue 22:00 in Chicago: the same instant is inside one window and outside the other.
+    assert outreach.in_send_window(NOW, "Asia/Manila") and not outreach.in_send_window(NOW, "America/Chicago")
+    assert outreach.in_send_window(NOW + timedelta(hours=12), "America/Chicago")  # Wed 10:00 in Chicago
+    cid, pid = approved_message(monkeypatch, "America/Chicago")
+    blocked = outreach.send_due(NOW, cid)
+    assert blocked["sent"] == 0 and blocked["window_open"] is False and status(pid) == "approved"
+    assert outreach.send_due(NOW + timedelta(hours=12), cid)["sent"] == 1 and status(pid) == "sent"
+
+
+def test_weekend_is_blocked_and_missing_address_refuses(monkeypatch):
+    monkeypatch.setattr(settings, "outreach_enforce_window", True)
+    cid, pid = approved_message(monkeypatch, "Asia/Manila")
+    assert outreach.send_due(NOW + timedelta(days=3), cid)["sent"] == 0 and status(pid) == "approved"  # Saturday
+    assert not outreach.in_send_window(NOW.replace(hour=16))
     monkeypatch.setattr(settings, "sender_address", "")
     with pytest.raises(RuntimeError):
-        outreach.send_due(NOW)
+        outreach.send_due(NOW, cid)
+
+
+def test_us_campaigns_say_inquiry_everywhere(monkeypatch):
+    assert outreach.localize("Enquiries and enquiry, an enquiries desk", "en-US") == "Inquiries and inquiry, an inquiries desk"
+    assert outreach.localize("enquiries", "en-PH") == "enquiries"
+    facts = {"name": "Acme Roofing", "category": "Roofing contractor", "city": "Austin"}
+    assert "inquiries" in outreach.template_draft(facts, "en-US").body and "enquir" not in outreach.template_draft(facts, "en-US").body
+    assert "enquir" not in outreach.followup_copy(3, "Acme", "Idea", "en-US").body
+    llm_returns(monkeypatch, "Hi Acme Dental team, many clinics lose enquiries when nobody can reply, and we built an assistant "
+                             "that answers customer enquiries instantly. Would a quick look be useful for you?")
+    monkeypatch.setattr(outreach, "_log_llm", lambda *a: None)
+    d, _ = outreach.draft_copy({"id": 1, "name": "Acme Dental", "category": "Dentist", "address": "1 A St, Austin", "pain_mentions": 0,
+                                "rating": None, "review_count": None, "website": None}, "en-US")
+    assert "inquiries" in d.body and "enquir" not in d.body
 
 
 def test_mail_failure_marks_message_failed_and_keeps_prospect_approved(monkeypatch):
@@ -388,3 +422,21 @@ def test_free_mail_address_is_flagged_and_weighed_less():
     biz, reasons_b = prospects.score({"email": "info@acme.example.com"})
     person, reasons_p = prospects.score({"email": "owner@gmail.com"})
     assert biz > person and any("free-mail" in r for r in reasons_p) and not any("free-mail" in r for r in reasons_b)
+
+
+@pytest.mark.parametrize("email,ok", [
+    ("office@acme-roofing.com", True), ("Hello@Acme.CO", True), ("info@acme-roofing.com", True),
+    ("flags@2x.png", False), ("chosen-sprite@2x.png", False), ("logo@3x.webp", False), ("name@domain.com", False),
+    ("abc123@sentry.wixpress.com", False), ("u003eowner@acme.com", False), ("a%20b@acme.com", False), ("not-an-email", False),
+])
+def test_usable_email_rejects_scraper_junk(email, ok):
+    assert prospects.usable_email(email) is ok
+
+
+def test_import_skips_junk_emails_and_falls_back_to_the_next_valid_one():
+    cid = campaign()
+    prospects.import_rows(cid, [{"title": "Junk Co", "place_id": uuid.uuid4().hex, "emails": ["flags@2x.png", "owner@junk-co.com"]},
+                                {"title": "Only Junk", "place_id": uuid.uuid4().hex, "emails": ["flags@2x.png"]}])
+    with engine.connect() as c:
+        got = {r[0]: (r[1], r[2]) for r in c.execute(text("SELECT name, email, status FROM prospects WHERE campaign_id=:c"), {"c": cid})}
+    assert got["Junk Co"] == ("owner@junk-co.com", "scored") and got["Only Junk"] == (None, "no_email")

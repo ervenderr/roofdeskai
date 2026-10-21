@@ -119,3 +119,11 @@ def test_call_endpoints():
     assert client.post(f"/admin/prospects/{pid}/call", json={"outcome": "callback", "note": "later"}, headers=H).json()["status"] == "no_email"
     assert client.post(f"/admin/prospects/{pid}/call", json={"outcome": "nope"}, headers=H).status_code == 422
     assert client.post("/admin/prospects/999999/call", json={"outcome": "callback"}, headers=H).status_code == 404
+
+
+def test_call_list_talking_points_follow_the_campaign_locale():
+    with engine.begin() as c:
+        cid = c.execute(text("INSERT INTO campaigns (name, locale) VALUES ('call-test', 'en-US') RETURNING id")).scalar_one()
+    add(cid, "Us Roofing")
+    r = outreach.call_list(cid)[0]
+    assert "enquir" not in r["opener"] and "inquir" in r["opener"]

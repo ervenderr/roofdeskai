@@ -8,6 +8,9 @@ from sqlalchemy import text
 from .db import engine
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+ASSET_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "svg", "webp", "ico", "css", "js", "map", "woff", "woff2", "ttf", "eot", "pdf"}
+JUNK_DOMAINS = {"example.com", "domain.com", "email.com", "yourdomain.com", "yoursite.com", "mysite.com", "test.com", "sentry.io",
+                "wixpress.com"}
 PAIN_RE = re.compile(
     r"(nobody|no ?one|never)\s+(answer|pick|call|return|got back|respond)|didn'?t\s+(answer|pick up|call back|return|respond)|"
     r"(hard|impossible|difficult) to (reach|get (a hold|hold|through))|goes to voicemail|unreturned|no (response|reply)|"
@@ -38,6 +41,17 @@ def _text_of(v) -> str:
     return _clean(", ".join(map(str, v)) if isinstance(v, (list, tuple)) else str(v)).strip()
 
 
+def usable_email(e: str) -> bool:
+    """Scrapers often pull strings that merely look like emails: image names ('logo@2x.png'), placeholders, error-tracker
+    addresses and HTML-escaped fragments. Only addresses that could plausibly be a business inbox pass."""
+    e = e.strip().lower()
+    if not EMAIL_RE.match(e):
+        return False
+    local, domain = e.rsplit("@", 1)
+    return not (domain.rsplit(".", 1)[-1] in ASSET_EXTENSIONS or domain in JUNK_DOMAINS
+                or domain.endswith((".sentry.io", ".wixpress.com")) or local.startswith("u00") or "%" in local)
+
+
 def normalize(row: dict) -> dict | None:
     """Map one scraper row to our columns. Shapes the scraper may vary (hours, reviews, address) are read
     defensively: anything unrecognised is dropped, never an exception. shortcut: field shapes inferred from the
@@ -52,7 +66,7 @@ def normalize(row: dict) -> dict | None:
     city = (ca.get("city") or "").strip()[:100] or None if isinstance(ca, dict) else None
     emails = row.get("emails") or row.get("email") or []
     emails = [emails] if isinstance(emails, str) else emails
-    email = next((e.strip().lower() for e in emails if isinstance(e, str) and EMAIL_RE.match(e.strip())), None)
+    email = next((e.strip().lower() for e in emails if isinstance(e, str) and usable_email(e)), None)
     hours = row.get("open_hours")
     hours = {str(d): _text_of(v) for d, v in hours.items()} if isinstance(hours, dict) else None
     reviews = []

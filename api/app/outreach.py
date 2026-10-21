@@ -38,6 +38,13 @@ class ReplyLabel(BaseModel):
 
 # --- copy -----------------------------------------------------------------------------------------
 
+def localize(text_: str, locale: str) -> str:
+    """US campaigns say 'inquiry'; the default copy uses 'enquiry'. Case is preserved."""
+    if locale != "en-US":
+        return text_
+    return re.sub(r"\b([Ee])nquir(y|ies)\b", lambda m: ("I" if m.group(1) == "E" else "i") + "nquir" + m.group(2), text_)
+
+
 def facts_for(p: dict) -> dict:
     city = p.get("city") or ((p.get("address") or "").split(",")[-1].strip() if "," in (p.get("address") or "") else None)
     f = {"name": p["name"], "category": p.get("category") or "local business", "city": city,
@@ -67,14 +74,14 @@ def check_draft(d: Draft, facts: dict) -> list[str]:
     return issues
 
 
-def template_draft(facts: dict) -> Draft:
+def template_draft(facts: dict, locale: str = "en-PH") -> Draft:
     kind = facts["category"].lower()
     where = f" in {facts['city']}" if facts.get("city") else ""
     return Draft(
         subject=f"A quick idea for {facts['name']}"[:70],
-        body=(f"Hi {facts['name']} team,\n\nI came across {facts['name']}, a {kind}{where}. Many {kind} businesses lose "
-              f"enquiries that arrive when nobody is free to reply. We built {settings.offer_summary}.\n\n"
-              "Would it be worth a quick look at how it could work for you?"))
+        body=localize(f"Hi {facts['name']} team,\n\nI came across {facts['name']}, a {kind}{where}. Many {kind} businesses lose "
+                      f"enquiries that arrive when nobody is free to reply. We built {settings.offer_summary}.\n\n"
+                      "Would it be worth a quick look at how it could work for you?", locale))
 
 
 SIGNOFF_RE = re.compile(r"\n+\s*(best regards|kind regards|regards|sincerely|thanks|thank you|cheers|warm regards)\b.*$", re.I | re.S)
@@ -98,11 +105,11 @@ def _parse_json(raw: str) -> dict:
     return json.loads(raw[a:b + 1])
 
 
-def draft_copy(p: dict) -> tuple[Draft, str]:
+def draft_copy(p: dict, locale: str = "en-PH") -> tuple[Draft, str]:
     """LLM draft, one retry with the issues named, then the fixed template. Returns (draft, 'llm' | 'template')."""
     facts = facts_for(p)
     version, tpl = llm.load_prompt(COPY_PROMPT)
-    system = (tpl.replace("<<sender>>", settings.sender_name).replace("<<offer>>", settings.offer_summary)
+    system = (tpl.replace("<<sender>>", settings.sender_name).replace("<<offer>>", localize(settings.offer_summary, locale))
               .replace("<<facts>>", json.dumps(facts)))
     messages = [{"role": "system", "content": system}, {"role": "user", "content": "Write the email."}]
     for _ in range(2):
@@ -113,7 +120,7 @@ def draft_copy(p: dict) -> tuple[Draft, str]:
             break
         _log_llm(out, version, p["id"])
         try:
-            d = Draft(subject=subject_for(facts), body=parse_body(out["content"]))
+            d = Draft(subject=subject_for(facts), body=localize(parse_body(out["content"]), locale))
             issues = check_draft(d, facts)
         except ValueError as e:
             d, issues = None, [str(e).splitlines()[0][:120]]
@@ -122,17 +129,17 @@ def draft_copy(p: dict) -> tuple[Draft, str]:
         log.warning("prospect %s: draft rejected (%s)", p["id"], "; ".join(issues))
         messages += [{"role": "assistant", "content": out["content"]},
                      {"role": "user", "content": f"Rejected: {'; '.join(issues)}. Fix it and reply with ONLY the email body."}]
-    return template_draft(facts), "template"
+    return template_draft(facts, locale), "template"
 
 
-def followup_copy(step: int, name: str, first_subject: str) -> Draft:
+def followup_copy(step: int, name: str, first_subject: str, locale: str = "en-PH") -> Draft:
     if step == 2:
-        return Draft(subject=f"Re: {first_subject}"[:70], body=(
+        return Draft(subject=f"Re: {first_subject}"[:70], body=localize(
             f"Hi {name} team,\n\nJust floating my earlier note back to the top in case it got buried. "
-            "Happy to show how it works in a few minutes if that would be useful.\n\nIf not, no worries at all."))
-    return Draft(subject=f"Last note: {first_subject}"[:70], body=(
+            "Happy to show how it works in a few minutes if that would be useful.\n\nIf not, no worries at all.", locale))
+    return Draft(subject=f"Last note: {first_subject}"[:70], body=localize(
         f"Hi {name} team,\n\nI'll stop here so I don't clutter your inbox. If handling customer enquiries ever "
-        "becomes a headache, just reply and I'll send the details."))
+        "becomes a headache, just reply and I'll send the details.", locale))
 
 
 def with_footer(body: str) -> str:
@@ -160,14 +167,14 @@ def draft_pending(limit: int = 5, campaign_id: int | None = None) -> dict:
     """Draft the first email for scored prospects in active campaigns. Campaign auto_approve skips the queue."""
     with engine.connect() as c:
         rows = [dict(r) for r in c.execute(text(
-            """SELECT p.*, c.auto_approve FROM prospects p JOIN campaigns c ON c.id = p.campaign_id
+            """SELECT p.*, c.auto_approve, c.locale AS campaign_locale FROM prospects p JOIN campaigns c ON c.id = p.campaign_id
                WHERE p.status = 'scored' AND p.email IS NOT NULL AND c.active
                  AND (CAST(:cid AS INT) IS NULL OR p.campaign_id = :cid)
                  AND NOT EXISTS (SELECT 1 FROM suppressions s WHERE s.email = p.email)
                ORDER BY p.score DESC, p.id LIMIT :n"""), {"n": limit, "cid": campaign_id}).mappings()]
     drafted = approved = 0
     for p in rows:
-        d, source = draft_copy(p)
+        d, source = draft_copy(p, p["campaign_locale"])
         with engine.begin() as c:
             c.execute(text("""INSERT INTO outreach_messages (prospect_id, step, subject, body, source, status, scheduled_for)
                               VALUES (:p, 1, :s, :b, :src, :st, :when) ON CONFLICT (prospect_id, step) DO NOTHING"""),
@@ -218,7 +225,7 @@ def schedule_followups(now: datetime | None = None, campaign_id: int | None = No
     made = 0
     with engine.connect() as c:
         rows = [dict(r) for r in c.execute(text(
-            """SELECT p.id, p.name, p.email, cm.auto_approve,
+            """SELECT p.id, p.name, p.email, cm.auto_approve, cm.locale,
                       (SELECT max(step) FROM outreach_messages WHERE prospect_id = p.id) AS last_step,
                       (SELECT subject FROM outreach_messages WHERE prospect_id = p.id AND step = 1) AS first_subject,
                       (SELECT max(sent_at) FROM outreach_messages WHERE prospect_id = p.id AND status = 'sent') AS last_sent
@@ -234,7 +241,7 @@ def schedule_followups(now: datetime | None = None, campaign_id: int | None = No
             if c.execute(text("SELECT 1 FROM outreach_messages WHERE prospect_id=:p AND status IN ('drafted','approved')"),
                          {"p": p["id"]}).first():
                 continue  # the previous step is still waiting
-            d = followup_copy(step, p["name"], p["first_subject"])
+            d = followup_copy(step, p["name"], p["first_subject"], p["locale"])
             c.execute(text("""INSERT INTO outreach_messages (prospect_id, step, subject, body, source, status, scheduled_for)
                               VALUES (:p, :st, :s, :b, 'template', :status, :when) ON CONFLICT (prospect_id, step) DO NOTHING"""),
                       {"p": p["id"], "st": step, "s": d.subject, "b": d.body,
@@ -244,9 +251,10 @@ def schedule_followups(now: datetime | None = None, campaign_id: int | None = No
     return {"followups_drafted": made}
 
 
-def in_send_window(now: datetime) -> bool:
+def in_send_window(now: datetime, tz: str | None = None) -> bool:
+    """Weekday business hours in the campaign's own timezone (a US campaign must not send at Manila's 9 to 5)."""
     start, end = (int(x) for x in settings.outreach_send_hours.split("-"))
-    local = now.astimezone(ZoneInfo(settings.outreach_timezone))
+    local = now.astimezone(ZoneInfo(tz or settings.outreach_timezone))
     return local.weekday() < 5 and start <= local.hour < end
 
 
@@ -254,24 +262,26 @@ def send_due(now: datetime | None = None, campaign_id: int | None = None) -> dic
     """Send approved messages that are due. Every guard here is code: window, daily cap, suppression, status."""
     now = now or datetime.now(timezone.utc)
     result = {"sent": 0, "failed": 0, "skipped": {}, "window_open": True}
+    day_starts: dict[str, datetime] = {}
 
     def skip(reason: str) -> None:
         result["skipped"][reason] = result["skipped"].get(reason, 0) + 1
 
     if not settings.sender_address:
         raise RuntimeError("SENDER_ADDRESS is not set; refusing to send mail without a postal address in the footer")
-    if settings.outreach_enforce_window and not in_send_window(now):
-        result["window_open"] = False
-        return result
-    day_start = now.astimezone(ZoneInfo(settings.outreach_timezone)).replace(hour=0, minute=0, second=0, microsecond=0)
     with engine.connect() as c:
         due = [dict(r) for r in c.execute(text(
-            """SELECT m.id, m.prospect_id, m.step, m.subject, m.body, p.email, p.status AS pstatus, p.campaign_id, cm.daily_cap
+            """SELECT m.id, m.prospect_id, m.step, m.subject, m.body, p.email, p.status AS pstatus, p.campaign_id, cm.daily_cap, cm.timezone
                FROM outreach_messages m JOIN prospects p ON p.id = m.prospect_id JOIN campaigns cm ON cm.id = p.campaign_id
                WHERE m.status = 'approved' AND COALESCE(m.scheduled_for, now()) <= :now AND cm.active
                  AND (CAST(:cid AS INT) IS NULL OR p.campaign_id = :cid)
                ORDER BY m.scheduled_for NULLS FIRST, m.id"""), {"now": now, "cid": campaign_id}).mappings()]
     for m in due:
+        if settings.outreach_enforce_window and not in_send_window(now, m["timezone"]):
+            skip("outside_send_window")
+            result["window_open"] = False
+            continue
+        day_start = day_starts.setdefault(m["timezone"], now.astimezone(ZoneInfo(m["timezone"])).replace(hour=0, minute=0, second=0, microsecond=0))
         with engine.begin() as c:
             if c.execute(text("SELECT 1 FROM suppressions WHERE email=:e"), {"e": m["email"]}).first():
                 c.execute(text("UPDATE outreach_messages SET status='cancelled' WHERE id=:i"), {"i": m["id"]})
@@ -391,17 +401,19 @@ def call_list(campaign_id: int | None = None, scope: str = "no_email", limit: in
     statuses = ("no_email",) if scope == "no_email" else ("no_email", "scored", "drafted", "approved", "sent", "replied")
     with engine.connect() as c:
         rows = [dict(r) for r in c.execute(text(
-            """SELECT id, campaign_id, name, category, city, address, phone, email, website, maps_url, rating, review_count,
-                      pain_mentions, hours_json, score, status, call_outcome, call_note, called_at
+            """SELECT prospects.id, campaign_id, name, category, city, address, phone, email, website, maps_url, rating,
+                      review_count, pain_mentions, hours_json, score, status, call_outcome, call_note, called_at,
+                      (SELECT locale FROM campaigns WHERE campaigns.id = campaign_id) AS locale
                FROM prospects
                WHERE COALESCE(phone, '') <> '' AND status = ANY(:st)
                  AND (call_outcome IS NULL OR call_outcome IN ('no_answer', 'callback'))
                  AND (CAST(:cid AS INT) IS NULL OR campaign_id = :cid)
-               ORDER BY score DESC, id LIMIT :n"""), {"st": list(statuses), "cid": campaign_id, "n": limit}).mappings()]
+               ORDER BY score DESC, prospects.id LIMIT :n"""), {"st": list(statuses), "cid": campaign_id, "n": limit}).mappings()]
     for r in rows:
-        r["talking_points"] = prospects.talking_points(r)
-        r["opener"] = prospects.opener(r)
+        r["talking_points"] = [localize(t, r["locale"]) for t in prospects.talking_points(r)]
+        r["opener"] = localize(prospects.opener(r), r["locale"])
         r.pop("hours_json")
+        r.pop("locale")
     return rows
 
 

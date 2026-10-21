@@ -127,9 +127,12 @@ curl -X POST localhost:5679/webhook/outreach-scrape -H 'content-type: applicatio
 
 Google's terms restrict scraping, so the API caps queries at 30 per day and only small batches are intended. Real scraped businesses stay out of the public demo: the static snapshot exports only campaigns flagged `public_demo`.
 
+**Markets:** each campaign has its own timezone and spelling (`timezone`, `locale`), so a US campaign sends in US business hours and says "inquiries". Create one with `{"name": "...", "timezone": "America/Chicago", "locale": "en-US"}`.
+
 **What a real run showed** (one search, 20 dental clinics in one city; details in `docs/failure-analysis.md`):
 - Only **5 of 20 had an email even with website crawling on, and 4 of those 5 were personal inboxes** (gmail and similar). Email outreach reaches few businesses in this niche. Phone and Facebook are where they live, and cold messages there are restricted.
-- **0 of 20 had a "calls go unanswered" review pattern.** The scraper returns about 5 reviews per business (mostly five-star), and its extended-reviews option returned nothing extra here. Opening hours and web presence are the more reliable signals, and review complaints that did appear were about scheduling mix-ups and long waits.
+- **The market changes the picture.** The same kind of search for 20 roofing contractors in Austin, TX found **9 business-domain emails (45%)**, versus 5 of 20 in Davao (and only one business domain there). All 20 had websites and were busy (74 to 1,500 reviews). Email outreach fits the US much better.
+- **0 of 20 had a "calls go unanswered" review pattern in Davao, and only 1 of 20 in Austin.** The scraper returns about 5 reviews per business (mostly five-star), and its extended-reviews option returned nothing extra here. Opening hours and web presence are the more reliable signals, and review complaints that did appear were about scheduling mix-ups and long waits.
 
 ### Phone call list (for the prospects email cannot reach)
 
@@ -141,7 +144,7 @@ Most scraped businesses have no usable email, so the same prospect table drives 
 - **CSV:** `curl -H 'X-Admin-Key: dev-admin-key' localhost:8000/admin/call-list.csv -o call-list.csv`
 - **n8n:** on weekdays at 9:00 the Outreach flow emails you the top 5 to phone, with their talking points.
 
-**Not built yet (Phase 2):** real sending (Resend), real inbound email (replies arrive by webhook today), and handing an interested prospect to a booking agent configured for sales calls (the booking agent is still the roofing one). The scraper itself has not been run; the importer was written against its documented field names and checked on a synthetic file, so check it on a real export.
+**Not built yet (Phase 2):** real sending and real inbound email (replies arrive by webhook today). Not through Resend: its acceptable-use policy prohibits cold outreach and scraped contact data, so cold email needs your own mailbox over SMTP/IMAP (see `docs/deploy.md`). Also not built: handing an interested prospect to a booking agent configured for sales calls (the booking agent is still the roofing one). The scraper itself has not been run; the importer was written against its documented field names and checked on a synthetic file, so check it on a real export.
 
 ## How I check the output
 
