@@ -27,6 +27,8 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
       SENDER_ADDRESS: ${SENDER_ADDRESS:-123 Example Street, Davao City (dev)}
+      CORS_ORIGINS: ${CORS_ORIGINS:-[]}  # JSON list, e.g. ["https://leadpilot.pages.dev"]
+      OWNER_EMAIL: ${OWNER_EMAIL:-}
       MAIL_TRANSPORT: ${MAIL_TRANSPORT:-mailpit}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}

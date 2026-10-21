@@ -2,11 +2,13 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from .admin import router as admin_router
 from .outreach_routes import router as outreach_router
+from .pilot import router as pilot_router
 from .agent import conversation_token, handle_turn, token_matches
 from .config import settings
 from .db import engine
@@ -28,6 +30,9 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="LeadPilot", lifespan=lifespan)
 app.include_router(admin_router)
 app.include_router(outreach_router)
+app.include_router(pilot_router)
+if settings.cors_origins:
+    app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["POST"], allow_headers=["content-type"])
 
 
 class ChatIn(BaseModel):
