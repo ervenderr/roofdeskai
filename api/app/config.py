@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     prompts_dir: Path = Path("/srv/prompts")
     site_dir: Path = Path("/srv/site")
+    db_dir: Path = Path("/srv/db")
     max_message_chars: int = 2000
     chat_rate_per_min: int = 20  # per client IP, in-process (single instance)
     llm_timeout_s: float = 60

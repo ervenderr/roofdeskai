@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from .admin import router as admin_router
+from .bootstrap import bootstrap_schema
 from .outreach_routes import router as outreach_router
 from .pilot import router as pilot_router
 from .agent import conversation_token, handle_turn, token_matches
@@ -21,6 +22,7 @@ log = logging.getLogger("leadpilot")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    bootstrap_schema()  # a failure here should stop the start: nothing works without a schema
     try:
         seed_faq()
     except Exception:

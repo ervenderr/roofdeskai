@@ -9,3 +9,8 @@ def test_health():
 
 def test_chat_rejects_empty():
     assert TestClient(app).post("/chat", json={"message": ""}).status_code == 422
+
+
+def test_bootstrap_is_a_noop_on_an_initialised_database():
+    from . import bootstrap
+    assert bootstrap.bootstrap_schema() is False  # tables already exist: nothing is run
