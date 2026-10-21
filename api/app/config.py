@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     nvidia_api_key: str = ""
     openrouter_api_key: str = ""
+    gemini_api_key: str = ""
     prompts_dir: Path = Path("/srv/prompts")
     site_dir: Path = Path("/srv/site")
     db_dir: Path = Path("/srv/db")

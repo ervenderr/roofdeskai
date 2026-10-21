@@ -24,7 +24,8 @@ PROVIDERS = [
     Provider("local", settings.local_llm_url, "ollama" if settings.local_llm_url else "", settings.local_llm_model),  # empty LOCAL_LLM_URL turns it off (hosted deploy)
     Provider("groq", "https://api.groq.com/openai/v1", settings.groq_api_key, "openai/gpt-oss-20b"),
     Provider("nvidia", "https://integrate.api.nvidia.com/v1", settings.nvidia_api_key, "openai/gpt-oss-20b"),
-    Provider("openrouter", "https://openrouter.ai/api/v1", settings.openrouter_api_key,
+    Provider("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/", settings.gemini_api_key, "gemini-2.5-flash"),
+    Provider("openrouter","https://openrouter.ai/api/v1", settings.openrouter_api_key,
              "google/gemma-4-31b-it:free"),
     Provider("ovh", "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1", "anonymous", "gpt-oss-20b"),
 ]
