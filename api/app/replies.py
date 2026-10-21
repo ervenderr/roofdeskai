@@ -3,6 +3,7 @@ Matching is by sender address (handle_event ignores addresses that are not prosp
 import email
 import imaplib
 import logging
+import re
 from email import policy
 from email.message import Message
 from email.utils import parseaddr
@@ -13,9 +14,15 @@ from .config import settings
 log = logging.getLogger("leadpilot.replies")
 
 
+QUOTE_START = re.compile(r"^(On .{5,200}wrote:|-{2,} ?Original Message|From: .+)$|^>", re.M | re.S)
+
+
 def _text(msg: Message) -> str:
+    """Only what the prospect wrote: our own quoted footer ('reply unsubscribe') must never be classified."""
     part = msg.get_body(preferencelist=("plain",))
-    return part.get_content() if part else ""
+    body = part.get_content() if part else ""
+    m = QUOTE_START.search(body)
+    return (body[:m.start()] if m else body).strip()
 
 
 def parse(raw: bytes) -> tuple[str, str, str] | None:

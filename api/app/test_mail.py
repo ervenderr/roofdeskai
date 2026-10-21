@@ -11,7 +11,7 @@ BOUNCE = (b"From: MAILER-DAEMON@x.com\nTo: hello@leadpilot.example\nSubject: Und
 
 def test_parse_reply_and_bounce(monkeypatch):
     monkeypatch.setattr(settings, "sender_email", "hello@leadpilot.example")
-    assert replies.parse(b"From: Bob <bob@biz.test>\nSubject: Re: hi\n\nSounds good\n") == ("bob@biz.test", "reply", "Sounds good\n")
+    assert replies.parse(b"From: Bob <bob@biz.test>\nSubject: Re: hi\n\nSounds good\n") == ("bob@biz.test", "reply", "Sounds good")
     assert replies.parse(BOUNCE) == ("gone@biz.test", "bounce", "")
     assert replies.parse(b"From: hello@leadpilot.example\n\nself\n") is None
 
@@ -41,3 +41,11 @@ def test_smtp_failure_is_mail_error(monkeypatch):
     monkeypatch.setattr(settings, "mail_transport", "smtp")
     with pytest.raises(mailer.MailError):
         mailer.send("a@b.co", "Hi", "Body")
+
+
+def test_quoted_footer_is_not_part_of_the_reply(monkeypatch):
+    monkeypatch.setattr(settings, "sender_email", "hello@leadpilot.example")
+    raw = (b"From: Bob <bob@biz.test>\nSubject: Re: hi\n\nYes interested\n\n"
+           b"On Wed, Oct 21, 2026 at 12:49 PM The LeadPilot team <hello@leadpilot.example> wrote:\n"
+           b"> Hi there\n> Not interested? Reply \"unsubscribe\" and I won't contact you again.\n")
+    assert replies.parse(raw) == ("bob@biz.test", "reply", "Yes interested")
