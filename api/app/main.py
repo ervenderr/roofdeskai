@@ -30,7 +30,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="LeadPilot", lifespan=lifespan)
+app = FastAPI(title="RoofDesk AI", lifespan=lifespan)
 app.include_router(admin_router)
 app.include_router(outreach_router)
 app.include_router(pilot_router)

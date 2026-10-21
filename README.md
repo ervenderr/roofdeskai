@@ -1,4 +1,4 @@
-# LeadPilot
+# RoofDesk AI
 
 An AI agent a small business could run on. It qualifies inbound leads by chat, checks a calendar, books roof inspections, updates a CRM, and hands off to a human when it should. An automated eval suite of 80 scenarios tests it, with published pass rates, latency and cost, and a write-up of what failed and how I fixed it.
 

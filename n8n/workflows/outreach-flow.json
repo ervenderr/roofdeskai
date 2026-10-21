@@ -148,7 +148,7 @@
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: $json.failed ? 'Scrape problem: ' + $json.failed + ' failed' : 'Scrape finished: ' + $json.prospects_imported + ' new prospects', Text: $json.prospects_imported + ' prospects imported (' + $json.no_email + ' without an email, ' + $json.duplicates + ' duplicates), ' + $json.failed + ' scrape(s) failed. New prospects with an email are drafted automatically and wait for your approval.'}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'RoofDesk AI outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: $json.failed ? 'Scrape problem: ' + $json.failed + ' failed' : 'Scrape finished: ' + $json.prospects_imported + ' new prospects', Text: $json.prospects_imported + ' prospects imported (' + $json.no_email + ' without an email, ' + $json.duplicates + ' duplicates), ' + $json.failed + ' scrape(s) failed. New prospects with an email are drafted automatically and wait for your approval.'}) }}"
       },
       "position": [
         780,
@@ -308,7 +308,7 @@
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'Outreach: ' + $json.drafted + ' new drafts to review', Text: $json.awaiting_approval + ' draft(s) are waiting for your approval in the dashboard (Outreach page).'}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'RoofDesk AI outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'Outreach: ' + $json.drafted + ' new drafts to review', Text: $json.awaiting_approval + ' draft(s) are waiting for your approval in the dashboard (Outreach page).'}) }}"
       },
       "position": [
         780,
@@ -504,7 +504,7 @@
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: $json.name + ' replied (' + $json.label + ')', Text: 'Prospect: ' + $json.name + '\\nClassified as: ' + $json.label + '\\nStatus: ' + $json.status + '\\nReply to them from your own inbox.'}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'RoofDesk AI outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: $json.name + ' replied (' + $json.label + ')', Text: 'Prospect: ' + $json.name + '\\nClassified as: ' + $json.label + '\\nStatus: ' + $json.status + '\\nReply to them from your own inbox.'}) }}"
       },
       "position": [
         1040,
@@ -592,7 +592,7 @@
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'Call sheet: ' + $json.count + ' businesses to phone today', Text: $json.text}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'RoofDesk AI outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'Call sheet: ' + $json.count + ' businesses to phone today', Text: $json.text}) }}"
       },
       "position": [
         780,

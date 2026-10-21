@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""  # Gmail app password
     imap_host: str = "imap.gmail.com"
-    sender_name: str = "The LeadPilot team"
-    sender_email: str = "hello@leadpilot.example"
+    sender_name: str = "The RoofDesk AI team"
+    sender_email: str = "hello@roofdeskai.example"
     sender_address: str = ""  # physical address for the email footer (required to send); set SENDER_ADDRESS
     offer_summary: str = "an AI assistant that answers customer enquiries instantly, qualifies them and books appointments"
     # Fixed, true claims only: added by code to the first email so the model cannot invent features.

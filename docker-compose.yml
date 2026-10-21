@@ -27,13 +27,13 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
       SENDER_ADDRESS: ${SENDER_ADDRESS:-123 Example Street, Davao City (dev)}
-      CORS_ORIGINS: ${CORS_ORIGINS:-[]}  # JSON list, e.g. ["https://leadpilot.pages.dev"]
+      CORS_ORIGINS: ${CORS_ORIGINS:-[]}  # JSON list, e.g. ["https://roofdeskai.com"]
       OWNER_EMAIL: ${OWNER_EMAIL:-}
       MAIL_TRANSPORT: ${MAIL_TRANSPORT:-mailpit}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SENDER_EMAIL: ${SENDER_EMAIL:-hello@leadpilot.example}
-      SENDER_NAME: ${SENDER_NAME:-The LeadPilot team}
+      SENDER_EMAIL: ${SENDER_EMAIL:-hello@roofdeskai.example}
+      SENDER_NAME: ${SENDER_NAME:-The RoofDesk AI team}
       OUTREACH_ENFORCE_WINDOW: ${OUTREACH_ENFORCE_WINDOW:-true}
       ESCALATION_WEBHOOK_URL: ${ESCALATION_WEBHOOK_URL:-http://n8n:5678/webhook/escalation-alert}
     volumes:

@@ -69,7 +69,7 @@
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'LeadPilot daily report', Text: $json.text}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: 'owner@summitroofing.test'}], Subject: 'RoofDesk AI daily report', Text: $json.text}) }}"
       },
       "position": [
         660,

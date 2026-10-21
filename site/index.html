@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LeadPilot: every enquiry answered while you're on the roof</title>
-<meta name="description" content="LeadPilot replies to customer enquiries in seconds, asks the right questions and books the inspection. Try it live.">
+<title>RoofDesk AI: every enquiry answered while you're on the roof</title>
+<meta name="description" content="RoofDesk AI replies to customer enquiries in seconds, asks the right questions and books the inspection. Try it live.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,7 +81,7 @@
 </head>
 <body>
 <header><div class="wrap">
-  <a class="brand" href="#"><img src="logo.svg" alt="" width="36" height="36">LeadPilot</a>
+  <a class="brand" href="#"><img src="logo.svg" alt="" width="36" height="36">RoofDesk AI</a>
   <nav><a href="#demo">Try the demo</a> <a class="cta" href="#pilot">Get a free pilot</a></nav>
 </div></header>
 
@@ -89,7 +89,7 @@
 <section class="wrap hero" id="demo">
   <div>
     <h1>Every enquiry answered while you're on the roof.</h1>
-    <p class="sub">LeadPilot replies to customer messages in seconds, asks what you need to know, and books the inspection. Try it yourself on the right, as a homeowner with a leak.</p>
+    <p class="sub">RoofDesk AI replies to customer messages in seconds, asks what you need to know, and books the inspection. Try it yourself on the right, as a homeowner with a leak.</p>
     <a class="btn" href="#pilot">Get a free pilot</a>
     <div class="ticket">
       <h2>What it does</h2>
@@ -117,7 +117,7 @@
   <h2>From first message to booked inspection</h2>
   <ol>
     <li><b>A customer messages you</b><span>On your site, any hour of the day.</span></li>
-    <li><b>LeadPilot replies</b><span>Instantly, using your services and hours.</span></li>
+    <li><b>RoofDesk AI replies</b><span>Instantly, using your services and hours.</span></li>
     <li><b>It qualifies and books</b><span>Owner or tenant, what's wrong, when, then a slot.</span></li>
     <li><b>You get the lead</b><span>Details and the booking, ready when you're off the ladder.</span></li>
   </ol>
@@ -126,7 +126,7 @@
 <section class="pilot" id="pilot"><div class="wrap">
   <div>
     <h2>Try it on your own enquiries, free.</h2>
-    <p>Tell us about your business. We'll set LeadPilot up with your services and hours and email you within one business day.</p>
+    <p>Tell us about your business. We'll set RoofDesk AI up with your services and hours and email you within one business day.</p>
   </div>
   <form id="pilot-form">
     <input name="name" placeholder="Your name" maxlength="100" required aria-label="Your name">
@@ -145,11 +145,11 @@
 
 <script src="config.js"></script>
 <script>
-const API = window.LEADPILOT.api;
-document.getElementById("addr").textContent = "LeadPilot, " + window.LEADPILOT.address;
+const API = window.ROOFDESK.api;
+document.getElementById("addr").textContent = "RoofDesk AI, " + window.ROOFDESK.address;
 const contact = document.getElementById("contact");
-contact.textContent = window.LEADPILOT.contact;
-contact.href = "mailto:" + window.LEADPILOT.contact;
+contact.textContent = window.ROOFDESK.contact;
+contact.href = "mailto:" + window.ROOFDESK.contact;
 
 const log = document.getElementById("log");
 let convo = null;  // {id, token}, kept in memory only

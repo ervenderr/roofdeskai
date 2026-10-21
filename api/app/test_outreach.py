@@ -405,7 +405,7 @@ def test_endpoints_require_the_admin_key_and_work(monkeypatch):
 
 
 def test_parse_body_strips_signoff_subject_and_fences():
-    raw = "```\nSubject: Hello\n\nHi Acme team,\n\nBody here?\n\nBest regards,\nThe LeadPilot team\n```"
+    raw = "```\nSubject: Hello\n\nHi Acme team,\n\nBody here?\n\nBest regards,\nThe RoofDesk AI team\n```"
     assert outreach.parse_body(raw) == "Hi Acme team,\n\nBody here?"
 
 
