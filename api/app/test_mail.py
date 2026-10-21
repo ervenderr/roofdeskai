@@ -84,6 +84,7 @@ def test_poll_returns_matched_replies_and_emails_the_owner(monkeypatch):
     out = replies.poll()
     assert (out["seen"], out["matched"], out["ignored"]) == (2, 1, 1) and out["replies"][0]["needs_human"]
     assert len(sent) == 1 and sent[0][0] == "owner@example.test" and "Biz Roofing" in sent[0][1] and "interested" in sent[0][1]
+    assert "Suggested reply" in sent[0][2] and f"${settings.monthly_price_usd}/month" in sent[0][2] and "/showcase" in sent[0][2]
 
 
 def test_poll_does_not_email_for_replies_that_need_no_human_and_survives_mail_failure(monkeypatch):

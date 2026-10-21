@@ -42,6 +42,16 @@ def parse(raw: bytes) -> tuple[str, str, str] | None:
     return sender, "reply", _text(msg)
 
 
+def interested_draft(name: str) -> str:
+    """Ready-to-paste answer to a yes: the demo, the video, the price and one next step."""
+    return (f"Hi {name} team,\n\nThanks for the reply. Here is the assistant working on a sample roofing company: "
+            f"{settings.demo_url}\nA 45-second walkthrough: {settings.demo_url}/showcase\n\n"
+            f"The pilot is free for {settings.pilot_days} days. After that it is ${settings.monthly_price_usd}/month with "
+            "no setup fee and no contract; cancel any time.\n\n"
+            "If you want it on your own site, reply with your service area and the phone number customers should be sent to, "
+            "and I will set it up.\n\nThe RoofDesk AI team")
+
+
 def notify_owner(outcome: dict) -> None:
     """Email the owner about a reply that needs a person. A failed alert never loses the reply."""
     if not settings.owner_email:
@@ -49,6 +59,8 @@ def notify_owner(outcome: dict) -> None:
     subject = f"{outcome.get('name', 'A prospect')} replied ({outcome.get('label')})".replace("\n", " ")[:100]
     body = (f"Prospect: {outcome.get('name')}\nClassified as: {outcome.get('label')}\nStatus: {outcome.get('status')}\n\n"
             "Reply to them from your outreach mailbox.")
+    if outcome.get("label") == "interested":
+        body += "\n\nSuggested reply:\n\n" + interested_draft(outcome.get("name", "there"))
     try:
         mailer.send(settings.owner_email, subject, body)
     except mailer.MailError:

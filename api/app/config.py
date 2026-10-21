@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     escalation_webhook_url: str = ""
     public_url: str = "http://localhost:8000"
     cors_origins: list[str] = []  # sites allowed to call /chat and /pilot-requests from a browser (the demo page)
+    demo_url: str = "https://roofdeskai.com"  # sent to prospects who say yes (video lives at /showcase)
+    pilot_days: int = 14
+    monthly_price_usd: int = 199  # after the free pilot; no setup fee
     owner_email: str = ""  # gets an email when someone asks for a pilot; empty disables it
     # --- scraping (gosom/google-maps-scraper web API) ---
     scraper_url: str = "http://scraper:8080"
