@@ -1,9 +1,11 @@
 """The only actions the agent can take. Called by code, never directly by the model."""
 import json
 import logging
+import re
 import time
 
 import httpx
+import openai
 from sqlalchemy import text
 
 from . import llm
@@ -58,12 +60,25 @@ def update_lead(lead_id: int, fields: dict) -> dict:
 
 
 def lookup_faq(query: str, k: int = 3) -> dict:
+    try:
+        vector = vector_literal(llm.embed(query))
+    except openai.OpenAIError:  # no Ollama (hosted deploy): fall back to keyword search
+        return {"chunks": _faq_keywords(query, k)}
     with engine.connect() as c:
-        rows = c.execute(
-            text("SELECT text FROM faq_chunks ORDER BY embedding <=> CAST(:v AS vector) LIMIT :k"),
-            {"v": vector_literal(llm.embed(query)), "k": k},
-        ).all()
+        rows = c.execute(text("SELECT text FROM faq_chunks ORDER BY embedding <=> CAST(:v AS vector) LIMIT :k"),
+                         {"v": vector, "k": k}).all()
     return {"chunks": [r.text for r in rows]}
+
+
+def _faq_keywords(query: str, k: int) -> list[str]:
+    terms = [w for w in re.findall(r"[a-z0-9]+", query.lower()) if len(w) > 2]  # alphanumerics only, so to_tsquery input is safe
+    if not terms:
+        return []
+    with engine.connect() as c:
+        rows = c.execute(text("SELECT text FROM faq_chunks WHERE to_tsvector('english', text) @@ to_tsquery('english', :q) "
+                              "ORDER BY ts_rank(to_tsvector('english', text), to_tsquery('english', :q)) DESC LIMIT :k"),
+                         {"q": " | ".join(terms), "k": k}).all()
+    return [r.text for r in rows]
 
 
 def escalate_to_human(conversation_id: int, reason: str) -> dict:

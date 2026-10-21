@@ -1,0 +1,9 @@
+.env
+.git
+dashboard
+n8n
+evals
+docs
+scripts
+**/__pycache__
+**/node_modules

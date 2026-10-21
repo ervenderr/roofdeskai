@@ -3,80 +3,146 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LeadPilot: never miss a customer enquiry</title>
-<meta name="description" content="An AI assistant that answers customer enquiries instantly, qualifies leads and books appointments. Try it live.">
+<title>LeadPilot: every enquiry answered while you're on the roof</title>
+<meta name="description" content="LeadPilot replies to customer enquiries in seconds, asks the right questions and books the inspection. Try it live.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
-  :root { --brand:#2563eb; --ink:#1f2937; --muted:#6b7280; --bg:#f3f4f6; --card:#fff; --line:#e5e7eb; }
+  :root {
+    --shingle:#16283A; --chalk:#1D5BD8; --concrete:#EDF0F2; --paper:#fff; --flashing:#5B6773; --caution:#F2790F;
+    --line:#D5DBE0; --r-phone:28px; --r-ctl:10px;
+  }
   * { box-sizing:border-box }
-  body { margin:0; font:16px/1.6 -apple-system,Segoe UI,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg) }
-  header { background:var(--brand); color:#fff; padding:14px 20px; font-weight:700; font-size:18px }
-  main { max-width:960px; margin:0 auto; padding:32px 16px 48px }
-  h1 { font-size:clamp(28px,5vw,40px); line-height:1.2; margin:0 0 12px }
-  .lead { font-size:18px; color:var(--muted); margin:0 0 28px; max-width:620px }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px }
-  @media (max-width:760px) { .grid { grid-template-columns:1fr } }
-  .card { background:var(--card); border-radius:10px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08) }
-  h2 { font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:0 0 12px }
-  ul { list-style:none; padding:0; margin:0 }
-  li { padding:6px 0 6px 26px; position:relative }
-  li::before { content:"\2713"; position:absolute; left:0; color:var(--brand); font-weight:700 }
-  #log { height:300px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:12px; background:#fafafa; display:flex; flex-direction:column; gap:8px }
-  .msg { max-width:85%; padding:8px 12px; border-radius:12px; white-space:pre-wrap; word-wrap:break-word }
-  .bot { background:#e5e7eb; align-self:flex-start } .me { background:var(--brand); color:#fff; align-self:flex-end }
-  .note { font-size:13px; color:var(--muted); margin:8px 0 0 }
-  form { display:flex; gap:8px; margin-top:10px }
-  input, textarea { font:inherit; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; width:100% }
-  button { font:inherit; font-weight:700; background:var(--brand); color:#fff; border:0; border-radius:8px; padding:10px 18px; cursor:pointer }
-  button:disabled { opacity:.6; cursor:default }
-  .stack { display:flex; flex-direction:column; gap:10px } .hp { position:absolute; left:-9999px }
-  #pilot-msg { min-height:1.4em; font-size:14px }
-  footer { text-align:center; color:var(--muted); font-size:13px; padding:0 16px 32px }
+  html { scroll-behavior:smooth }
+  body { margin:0; font:17px/1.55 "Bricolage Grotesque",system-ui,sans-serif; color:var(--shingle); background:var(--concrete) }
+  a { color:inherit }
+  :focus-visible { outline:3px solid var(--chalk); outline-offset:2px }
+  .wrap { max-width:1080px; margin:0 auto; padding:0 20px }
+
+  header .wrap { display:flex; align-items:center; justify-content:space-between; padding-block:18px }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:800; font-size:21px; text-decoration:none; letter-spacing:-.01em }
+  .brand img { width:36px; height:36px; display:block }
+  nav a { font-weight:600; text-decoration:none; padding:9px 16px; border-radius:var(--r-ctl) }
+  nav a.cta { background:var(--shingle); color:#fff }
+
+  .hero { display:grid; grid-template-columns:1.05fr .95fr; gap:48px; align-items:center; padding-block:36px 64px }
+  h1 { font-size:clamp(34px,5.4vw,60px); line-height:1.04; font-weight:800; letter-spacing:-.025em; margin:0 0 18px; max-width:13ch }
+  .sub { font-size:19px; color:var(--flashing); max-width:46ch; margin:0 0 28px }
+  .btn { display:inline-block; font:inherit; font-weight:600; background:var(--chalk); color:#fff; border:0; border-radius:var(--r-ctl); padding:13px 22px; cursor:pointer; text-decoration:none }
+  .btn:disabled { opacity:.6; cursor:default }
+
+  .ticket { margin-top:34px; background:var(--paper); padding:20px 22px 20px 26px; border-left:3px dashed var(--chalk); max-width:46ch }
+  .ticket h2 { font-size:18px; font-weight:800; margin:0 0 8px }
+  .ticket ul { list-style:none; margin:0; padding:0 }
+  .ticket li { padding:5px 0 5px 24px; position:relative }
+  .ticket li::before { content:""; position:absolute; left:2px; top:.8em; width:10px; height:6px; border-left:3px solid var(--chalk); border-bottom:3px solid var(--chalk); transform:rotate(-45deg) translateY(-50%) }
+
+  .phone { background:var(--shingle); border-radius:var(--r-phone); padding:12px; box-shadow:0 24px 48px -24px rgba(22,40,58,.55) }
+  .phone-head { display:flex; align-items:center; gap:10px; color:#fff; padding:6px 8px 12px }
+  .phone-head img { width:34px; height:34px }
+  .phone-head b { display:block; line-height:1.2 } .phone-head span { font-size:13px; opacity:.7 }
+  .ping { width:9px; height:9px; border-radius:50%; background:var(--caution); margin-left:auto }
+  #log { height:340px; overflow-y:auto; background:var(--concrete); border-radius:18px 18px 4px 4px; padding:14px; display:flex; flex-direction:column; gap:8px }
+  .msg { max-width:84%; padding:9px 13px; border-radius:16px; white-space:pre-wrap; overflow-wrap:anywhere }
+  .bot { background:var(--paper); align-self:flex-start; border-bottom-left-radius:4px }
+  .me { background:var(--chalk); color:#fff; align-self:flex-end; border-bottom-right-radius:4px }
+  .typing { display:inline-flex; gap:4px; padding:12px 14px } .typing i { width:7px; height:7px; border-radius:50%; background:var(--flashing); animation:blink 1s infinite } .typing i:nth-child(2){animation-delay:.15s} .typing i:nth-child(3){animation-delay:.3s}
+  @keyframes blink { 0%,60%,100%{opacity:.25} 30%{opacity:1} }
+  #chat-form { display:flex; gap:8px; padding-top:10px }
+  input, textarea { font:inherit; padding:11px 13px; border:1px solid var(--line); border-radius:var(--r-ctl); width:100%; background:var(--paper); color:var(--shingle) }
+  .phone input { border:0 }
+  .fine { color:rgba(255,255,255,.65); font-size:13px; margin:10px 8px 4px }
+
+  .flow { padding-block:8px 72px }
+  .flow h2, .pilot h2 { font-size:clamp(26px,3.6vw,38px); line-height:1.1; font-weight:800; letter-spacing:-.02em; margin:0 0 28px; max-width:20ch }
+  ol { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,1fr); gap:0 28px; counter-reset:s }
+  ol li { counter-increment:s; border-top:3px solid var(--shingle); padding-top:14px }
+  ol li::before { content:counter(s); display:block; font-weight:800; font-size:34px; line-height:1; color:var(--chalk); margin-bottom:8px }
+  ol b { display:block; font-size:18px } ol span { color:var(--flashing) }
+
+  .pilot { background:var(--shingle); color:#fff; padding:64px 0 72px }
+  .pilot .wrap { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start }
+  .pilot p { color:rgba(255,255,255,.75); max-width:40ch; margin:0 0 12px }
+  #pilot-form { display:flex; flex-direction:column; gap:10px }
+  .hp { position:absolute; left:-9999px }
+  #pilot-msg { min-height:1.5em; font-weight:600 }
+  footer { color:var(--flashing); font-size:14px; padding-block:28px 36px }
+
+  @media (max-width:820px) {
+    .hero, .pilot .wrap { grid-template-columns:1fr; gap:32px }
+    ol { grid-template-columns:1fr 1fr; gap:28px }
+    nav a:not(.cta) { display:none }
+  }
+  @media (max-width:480px) { ol { grid-template-columns:1fr } }
+  @media (prefers-reduced-motion:reduce) { .typing i { animation:none } html { scroll-behavior:auto } }
 </style>
 </head>
 <body>
-<header>LeadPilot</header>
+<header><div class="wrap">
+  <a class="brand" href="#"><img src="logo.svg" alt="" width="36" height="36">LeadPilot</a>
+  <nav><a href="#demo">Try the demo</a> <a class="cta" href="#pilot">Get a free pilot</a></nav>
+</div></header>
+
 <main>
-  <h1>Never miss a customer enquiry again.</h1>
-  <p class="lead">An AI assistant that answers your customers instantly, even after hours, asks the right questions and books the appointment. Try it below as if you were a customer of a roofing company.</p>
-
-  <div class="grid">
-    <section class="card">
-      <h2>Try it live</h2>
-      <div id="log" aria-live="polite"></div>
-      <form id="chat-form">
-        <input id="chat-input" maxlength="500" placeholder="e.g. I have a leak in my roof" autocomplete="off" required>
-        <button id="chat-send">Send</button>
-      </form>
-      <p class="note">Demo for a sample company (Summit Roofing). Please don't enter real personal details.</p>
-    </section>
-
-    <div class="stack">
-      <section class="card">
-        <h2>What it does</h2>
-        <ul>
-          <li>Replies to customer enquiries instantly, even after hours</li>
-          <li>Asks the right questions and qualifies each lead for you</li>
-          <li>Books appointments straight into your schedule</li>
-          <li>Hands the conversation to you when a person is needed</li>
-        </ul>
-      </section>
-      <section class="card">
-        <h2>Get a free pilot</h2>
-        <form id="pilot-form" class="stack">
-          <input name="name" placeholder="Your name" maxlength="100" required>
-          <input name="business" placeholder="Business name" maxlength="100" required>
-          <input name="email" type="email" placeholder="Email" maxlength="120" required>
-          <input name="phone" placeholder="Phone (optional)" maxlength="30">
-          <textarea name="message" rows="2" placeholder="Anything we should know? (optional)" maxlength="500"></textarea>
-          <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-          <button id="pilot-send">Request my free pilot</button>
-          <div id="pilot-msg" role="status"></div>
-        </form>
-      </section>
+<section class="wrap hero" id="demo">
+  <div>
+    <h1>Every enquiry answered while you're on the roof.</h1>
+    <p class="sub">LeadPilot replies to customer messages in seconds, asks what you need to know, and books the inspection. Try it yourself on the right, as a homeowner with a leak.</p>
+    <a class="btn" href="#pilot">Get a free pilot</a>
+    <div class="ticket">
+      <h2>What it does</h2>
+      <ul>
+        <li>Replies to customer enquiries instantly, even after hours</li>
+        <li>Asks the right questions and qualifies each lead for you</li>
+        <li>Books appointments straight into your schedule</li>
+        <li>Hands the conversation to you when a person is needed</li>
+      </ul>
     </div>
   </div>
+
+  <div class="phone">
+    <div class="phone-head"><img src="logo.svg" alt=""><div><b>Summit Roofing</b><span>Sample company for this demo</span></div><i class="ping" title="Online"></i></div>
+    <div id="log" aria-live="polite"></div>
+    <form id="chat-form">
+      <input id="chat-input" maxlength="500" placeholder="Type as a homeowner, e.g. I have a leak" autocomplete="off" aria-label="Your message" required>
+      <button class="btn" id="chat-send">Send</button>
+    </form>
+    <p class="fine">This is a demo. Please don't enter real personal details.</p>
+  </div>
+</section>
+
+<section class="wrap flow">
+  <h2>From first message to booked inspection</h2>
+  <ol>
+    <li><b>A customer messages you</b><span>On your site, any hour of the day.</span></li>
+    <li><b>LeadPilot replies</b><span>Instantly, using your services and hours.</span></li>
+    <li><b>It qualifies and books</b><span>Owner or tenant, what's wrong, when, then a slot.</span></li>
+    <li><b>You get the lead</b><span>Details and the booking, ready when you're off the ladder.</span></li>
+  </ol>
+</section>
+
+<section class="pilot" id="pilot"><div class="wrap">
+  <div>
+    <h2>Try it on your own enquiries, free.</h2>
+    <p>Tell us about your business. We'll set LeadPilot up with your services and hours and email you within one business day.</p>
+  </div>
+  <form id="pilot-form">
+    <input name="name" placeholder="Your name" maxlength="100" required aria-label="Your name">
+    <input name="business" placeholder="Business name" maxlength="100" required aria-label="Business name">
+    <input name="email" type="email" placeholder="Email" maxlength="120" required aria-label="Email">
+    <input name="phone" placeholder="Phone (optional)" maxlength="30" aria-label="Phone">
+    <textarea name="message" rows="2" placeholder="Anything we should know? (optional)" maxlength="500" aria-label="Message"></textarea>
+    <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="btn" id="pilot-send">Request my free pilot</button>
+    <div id="pilot-msg" role="status"></div>
+  </form>
+</div></section>
 </main>
-<footer><span id="addr"></span><br>Questions? <a id="contact" style="color:inherit"></a></footer>
+
+<footer><div class="wrap"><span id="addr"></span><br>Questions? <a id="contact"></a></div></footer>
+
 <script src="config.js"></script>
 <script>
 const API = window.LEADPILOT.api;
@@ -94,8 +160,17 @@ function add(text, who) {
   el.textContent = text;  // textContent, never innerHTML: replies are untrusted
   log.appendChild(el);
   log.scrollTop = log.scrollHeight;
+  return el;
 }
-add("Hi! I'm the assistant for Summit Roofing. How can I help you today?", "bot");
+function typing() {
+  const el = document.createElement("div");
+  el.className = "msg bot typing"; el.innerHTML = "<i></i><i></i><i></i>"; el.setAttribute("aria-label", "Typing");
+  log.appendChild(el); log.scrollTop = log.scrollHeight;
+  return el;
+}
+// The one entrance moment: the assistant types its greeting once.
+const dots = typing();
+setTimeout(() => { dots.remove(); add("Hi! I'm the assistant for Summit Roofing. How can I help you today?", "bot"); }, 1100);
 
 async function post(path, body) {
   const r = await fetch(API + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -109,12 +184,14 @@ document.getElementById("chat-form").addEventListener("submit", async (e) => {
   const message = input.value.trim();
   if (!message) return;
   add(message, "me"); input.value = ""; send.disabled = true;
+  const wait = typing();
   try {
     const out = await post("/chat", { message, conversation_id: convo && convo.id, conversation_token: convo && convo.token });
     convo = { id: out.conversation_id, token: out.conversation_token };
-    add(out.reply, "bot");
+    wait.remove(); add(out.reply, "bot");
   } catch (err) {
-    add(err.message === "rate" ? "You're sending messages quickly. Please wait a moment." : "Sorry, the assistant is unavailable right now. Please try again shortly.", "bot");
+    wait.remove();
+    add(err.message === "rate" ? "You're sending messages quickly. Wait a moment, then try again." : "The assistant is unavailable right now. Try again in a minute.", "bot");
   } finally { send.disabled = false; input.focus(); }
 });
 
@@ -125,11 +202,11 @@ document.getElementById("pilot-form").addEventListener("submit", async (e) => {
   btn.disabled = true; msg.textContent = "";
   try {
     await post("/pilot-requests", data);
-    form.reset(); msg.style.color = "#047857";
-    msg.textContent = "Thanks! We'll email you within one business day.";
+    form.reset(); msg.style.color = "#9FE0B5";
+    msg.textContent = "Request sent. We'll email you within one business day.";
   } catch (err) {
-    msg.style.color = "#b91c1c";
-    msg.textContent = err.message === "rate" ? "Too many requests, please try again later." : "Something went wrong. Please check your details and try again.";
+    msg.style.color = "#FFB4A8";
+    msg.textContent = err.message === "rate" ? "Too many requests. Try again later." : "That didn't send. Check your details and try again.";
   } finally { btn.disabled = false; }
 });
 </script>

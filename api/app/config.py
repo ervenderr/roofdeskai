@@ -43,7 +43,7 @@ class Settings(BaseSettings):
         "Books appointments straight into your schedule",
         "Hands the conversation to you when a person is needed",
     ]
-    brand_color: str = "#2563eb"  # header, bullets and button in the HTML email
+    brand_color: str = "#1D5BD8"  # header, bullets and button in the HTML email
     outreach_enforce_window: bool = True
     outreach_send_hours: str = "9-17"  # local hours, weekdays only
     outreach_timezone: str = "Asia/Manila"
@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     nvidia_api_key: str = ""
     openrouter_api_key: str = ""
     prompts_dir: Path = Path("/srv/prompts")
+    site_dir: Path = Path("/srv/site")
     max_message_chars: int = 2000
     chat_rate_per_min: int = 20  # per client IP, in-process (single instance)
     llm_timeout_s: float = 60

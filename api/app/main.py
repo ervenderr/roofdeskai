@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
@@ -66,3 +67,8 @@ def chat(body: ChatIn):
         log.exception("all LLM providers failed (conversation %s)", body.conversation_id)
         raise HTTPException(502, "The assistant is unavailable right now.")
     return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply)
+
+
+# The demo page is served by the API itself so one tunnel carries the page, chat and form. Mounted last: API routes win.
+if settings.site_dir.is_dir():
+    app.mount("/", StaticFiles(directory=settings.site_dir, html=True), name="site")

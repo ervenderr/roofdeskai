@@ -39,6 +39,7 @@ services:
     volumes:
       - ./api/app:/srv/app
       - ./prompts:/srv/prompts:ro
+      - ./site:/srv/site:ro
       - ./evals:/srv/evals
       - ./scripts:/srv/scripts
     ports: ["8000:8000"]

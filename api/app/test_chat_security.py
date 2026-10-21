@@ -29,3 +29,17 @@ def test_chat_is_rate_limited(monkeypatch):
     codes = [client.post("/chat", json={"message": "let me speak to a real person"}).status_code for _ in range(3)]
     assert codes == [200, 200, 429]
     ratelimit._hits.clear()
+
+
+def test_faq_lookup_falls_back_to_keywords_when_embeddings_are_down(monkeypatch):
+    import httpx
+    import openai
+
+    from . import llm, tools
+
+    def down(_):
+        raise openai.APIConnectionError(request=httpx.Request("POST", "http://ollama"))
+
+    monkeypatch.setattr(llm, "embed", down)
+    assert tools.lookup_faq("how long does a roof inspection take")["chunks"]
+    assert tools.lookup_faq("zzzz qqqq")["chunks"] == []
