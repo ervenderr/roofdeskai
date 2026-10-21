@@ -4,11 +4,9 @@ An AI agent a small business could run on. It qualifies inbound leads by chat, c
 
 The business is **Summit Roofing**, a made-up company. Every name, number and address in this repo is synthetic. Nothing comes from a client or employer.
 
-![Dashboard overview](docs/img/overview.png)
+![RoofDesk AI walkthrough: live chat booking, dashboard, outreach and automations](docs/media/roofdeskai-showcase.gif)
 
-| Conversations | Transcript with tool calls inline |
-|---|---|
-| ![Conversations](docs/img/conversations.png) | ![Transcript](docs/img/transcript.png) |
+[Watch the full video with sound (MP4, 42 s)](docs/media/roofdeskai-showcase.mp4) · [Live demo](https://roofdeskai.com)
 
 > **Key design rule: the model proposes, the code decides.** The LLM extracts facts and writes FAQ answers. Plain code validates every output, runs the conversation state machine, applies the qualification rules, and is the only thing allowed to book, update a lead or escalate. A bad generation cannot book a bad slot.
 
@@ -85,8 +83,6 @@ All logic lives in the FastAPI service; n8n only triggers and sends. The project
 
 The same agent pattern runs the other direction: it finds local businesses, drafts a personalised first email, sends it after approval, follows up, and reads the replies. A prospect who answers "interested" is flagged for a human.
 
-![Outreach page](docs/img/outreach.png)
-
 ```
 Scraper rows (Google Maps) → import + dedupe → score → AI drafts email → you approve → send (cap, hours, opt-out)
                                                                               ↓
@@ -137,8 +133,6 @@ Google's terms restrict scraping, so the API caps queries at 30 per day and only
 ### Phone call list (for the prospects email cannot reach)
 
 Most scraped businesses have no usable email, so the same prospect table drives a call list: businesses with a phone number and no email, best score first. Each comes with plain talking points built only from their public listing (closed on Sundays, busy, no website) and a fixed opener. No model is involved, so nothing can be invented.
-
-![Calls page](docs/img/calls.png)
 
 - **Dashboard:** the Calls page (live mode) logs the outcome: no answer, call back, wrong number, interested, not interested, or do not contact. A firm yes or no settles the prospect and cancels any pending email, and a no also suppresses their email address.
 - **CSV:** `curl -H 'X-Admin-Key: dev-admin-key' localhost:8000/admin/call-list.csv -o call-list.csv`
