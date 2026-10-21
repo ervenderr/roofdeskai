@@ -402,7 +402,7 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "parameters": {
-        "content": "## 4. Replies, bounces, unsubscribes\nPOST the inbound email to /webhook/outreach-reply. An unsubscribe or bounce stops the sequence immediately (no AI involved).\nInterested replies and questions email you.",
+        "content": "## 4. Replies, bounces, unsubscribes\nPOST the inbound email to /webhook/outreach-reply. An unsubscribe or bounce stops the sequence immediately (no AI involved).\nInterested replies and questions email you.\nYour outreach mailbox is also polled over IMAP every 15 minutes (bottom lane), so replies are picked up without a webhook.",
         "width": 900,
         "height": 140
       },
@@ -597,6 +597,62 @@
       "position": [
         780,
         1160
+      ]
+    },
+    {
+      "id": "every-15-min-mailbox",
+      "name": "Every 15 min (mailbox)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        1120
+      ]
+    },
+    {
+      "id": "poll-mailbox",
+      "name": "Poll mailbox for replies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/outreach/poll-replies",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        260,
+        1120
+      ]
+    },
+    {
+      "id": "replies-needing-human",
+      "name": "Replies needing a human",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const replies = $input.first().json.replies || [];\nreturn replies.filter(r => r.needs_human).map(r => ({ json: r }));  // unsubscribes, bounces and auto-replies need no human"
+      },
+      "position": [
+        520,
+        1120
       ]
     }
   ],
@@ -809,6 +865,39 @@
         [
           {
             "node": "Email me the call sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 min (mailbox)": {
+      "main": [
+        [
+          {
+            "node": "Poll mailbox for replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll mailbox for replies": {
+      "main": [
+        [
+          {
+            "node": "Replies needing a human",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Replies needing a human": {
+      "main": [
+        [
+          {
+            "node": "Alert me",
             "type": "main",
             "index": 0
           }

@@ -58,3 +58,22 @@ def test_html_email_escapes_and_has_footer(monkeypatch):
     assert "&lt;b&gt;team" in out and "<b>team" not in out
     assert "Does a thing" in out and "mailto:" in out and "1 Test St" in out and "unsubscribe" in out
     assert "What it does" not in email_html.render("Hi", "S", 2, ["Does a thing"])
+
+
+def test_poll_returns_matched_replies(monkeypatch):
+    class FakeIMAP:
+        def __init__(self, host): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): pass
+        def login(self, u, p): pass
+        def select(self, box): pass
+        def search(self, *a): return "OK", [b"1 2"]
+        def fetch(self, num, spec):
+            raw = b"From: bob@biz.test\nSubject: Re: hi\n\nYes interested\n" if num == b"1" else b"From: spam@x.test\n\nbuy\n"
+            return "OK", [(b"", raw)]
+
+    monkeypatch.setattr(replies.imaplib, "IMAP4_SSL", FakeIMAP)
+    monkeypatch.setattr(replies.outreach, "handle_event",
+                        lambda email, kind, body: {"matched": email == "bob@biz.test", "needs_human": True})
+    out = replies.poll()
+    assert (out["seen"], out["matched"], out["ignored"]) == (2, 1, 1) and out["replies"][0]["needs_human"]

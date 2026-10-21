@@ -43,7 +43,7 @@ def parse(raw: bytes) -> tuple[str, str, str] | None:
 
 
 def poll() -> dict:
-    result = {"seen": 0, "matched": 0, "ignored": 0}
+    result = {"seen": 0, "matched": 0, "ignored": 0, "replies": []}
     with imaplib.IMAP4_SSL(settings.imap_host) as imap:
         imap.login(settings.smtp_user, settings.smtp_password)
         imap.select("INBOX")
@@ -52,8 +52,10 @@ def poll() -> dict:
             _, parts = imap.fetch(num, "(RFC822)")  # fetching marks it read, so it is processed once
             result["seen"] += 1
             parsed = parse(parts[0][1])
-            if parsed and outreach.handle_event(*parsed).get("matched"):
+            outcome = outreach.handle_event(*parsed) if parsed else {}
+            if outcome.get("matched"):
                 result["matched"] += 1
+                result["replies"].append(outcome)  # n8n alerts you on the ones that need a human
             else:
                 result["ignored"] += 1
     log.info("reply poll: %s", result)
