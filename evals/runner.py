@@ -17,6 +17,7 @@ from sqlalchemy import text
 
 from app import policy
 from app.agent import PROMPT, handle_turn
+from app.config import settings
 from app.db import engine
 from app.llm import load_prompt
 
@@ -95,6 +96,7 @@ def main() -> None:
     ap.add_argument("--ids")
     ap.add_argument("--category")
     args = ap.parse_args()
+    settings.mail_transport = "mailpit"  # eval bookings send emails; never to a real mailbox
     scenarios = load_scenarios()
     if args.ids:
         scenarios = [s for s in scenarios if s["id"] in args.ids.split(",")]
@@ -170,7 +172,7 @@ def write_report(results, cids) -> None:
         "## Failures", "",
         *[f"- `{sc['id']}`: {'; '.join(f)}" for sc, _, f in results if f],
     ]
-    out = HERE / "reports" / "latest.md"
+    out = HERE / "reports" / ("latest.md" if len(results) == len(load_scenarios()) else "latest-partial.md")  # a partial run must not overwrite the full report
     out.write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 

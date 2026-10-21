@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import text
 
+from .config import settings
 from .db import engine
 
 CONVO_CHILDREN = ("events", "escalations", "tool_calls", "llm_calls", "messages")
@@ -31,3 +32,9 @@ def remove_test_data():
         c.execute(text("DELETE FROM prospects WHERE id > :p"), f)
         c.execute(text("DELETE FROM campaigns WHERE id > :k"), f)
         c.execute(text("DELETE FROM suppressions WHERE email LIKE '%@outreach.test'"))
+
+
+@pytest.fixture(autouse=True)
+def no_real_mail(monkeypatch):
+    """The dev .env may point at a real mailbox; tests must never email anyone (mail tests patch their own transport)."""
+    monkeypatch.setattr(settings, "mail_transport", "mailpit")
