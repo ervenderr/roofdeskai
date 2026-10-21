@@ -178,7 +178,7 @@ def test_footer_is_added_by_code():
 
 def test_draft_then_manual_approval_then_send(monkeypatch):
     sent = []
-    monkeypatch.setattr(mailer, "send", lambda to, subject, body: sent.append((to, subject, body)))
+    monkeypatch.setattr(mailer, "send", lambda to, subject, body, html=None: sent.append((to, subject, body)))
     llm_returns(monkeypatch, GOOD_COPY["body"])
     monkeypatch.setattr(outreach, "_log_llm", lambda *a: None)
     cid = campaign(auto=False)

@@ -16,11 +16,11 @@ def _unsub(sender: str) -> str:
     return f"<mailto:{sender}?subject=unsubscribe>"
 
 
-def _send_mailpit(to: str, subject: str, body: str) -> None:
+def _send_mailpit(to: str, subject: str, body: str, html: str | None) -> None:
     try:
         r = httpx.post(f"{settings.mailpit_url}/api/v1/send", timeout=10, json={
             "From": {"Email": settings.sender_email, "Name": settings.sender_name},
-            "To": [{"Email": to}], "Subject": subject, "Text": body,
+            "To": [{"Email": to}], "Subject": subject, "Text": body, **({"HTML": html} if html else {}),
             "Headers": {"List-Unsubscribe": _unsub(settings.sender_email)},
         })
         r.raise_for_status()
@@ -28,13 +28,15 @@ def _send_mailpit(to: str, subject: str, body: str) -> None:
         raise MailError(type(e).__name__) from e
 
 
-def _send_smtp(to: str, subject: str, body: str) -> None:
+def _send_smtp(to: str, subject: str, body: str, html: str | None) -> None:
     msg = EmailMessage()
     msg["From"] = formataddr((settings.sender_name, settings.sender_email))
     msg["To"], msg["Subject"] = to, subject
     msg["Message-ID"] = make_msgid(domain=settings.sender_email.rpartition("@")[2])
     msg["List-Unsubscribe"] = _unsub(settings.sender_email)
     msg.set_content(body)
+    if html:
+        msg.add_alternative(html, subtype="html")
     try:
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as s:
             s.starttls()
@@ -44,7 +46,7 @@ def _send_smtp(to: str, subject: str, body: str) -> None:
         raise MailError(type(e).__name__) from e
 
 
-def send(to: str, subject: str, body: str) -> None:
+def send(to: str, subject: str, body: str, html: str | None = None) -> None:
     if settings.mail_transport == "smtp":
-        return _send_smtp(to, subject, body)
-    return _send_mailpit(to, subject, body)
+        return _send_smtp(to, subject, body, html)
+    return _send_mailpit(to, subject, body, html)

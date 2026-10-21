@@ -49,3 +49,12 @@ def test_quoted_footer_is_not_part_of_the_reply(monkeypatch):
            b"On Wed, Oct 21, 2026 at 12:49 PM The LeadPilot team <hello@leadpilot.example> wrote:\n"
            b"> Hi there\n> Not interested? Reply \"unsubscribe\" and I won't contact you again.\n")
     assert replies.parse(raw) == ("bob@biz.test", "reply", "Yes interested")
+
+
+def test_html_email_escapes_and_has_footer(monkeypatch):
+    from . import email_html
+    monkeypatch.setattr(settings, "sender_address", "1 Test St")
+    out = email_html.render("Hi <b>team</b>,\n\nHello.", "Subj", 1, ["Does a thing"])
+    assert "&lt;b&gt;team" in out and "<b>team" not in out
+    assert "Does a thing" in out and "mailto:" in out and "1 Test St" in out and "unsubscribe" in out
+    assert "What it does" not in email_html.render("Hi", "S", 2, ["Does a thing"])

@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
-from . import llm, mailer, prospects
+from . import email_html, llm, mailer, prospects
 from .config import settings
 from .db import engine
 
@@ -303,7 +303,9 @@ def send_due(now: datetime | None = None, campaign_id: int | None = None) -> dic
                 skip("daily_cap_reached")
                 continue
             try:
-                mailer.send(m["email"], m["subject"], with_footer(m["body"], m["step"], m["locale"]))
+                points = [localize(pt, m["locale"]) for pt in settings.service_points]
+                html = email_html.render(localize(m["body"], m["locale"]), m["subject"], m["step"], points)
+                mailer.send(m["email"], m["subject"], with_footer(m["body"], m["step"], m["locale"]), html)
             except mailer.MailError as e:
                 c.execute(text("UPDATE outreach_messages SET status='failed', error=:e WHERE id=:i"), {"e": str(e), "i": m["id"]})
                 _event(c, m["prospect_id"], "send_failed", str(e))
