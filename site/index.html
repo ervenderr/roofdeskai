@@ -53,6 +53,7 @@
   #chat-form { display:flex; gap:8px; padding-top:10px }
   input, textarea { font:inherit; padding:11px 13px; border:1px solid var(--line); border-radius:var(--r-ctl); width:100%; background:var(--paper); color:var(--shingle) }
   .phone input { border:0 }
+  #mic[aria-pressed="true"] { background:var(--caution); color:var(--shingle) }
   .fine { color:rgba(255,255,255,.65); font-size:13px; margin:10px 8px 4px }
 
   .flow { padding-block:8px 72px }
@@ -108,6 +109,7 @@
     <form id="chat-form">
       <input id="chat-input" maxlength="500" placeholder="Type as a homeowner, e.g. I have a leak" autocomplete="off" aria-label="Your message" required>
       <button class="btn" id="chat-send">Send</button>
+      <button class="btn" id="mic" type="button" hidden aria-pressed="false">Talk</button>
     </form>
     <p class="fine">Demo company serving the Denver area. To see a booking, give a Denver address, for example 120 Main St, Denver. Please don't enter real personal details.</p>
   </div>
@@ -188,12 +190,34 @@ document.getElementById("chat-form").addEventListener("submit", async (e) => {
   try {
     const out = await post("/chat", { message, conversation_id: convo && convo.id, conversation_token: convo && convo.token });
     convo = { id: out.conversation_id, token: out.conversation_token };
-    wait.remove(); add(out.reply, "bot");
+    wait.remove(); add(out.reply, "bot"); speak(out.reply);
   } catch (err) {
     wait.remove();
     add(err.message === "rate" ? "You're sending messages quickly. Wait a moment, then try again." : "The assistant is unavailable right now. Try again in a minute.", "bot");
   } finally { send.disabled = false; input.focus(); }
 });
+
+// Voice: the browser's own speech recognition and synthesis; the words go through the same /chat as typing.
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition, mic = document.getElementById("mic");
+let voice = false, rec = null;
+function listen() {
+  if (!voice) return;
+  rec = new Rec(); rec.lang = "en-US";
+  rec.onresult = (ev) => { document.getElementById("chat-input").value = ev.results[0][0].transcript; document.getElementById("chat-form").requestSubmit(); };
+  rec.onerror = () => setVoice(false);
+  rec.onend = () => { if (voice && !speechSynthesis.speaking && !document.getElementById("chat-send").disabled) listen(); };
+  rec.start();
+}
+function speak(text) {
+  if (!voice) return;
+  const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.onend = listen;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+function setVoice(on) {
+  voice = on; mic.setAttribute("aria-pressed", on); mic.textContent = on ? "Stop" : "Talk";
+  if (on) listen(); else { speechSynthesis.cancel(); if (rec) rec.abort(); }
+}
+if (Rec && window.speechSynthesis) { mic.hidden = false; mic.addEventListener("click", () => setVoice(!voice)); }
 
 document.getElementById("pilot-form").addEventListener("submit", async (e) => {
   e.preventDefault();
