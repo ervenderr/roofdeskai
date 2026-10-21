@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     sender_email: str = "hello@leadpilot.example"
     sender_address: str = ""  # physical address for the email footer (required to send); set SENDER_ADDRESS
     offer_summary: str = "an AI assistant that answers customer enquiries instantly, qualifies them and books appointments"
+    # Fixed, true claims only: added by code to the first email so the model cannot invent features.
+    service_points: list[str] = [
+        "Replies to customer enquiries instantly, even after hours",
+        "Asks the right questions and qualifies each lead for you",
+        "Books appointments straight into your schedule",
+        "Hands the conversation to you when a person is needed",
+    ]
     outreach_enforce_window: bool = True
     outreach_send_hours: str = "9-17"  # local hours, weekdays only
     outreach_timezone: str = "Asia/Manila"

@@ -440,3 +440,10 @@ def test_import_skips_junk_emails_and_falls_back_to_the_next_valid_one():
     with engine.connect() as c:
         got = {r[0]: (r[1], r[2]) for r in c.execute(text("SELECT name, email, status FROM prospects WHERE campaign_id=:c"), {"c": cid})}
     assert got["Junk Co"] == ("owner@junk-co.com", "scored") and got["Only Junk"] == (None, "no_email")
+
+
+def test_first_email_gets_service_list_and_followups_do_not():
+    first = outreach.with_footer("Hi team,", 1, "en-US")
+    assert "What it does:" in first and "  • Replies to customer inquiries instantly" in first
+    assert "What it does:" not in outreach.with_footer("Hi team,", 2)
+    assert first.rstrip().endswith('"unsubscribe" and I won\'t contact you again.')

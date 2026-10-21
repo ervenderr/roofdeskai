@@ -142,8 +142,12 @@ def followup_copy(step: int, name: str, first_subject: str, locale: str = "en-PH
         "becomes a headache, just reply and I'll send the details.", locale))
 
 
-def with_footer(body: str) -> str:
-    """Added by code at send time, so neither the model nor an edit can remove the opt-out."""
+def with_footer(body: str, step: int = 2, locale: str = "en-PH") -> str:
+    """Added by code at send time, so neither the model nor an edit can remove the opt-out.
+    The first email also gets the fixed 'what it does' list (follow-ups stay short)."""
+    if step == 1 and settings.service_points:
+        points = "\n".join(f"  • {localize(pt, locale)}" for pt in settings.service_points)
+        body = f"{body}\n\nWhat it does:\n{points}"
     return (f"{body}\n\n--\n{settings.sender_name}\n{settings.sender_address}\n"
             "Not interested? Reply \"unsubscribe\" and I won't contact you again.")
 
@@ -271,7 +275,7 @@ def send_due(now: datetime | None = None, campaign_id: int | None = None) -> dic
         raise RuntimeError("SENDER_ADDRESS is not set; refusing to send mail without a postal address in the footer")
     with engine.connect() as c:
         due = [dict(r) for r in c.execute(text(
-            """SELECT m.id, m.prospect_id, m.step, m.subject, m.body, p.email, p.status AS pstatus, p.campaign_id, cm.daily_cap, cm.timezone
+            """SELECT m.id, m.prospect_id, m.step, m.subject, m.body, p.email, p.status AS pstatus, p.campaign_id, cm.daily_cap, cm.timezone, cm.locale
                FROM outreach_messages m JOIN prospects p ON p.id = m.prospect_id JOIN campaigns cm ON cm.id = p.campaign_id
                WHERE m.status = 'approved' AND COALESCE(m.scheduled_for, now()) <= :now AND cm.active
                  AND (CAST(:cid AS INT) IS NULL OR p.campaign_id = :cid)
@@ -299,7 +303,7 @@ def send_due(now: datetime | None = None, campaign_id: int | None = None) -> dic
                 skip("daily_cap_reached")
                 continue
             try:
-                mailer.send(m["email"], m["subject"], with_footer(m["body"]))
+                mailer.send(m["email"], m["subject"], with_footer(m["body"], m["step"], m["locale"]))
             except mailer.MailError as e:
                 c.execute(text("UPDATE outreach_messages SET status='failed', error=:e WHERE id=:i"), {"e": str(e), "i": m["id"]})
                 _event(c, m["prospect_id"], "send_failed", str(e))
