@@ -115,6 +115,22 @@ python3 -c "import json;print(json.dumps({'campaign_id':$ID,'rows':json.load(ope
 # drafts appear in the dashboard under Outreach (live mode); approve them, then watch Mailpit at :8025
 ```
 
+### Finding prospects: Google Maps scraper
+
+The [gosom/google-maps-scraper](https://github.com/gosom/google-maps-scraper) (MIT) runs as an opt-in Compose service, and its REST API is wired in three ways: the API (`POST /admin/scrapes`), the dashboard (a "Find prospects" form, live mode only), and n8n (`POST /webhook/outreach-scrape`, plus a 5-minute schedule that imports finished scrapes). Imported businesses are deduplicated across searches, scored, and drafted automatically.
+
+```bash
+make scraper                                    # starts the scraper (first start downloads a browser)
+curl -X POST localhost:5679/webhook/outreach-scrape -H 'content-type: application/json' \
+  -d '{"campaign_id": 1, "queries": ["dentist in Davao City"], "depth": 1, "email": false}'
+```
+
+Google's terms restrict scraping, so the API caps queries at 30 per day and only small batches are intended. Real scraped businesses stay out of the public demo: the static snapshot exports only campaigns flagged `public_demo`.
+
+**What a real run showed** (one search, 20 dental clinics in one city; details in `docs/failure-analysis.md`):
+- Only **5 of 20 had an email even with website crawling on, and 4 of those 5 were personal inboxes** (gmail and similar). Email outreach reaches few businesses in this niche. Phone and Facebook are where they live, and cold messages there are restricted.
+- **0 of 20 had a "calls go unanswered" review pattern.** The scraper returns about 5 reviews per business (mostly five-star), and its extended-reviews option returned nothing extra here. Opening hours and web presence are the more reliable signals, and review complaints that did appear were about scheduling mix-ups and long waits.
+
 **Not built yet (Phase 2):** real sending (Resend), real inbound email (replies arrive by webhook today), and handing an interested prospect to a booking agent configured for sales calls (the booking agent is still the roofing one). The scraper itself has not been run; the importer was written against its documented field names and checked on a synthetic file, so check it on a real export.
 
 ## How I check the output

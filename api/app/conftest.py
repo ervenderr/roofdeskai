@@ -25,6 +25,7 @@ def remove_test_data():
         if leads:
             c.execute(text("DELETE FROM appointments WHERE lead_id = ANY(:l)"), {"l": leads})
             c.execute(text("DELETE FROM leads WHERE id = ANY(:l)"), {"l": leads})
+        c.execute(text("DELETE FROM scrape_runs WHERE campaign_id > :k"), f)
         for t in ("prospect_events", "outreach_messages", "llm_calls"):
             c.execute(text(f"DELETE FROM {t} WHERE prospect_id > :p"), f)
         c.execute(text("DELETE FROM prospects WHERE id > :p"), f)

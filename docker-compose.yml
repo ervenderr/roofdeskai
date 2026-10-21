@@ -65,6 +65,21 @@ services:
       - ./n8n/workflows:/workflows:ro
     depends_on: [api, mailpit]
 
+  # Google Maps scraper (https://github.com/gosom/google-maps-scraper, MIT). Opt in: `docker compose --profile scraper up -d scraper`
+  # First start downloads a browser into the playwright cache volume.
+  scraper:
+    image: gosom/google-maps-scraper
+    profiles: ["scraper"]
+    command: ["-web", "-addr", ":8080", "-data-folder", "/gmapsdata", "-c", "2"]
+    environment:
+      DISABLE_TELEMETRY: "1"
+    volumes:
+      - gmaps-data:/gmapsdata
+      - gmaps-playwright-cache:/opt
+    ports: ["8081:8080"]
+
 volumes:
   pgdata:
+  gmaps-data:
+  gmaps-playwright-cache:
   n8ndata:

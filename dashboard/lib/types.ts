@@ -42,3 +42,10 @@ export type ProspectDetail = {
 }
 export type QueueItem = { id: number; prospect_id: number; step: number; subject: string; body: string; source: string; name: string; email: string; score: number }
 export type OutreachMetrics = { prospects: Record<string, number>; messages: Record<string, number>; awaiting_approval: number; suppressed: number }
+
+export type Campaign = { id: number; name: string; city: string | null; auto_approve: boolean; daily_cap: number; active: boolean; prospects: number; public_demo: boolean }
+export type ScrapeRun = {
+  id: number; campaign: string; queries: string[]; depth: number; email: boolean; status: string
+  result_json: { imported: number; duplicates: number; no_email: number; invalid: number } | null; error: string | null
+  created_at: string; finished_at: string | null
+}

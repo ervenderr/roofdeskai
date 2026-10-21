@@ -206,26 +206,7 @@
     "total": 31,
     "passed": 20
    }
-  ],
-  "outreach": {
-   "prospects": {
-    "interested": 1,
-    "not_interested": 1,
-    "no_email": 2,
-    "approved": 1,
-    "sent": 1,
-    "drafted": 2,
-    "unsubscribed": 1,
-    "bounced": 1
-   },
-   "messages": {
-    "approved": 1,
-    "sent": 6,
-    "drafted": 2
-   },
-   "awaiting_approval": 2,
-   "suppressed": 3
-  }
+  ]
  },
  "conversations": [
   {
@@ -2412,7 +2393,7 @@
    "review_count": 140,
    "score": 100,
    "pain_mentions": 2,
-   "status": "approved",
+   "status": "sent",
    "created_at": "2026-10-21 01:59:17.020337+00:00"
   },
   {
@@ -2577,7 +2558,8 @@
     ],
     "pain_mentions": 2,
     "status": "interested",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -2656,8 +2638,9 @@
      "target category"
     ],
     "pain_mentions": 2,
-    "status": "approved",
-    "created_at": "2026-10-21 01:59:17.020337+00:00"
+    "status": "sent",
+    "created_at": "2026-10-21 01:59:17.020337+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -2668,9 +2651,9 @@
      "subject": "A quick idea for Davao Family Dental",
      "body": "Hi Davao Family Dental team,\n\nA few customer reviews mention calls going unanswered. Many businesses like yours miss enquiries that arrive when nobody is free to reply.\n\nOur AI assistant answers customer enquiries instantly, qualifies them and books appointments. This helps ensure that every enquiry is handled promptly and efficiently.\n\nWould you like to learn more about how our assistant can help your team?",
      "source": "llm",
-     "status": "approved",
+     "status": "sent",
      "scheduled_for": "2026-10-21 02:01:50.642698+00:00",
-     "sent_at": null,
+     "sent_at": "2026-10-21 02:15:00.067784+00:00",
      "error": null,
      "created_at": "2026-10-21 01:59:20.628154+00:00"
     }
@@ -2685,6 +2668,11 @@
      "kind": "approved",
      "detail": "step 1",
      "created_at": "2026-10-21 02:01:50.642698+00:00"
+    },
+    {
+     "kind": "sent",
+     "detail": "step 1",
+     "created_at": "2026-10-21 02:15:00.069532+00:00"
     }
    ]
   },
@@ -2727,7 +2715,8 @@
     ],
     "pain_mentions": 2,
     "status": "unsubscribed",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -2807,7 +2796,8 @@
     ],
     "pain_mentions": 1,
     "status": "bounced",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -2886,7 +2876,8 @@
     ],
     "pain_mentions": 1,
     "status": "drafted",
-    "created_at": "2026-10-21 01:59:17.020337+00:00"
+    "created_at": "2026-10-21 01:59:17.020337+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -2948,7 +2939,8 @@
     ],
     "pain_mentions": 0,
     "status": "not_interested",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -3025,7 +3017,8 @@
     ],
     "pain_mentions": 0,
     "status": "sent",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -3129,7 +3122,8 @@
     ],
     "pain_mentions": 0,
     "status": "no_email",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [],
    "events": []
@@ -3170,7 +3164,8 @@
     ],
     "pain_mentions": 1,
     "status": "drafted",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [
     {
@@ -3218,7 +3213,8 @@
     ],
     "pain_mentions": 0,
     "status": "no_email",
-    "created_at": "2026-10-21 01:56:49.534595+00:00"
+    "created_at": "2026-10-21 01:56:49.534595+00:00",
+    "city": null
    },
    "messages": [],
    "events": []
@@ -3253,17 +3249,15 @@
  "outreach_metrics": {
   "prospects": {
    "interested": 1,
-   "not_interested": 1,
-   "no_email": 2,
-   "approved": 1,
-   "sent": 1,
-   "drafted": 2,
+   "sent": 2,
    "unsubscribed": 1,
-   "bounced": 1
+   "bounced": 1,
+   "drafted": 2,
+   "not_interested": 1,
+   "no_email": 2
   },
   "messages": {
-   "approved": 1,
-   "sent": 6,
+   "sent": 7,
    "drafted": 2
   },
   "awaiting_approval": 2,

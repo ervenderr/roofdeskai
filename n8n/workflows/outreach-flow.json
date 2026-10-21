@@ -4,6 +4,158 @@
   "active": true,
   "nodes": [
     {
+      "id": "note-0.-find-prospects",
+      "name": "Note 0. Find prospects",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "## 0. Find prospects (Google Maps scraper)\nPOST {campaign_id, queries:[\"dentist in Davao City\"], depth, email} to /webhook/outreach-scrape to start a scrape.\nEvery 5 minutes finished scrapes are imported, deduplicated and scored. Needs the scraper service:\ndocker compose --profile scraper up -d scraper",
+        "width": 900,
+        "height": 150
+      },
+      "position": [
+        -20,
+        -450
+      ]
+    },
+    {
+      "id": "start-scrape-webhook",
+      "name": "Start scrape webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outreach-scrape",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        -340
+      ],
+      "webhookId": "outreach-scrape"
+    },
+    {
+      "id": "start-google-maps-scrape",
+      "name": "Start Google Maps scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/scrapes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        260,
+        -340
+      ]
+    },
+    {
+      "id": "scrape-started",
+      "name": "Scrape started",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "position": [
+        520,
+        -340
+      ]
+    },
+    {
+      "id": "every-5-min",
+      "name": "Every 5 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/5 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        -170
+      ]
+    },
+    {
+      "id": "collect-finished-scrapes",
+      "name": "Collect finished scrapes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/admin/scrapes/sync",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        260,
+        -170
+      ]
+    },
+    {
+      "id": "anything-finished",
+      "name": "Anything finished?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nif (!j.imported_runs && !j.failed) return [];  // still running or nothing to do: stay quiet\nreturn [{ json: j }];"
+      },
+      "position": [
+        520,
+        -170
+      ]
+    },
+    {
+      "id": "tell-me-about-the-scrape",
+      "name": "Tell me about the scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'LeadPilot outreach'}, To: [{Email: 'owner@summitroofing.test'}], Subject: $json.failed ? 'Scrape problem: ' + $json.failed + ' failed' : 'Scrape finished: ' + $json.prospects_imported + ' new prospects', Text: $json.prospects_imported + ' prospects imported (' + $json.no_email + ' without an email, ' + $json.duplicates + ' duplicates), ' + $json.failed + ' scrape(s) failed. New prospects with an email are drafted automatically and wait for your approval.'}) }}"
+      },
+      "position": [
+        780,
+        -170
+      ]
+    },
+    {
       "id": "note-1.-import-prospects",
       "name": "Note 1. Import prospects",
       "type": "n8n-nodes-base.stickyNote",
@@ -481,6 +633,61 @@
         [
           {
             "node": "Alert me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start scrape webhook": {
+      "main": [
+        [
+          {
+            "node": "Start Google Maps scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Google Maps scrape": {
+      "main": [
+        [
+          {
+            "node": "Scrape started",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 5 min": {
+      "main": [
+        [
+          {
+            "node": "Collect finished scrapes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect finished scrapes": {
+      "main": [
+        [
+          {
+            "node": "Anything finished?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anything finished?": {
+      "main": [
+        [
+          {
+            "node": "Tell me about the scrape",
             "type": "main",
             "index": 0
           }

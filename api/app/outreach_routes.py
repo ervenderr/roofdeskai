@@ -1,9 +1,9 @@
 """Outbound prospecting endpoints. Admin-key protected, like the rest of the admin API."""
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy import text
 
-from . import outreach, prospects
+from . import outreach, prospects, scraper, scrapes
 from .admin import _rows, require_admin
 from .db import engine
 
@@ -26,6 +26,20 @@ class CampaignPatch(BaseModel):
 
 class ImportIn(BaseModel):
     rows: list[dict] = Field(max_length=2000)
+
+
+class ScrapeIn(BaseModel):
+    campaign_id: int
+    queries: list[str] = Field(min_length=1, max_length=scrapes.MAX_QUERIES)
+    depth: int = Field(1, ge=1, le=scrapes.MAX_DEPTH)
+    email: bool = False  # crawl each business website for an email: much slower, but most listings have none otherwise
+
+    @field_validator("queries")
+    @classmethod
+    def short_queries(cls, v):
+        if any(not 3 <= len(q.strip()) <= 120 for q in v):
+            raise ValueError("each query must be 3 to 120 characters, e.g. 'dentist in Davao City'")
+        return v
 
 
 class EditIn(BaseModel):
@@ -152,3 +166,25 @@ def outreach_metrics():
 @router.post("/webhooks/outreach-event")
 def outreach_event(body: EventIn):
     return outreach.handle_event(body.email, body.kind, body.body)
+
+
+@router.post("/admin/scrapes")
+def start_scrape(body: ScrapeIn):
+    if not _rows("SELECT 1 FROM campaigns WHERE id=:i", i=body.campaign_id):
+        raise HTTPException(404, "campaign not found")
+    try:
+        return scrapes.start_run(body.campaign_id, body.queries, body.depth, body.email)
+    except scrapes.DailyLimit as e:
+        raise HTTPException(429, str(e))
+    except scraper.ScraperError as e:
+        raise HTTPException(503, f"{e}. Start it with: docker compose --profile scraper up -d scraper")
+
+
+@router.get("/admin/scrapes")
+def list_scrapes():
+    return scrapes.list_runs()
+
+
+@router.post("/admin/scrapes/sync")
+def sync_scrapes():
+    return scrapes.sync_runs()

@@ -46,6 +46,8 @@ def normalize(row: dict) -> dict | None:
     address = row.get("address") or row.get("complete_address") or ""
     if isinstance(address, dict):
         address = ", ".join(str(v) for v in address.values() if v)
+    ca = row.get("complete_address")
+    city = (ca.get("city") or "").strip()[:100] or None if isinstance(ca, dict) else None
     emails = row.get("emails") or row.get("email") or []
     emails = [emails] if isinstance(emails, str) else emails
     email = next((e.strip().lower() for e in emails if isinstance(e, str) and EMAIL_RE.match(e.strip())), None)
@@ -64,7 +66,7 @@ def normalize(row: dict) -> dict | None:
         rating = review_count = None
     return {
         "external_id": str(place) if place else hashlib.sha1(f"{name}|{address}".lower().encode()).hexdigest(),
-        "name": name[:200], "category": (row.get("category") or "")[:100] or None, "address": str(address)[:300] or None,
+        "name": name[:200], "city": city, "category": (row.get("category") or "")[:100] or None, "address": str(address)[:300] or None,
         "phone": (row.get("phone") or "")[:40] or None, "email": email, "website": (row.get("website") or "")[:300] or None,
         "maps_url": (row.get("link") or "")[:500] or None, "rating": rating, "review_count": review_count,
         "hours": hours, "review_texts": reviews[:20],
@@ -133,9 +135,9 @@ def import_rows(campaign_id: int, rows: list[dict]) -> dict:
             sc, reasons = score({**p, "review_texts": p["review_texts"]})
             suppressed = p["email"] and c.execute(text("SELECT 1 FROM suppressions WHERE email=:e"), {"e": p["email"]}).first()
             status = "skipped" if suppressed else ("scored" if p["email"] else "no_email")
-            r = c.execute(text("""INSERT INTO prospects (campaign_id, external_id, name, category, address, phone, email, website,
+            r = c.execute(text("""INSERT INTO prospects (campaign_id, external_id, name, city, category, address, phone, email, website,
                     maps_url, rating, review_count, hours_json, review_texts, score, score_reasons, pain_mentions, status)
-                VALUES (:cid, :external_id, :name, :category, :address, :phone, :email, :website, :maps_url, :rating,
+                VALUES (:cid, :external_id, :name, :city, :category, :address, :phone, :email, :website, :maps_url, :rating,
                     :review_count, CAST(:hours AS jsonb), CAST(:reviews AS jsonb), :score, CAST(:reasons AS jsonb), :pm, :status)
                 ON CONFLICT (external_id) DO NOTHING RETURNING id"""),
                 {**p, "cid": campaign_id, "hours": json.dumps(p["hours"]), "reviews": json.dumps(p["review_texts"]),

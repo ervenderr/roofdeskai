@@ -39,7 +39,7 @@ class ReplyLabel(BaseModel):
 # --- copy -----------------------------------------------------------------------------------------
 
 def facts_for(p: dict) -> dict:
-    city = (p.get("address") or "").split(",")[-1].strip() if "," in (p.get("address") or "") else None
+    city = p.get("city") or ((p.get("address") or "").split(",")[-1].strip() if "," in (p.get("address") or "") else None)
     f = {"name": p["name"], "category": p.get("category") or "local business", "city": city,
          "review_signal": (p.get("pain_mentions") or 0) >= 2, "has_website": bool(p.get("website"))}
     if p.get("rating"):

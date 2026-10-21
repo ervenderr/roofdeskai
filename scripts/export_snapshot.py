@@ -9,15 +9,28 @@ from app import admin, outreach_routes
 
 def main() -> None:
     conversations = admin.list_conversations(limit=500)
-    prospects = outreach_routes.list_prospects(limit=500)
+    # Real scraped businesses must never reach the public snapshot: only campaigns flagged public_demo are exported.
+    demo = {c["id"] for c in outreach_routes.list_campaigns() if c["public_demo"]}
+    prospects = [p for p in outreach_routes.list_prospects(limit=500) if p["campaign_id"] in demo]
+    ids = {p["id"] for p in prospects}
+    details = {str(p["id"]): outreach_routes.get_prospect(p["id"]) for p in prospects}
+    by_status: dict[str, int] = {}
+    for p in prospects:
+        by_status[p["status"]] = by_status.get(p["status"], 0) + 1
+    queue = [m for m in outreach_routes.approval_queue() if m["prospect_id"] in ids]
+    sent = sum(1 for d in details.values() for m in d["messages"] if m["status"] == "sent")
+    outreach_metrics = {"prospects": by_status, "messages": {"sent": sent, "drafted": len(queue)}, "awaiting_approval": len(queue),
+                        "suppressed": sum(by_status.get(k, 0) for k in ("unsubscribed", "bounced", "not_interested"))}
+    metrics = admin.metrics()
+    metrics.pop("outreach", None)  # counts every campaign, including real ones
     out = {
-        "metrics": admin.metrics(),
+        "metrics": metrics,
         "conversations": conversations,
         "details": {str(c["id"]): admin.get_conversation(c["id"]) for c in conversations},
         "prospects": prospects,
-        "prospect_details": {str(p["id"]): outreach_routes.get_prospect(p["id"]) for p in prospects},
-        "queue": outreach_routes.approval_queue(),
-        "outreach_metrics": outreach_routes.outreach_metrics(),
+        "prospect_details": details,
+        "queue": queue,
+        "outreach_metrics": outreach_metrics,
     }
     print(json.dumps(out, default=str, indent=1))
 

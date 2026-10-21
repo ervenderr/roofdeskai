@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     admin_api_key: str = ""  # empty disables every admin endpoint
     escalation_webhook_url: str = ""
     public_url: str = "http://localhost:8000"
+    # --- scraping (gosom/google-maps-scraper web API) ---
+    scraper_url: str = "http://scraper:8080"
+    scrape_queries_per_day: int = 30  # be a polite client: Google's terms restrict scraping, so keep volume small
     # --- outbound outreach ---
     mailpit_url: str = "http://mailpit:8025"
     sender_name: str = "The LeadPilot team"

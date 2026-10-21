@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import type { ConversationDetail, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem } from "./types"
+import type { Campaign, ConversationDetail, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem, ScrapeRun } from "./types"
 
 const API = process.env.API_URL
 const KEY = process.env.ADMIN_API_KEY ?? ""
@@ -43,4 +43,19 @@ export async function reviewDraft(id: number, action: "approve" | "reject"): Pro
   if (!isLive) throw new Error("the static demo is read-only")
   const res = await fetch(`${API}/admin/outreach/${id}/${action}`, { method: "POST", headers: { "X-Admin-Key": KEY } })
   if (!res.ok) throw new Error(`API ${action} returned ${res.status}`)
+}
+
+export const getCampaigns = async (): Promise<Campaign[]> => (isLive ? api("/admin/campaigns") : [])
+export const getScrapes = async (): Promise<ScrapeRun[]> => (isLive ? api("/admin/scrapes") : [])
+
+/** Start a Google Maps scrape. Server-side only; returns a message for the form instead of throwing. */
+export async function startScrapeRun(input: { campaign_id: number; queries: string[]; depth: number; email: boolean }): Promise<string> {
+  if (!isLive) return "The static demo is read-only."
+  const res = await fetch(`${API}/admin/scrapes`, {
+    method: "POST", headers: { "X-Admin-Key": KEY, "content-type": "application/json" }, body: JSON.stringify(input),
+  })
+  if (res.ok) return "Scrape started. Results are imported and scored automatically in a few minutes."
+  const body = await res.json().catch(() => ({}))
+  const detail = typeof body.detail === "string" ? body.detail : "Check the form values."
+  return `Could not start the scrape (${res.status}): ${detail}`
 }

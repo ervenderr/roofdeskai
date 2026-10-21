@@ -1,14 +1,16 @@
 import Link from "next/link"
 import { connection } from "next/server"
 import { FunnelChart } from "@/components/Charts"
-import { getOutreachMetrics, getQueue, isLive } from "@/lib/data"
+import { FindProspects } from "@/components/FindProspects"
+import { getCampaigns, getOutreachMetrics, getQueue, getScrapes, isLive } from "@/lib/data"
+import { when } from "@/lib/format"
 import { approveDraft, rejectDraft } from "@/lib/review-actions"
 
 const sum = (m: Record<string, number>, keys: string[]) => keys.reduce((a, k) => a + (m[k] ?? 0), 0)
 
 export default async function Outreach() {
   if (!process.env.EXPORT) await connection()
-  const [m, queue] = await Promise.all([getOutreachMetrics(), getQueue()])
+  const [m, queue, campaigns, scrapes] = await Promise.all([getOutreachMetrics(), getQueue(), getCampaigns(), getScrapes()])
   const s = m.prospects
   const found = sum(s, Object.keys(s))
   const contacted = sum(s, ["sent", "replied", "interested", "not_interested", "booked", "unsubscribed", "bounced"])
@@ -18,6 +20,23 @@ export default async function Outreach() {
     <>
       <h1>Outreach</h1>
       <p className="sub">Find, draft, send, follow up. Every email below is reviewed by a person before it goes out, unless a campaign has auto-approve turned on.</p>
+      {isLive && <FindProspects campaigns={campaigns} />}
+      {isLive && scrapes.length > 0 && (
+        <div className="card" style={{ padding: 0, overflowX: "auto", marginBottom: 16 }}>
+          <table>
+            <thead><tr><th>Scrape</th><th>Search</th><th>Status</th><th className="num">New prospects</th><th className="num">Without email</th></tr></thead>
+            <tbody>
+              {scrapes.slice(0, 8).map((r) => (
+                <tr key={r.id}>
+                  <td>{when(r.created_at)}</td><td>{r.queries.join(", ")}</td>
+                  <td><span className={`pill ${r.status === "imported" ? "booked" : r.status === "failed" ? "escalated" : "plain"}`}>{r.status}</span></td>
+                  <td className="num">{r.result_json?.imported ?? "…"}</td><td className="num">{r.result_json?.no_email ?? "…"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="tiles">
         <div className="tile"><div className="label">Emails sent</div><div className="value">{m.messages.sent ?? 0}</div></div>
         <div className="tile"><div className="label">Awaiting your approval</div><div className="value">{m.awaiting_approval}</div></div>

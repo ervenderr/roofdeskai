@@ -23,6 +23,7 @@ No environment variables. The snapshot is synthetic (made-up names, numbers, add
 | LLM | Groq / NVIDIA NIM / OpenRouter keys | Set `GROQ_API_KEY`, `NVIDIA_API_KEY`, `OPENROUTER_API_KEY`. The local Ollama entry is skipped when unreachable; its failure is handled like any other provider error. Embeddings (`lookup_faq`) currently need an Ollama-compatible `/v1/embeddings` endpoint (`LOCAL_LLM_URL`); a hosted host has none, so use a small embeddings API or run Ollama alongside. |
 | Auth for admin pages | Clerk | Not wired yet. Until it is, the admin endpoints are protected by `X-Admin-Key` only. |
 | Email | Resend | Not wired yet. n8n and the outreach engine send through Mailpit in dev. Swap the HTTP Request URL in each n8n workflow, and the one function in `api/app/mailer.py`, for Resend (`https://api.resend.com/emails`, bearer token). For cold outreach use a separate sending domain with SPF, DKIM and DMARC, warm it up, keep the daily cap low, and set `SENDER_ADDRESS` (the API refuses to send without it). |
+| Google Maps scraper | Local only | Runs a headless browser (heavy for a free tier) and sends traffic to Google from your IP. Keep it on your own machine; only the resulting prospects need a database. |
 | n8n | Local only | Needs an always-on host; free tiers sleep. Export JSON in `n8n/workflows/` plus the demo video show it running. |
 
 ## Before the API is public

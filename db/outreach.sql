@@ -28,3 +28,13 @@ CREATE TABLE IF NOT EXISTS prospect_events (
 );
 ALTER TABLE llm_calls ALTER COLUMN conversation_id DROP NOT NULL;
 ALTER TABLE llm_calls ADD COLUMN IF NOT EXISTS prospect_id INT REFERENCES prospects(id);
+
+-- Scraping runs (Google Maps scraper jobs) and per-campaign demo flag.
+ALTER TABLE prospects ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS public_demo BOOLEAN NOT NULL DEFAULT false;  -- only these campaigns may appear in the public snapshot
+CREATE TABLE IF NOT EXISTS scrape_runs (
+  id SERIAL PRIMARY KEY, campaign_id INT NOT NULL REFERENCES campaigns(id), job_id TEXT NOT NULL UNIQUE,
+  queries JSONB NOT NULL, depth INT NOT NULL DEFAULT 1, email BOOLEAN NOT NULL DEFAULT false,
+  status TEXT NOT NULL DEFAULT 'running',  -- running, imported, failed
+  result_json JSONB, error TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), finished_at TIMESTAMPTZ
+);

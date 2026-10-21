@@ -83,3 +83,22 @@ Eval: `evals/outreach_runner.py`, 8 fictional prospects, first-try output, no re
 - The guard rejected "24/7" as a number not in the facts. That is correct: we cannot promise it.
 - My eval deduplicated by keeping the last duplicate row, which was a stripped copy with no reviews, so one scenario failed for a reason that had nothing to do with the model.
 - `draft_pending` and `send_due` acted on every prospect in the database. They are now scoped by campaign, which also makes the tests isolated.
+
+
+## First real scrape (Google Maps scraper, 20 dental clinics, one city)
+
+### 14. My importer had never seen real data
+- **What I assumed:** nested fields arrive as objects. **What arrived:** a CSV where hours, address, reviews and emails are JSON strings, so the importer would have silently dropped them.
+- **Change:** `scraper.rows_from_csv` decodes those cells (and tolerates garbage without failing the row). The address now uses the scraper's own `city` field instead of guessing from the last comma, which would have given a postal code.
+
+### 15. The review hook the outreach copy depends on mostly does not exist
+- **What happened:** 0 of 20 businesses had two or more reviews about unanswered calls. The scraper returns about 5 reviews each, 76 of 96 were five-star, and the scraper's `extra_reviews` option returned nothing extra (the CLI log says "dropped 3 of 3 already present").
+- **What the reviews did say:** scheduling mix-ups and long in-clinic waits, which are not the same problem as unanswered calls and which the copy must not claim.
+- **Consequence:** the copywriter only mentions reviews when the signal is real, so most real drafts use the generic opening. Opening hours and web presence carry more weight than I expected.
+
+### 16. Email is the wrong channel for this niche
+- **What happened:** 5 of 20 had an email even with website crawling on, and 4 of those were free-mail addresses (personal data, scored lower and flagged). One business email in 20.
+- **Consequence:** an email-first engine reaches about one in twenty here. The rest need a phone call or a Facebook message, and automated cold messages on those are restricted. A call list for the no-email prospects, with the score reasons as talking points, would be more useful than more email machinery.
+
+### 17. Real data must not reach the public demo
+- The static snapshot is built from the same database. It now exports only campaigns flagged `public_demo`; a check confirmed none of the 30 real businesses appear in it.

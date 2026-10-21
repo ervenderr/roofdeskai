@@ -6,3 +6,6 @@ export async function approveDraft(_id: number): Promise<void> {
 export async function rejectDraft(_id: number): Promise<void> {
   throw new Error("the static demo is read-only")
 }
+export async function startScrape(_prev: string | null, _form: FormData): Promise<string> {
+  return "The static demo is read-only."
+}
