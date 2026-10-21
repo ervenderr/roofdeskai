@@ -137,8 +137,19 @@ def write_report(results, cids) -> None:
     sha = os.environ.get("GIT_SHA", "unknown")
 
     with engine.begin() as c:
-        run_id = c.execute(text("INSERT INTO eval_runs (git_sha, model, prompt_version) VALUES (:g, :m, :p) RETURNING id"),
-                           {"g": sha, "m": ",".join(llm.models or []), "p": prompt_version}).scalar_one()
+        metrics = {
+            "passed": passed, "total": len(results),
+            "booking_validity": 1 - invalid / max(len(ran), 1),
+            "escalation_precision": tp / pred if pred else 1.0, "escalation_recall": tp / actual if actual else 1.0,
+            "schema_validity": float(llm.valid or 0), "llm_calls": llm.n,
+            "latency_p50_s": statistics.median(turn_times) if turn_times else 0, "latency_p95_s": pct(turn_times, .95),
+            "prompt_tokens": int(llm.pt or 0), "completion_tokens": int(llm.ct or 0),
+            "categories": {k: {"passed": v[0], "total": v[1]} for k, v in by_cat.items()},
+        }
+        run_id = c.execute(text("INSERT INTO eval_runs (git_sha, model, prompt_version, metrics_json) "
+                                "VALUES (:g, :m, :p, CAST(:j AS jsonb)) RETURNING id"),
+                           {"g": sha, "m": ",".join(llm.models or []), "p": prompt_version,
+                            "j": json.dumps(metrics)}).scalar_one()
         for sc, r, f in results:
             c.execute(text("INSERT INTO eval_results (run_id, scenario_id, passed, details_json) "
                            "VALUES (:r, :s, :p, CAST(:d AS jsonb))"),

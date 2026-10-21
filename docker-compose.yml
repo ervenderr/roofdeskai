@@ -30,6 +30,7 @@ services:
       - ./api/app:/srv/app
       - ./prompts:/srv/prompts:ro
       - ./evals:/srv/evals
+      - ./scripts:/srv/scripts
     ports: ["8000:8000"]
     depends_on:
       db: {condition: service_healthy}
@@ -48,6 +49,13 @@ services:
       ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
       GENERIC_TIMEZONE: Asia/Manila
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+    # Import and publish the exported workflows on every start so `docker compose up` is all it takes.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        n8n import:workflow --separate --input=/workflows &&
+        for f in /workflows/*.json; do n8n publish:workflow --id=$$(basename $$f .json); done;
+        exec n8n start
     ports: ["5679:5678"]
     volumes:
       - n8ndata:/home/node/.n8n

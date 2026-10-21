@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     prompts_dir: Path = Path("/srv/prompts")
     max_message_chars: int = 2000
+    chat_rate_per_min: int = 20  # per client IP, in-process (single instance)
     llm_timeout_s: float = 60
     provider_cooldown_s: float = 60
 

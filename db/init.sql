@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE leads (
   id SERIAL PRIMARY KEY, name TEXT, phone TEXT, email TEXT, address TEXT,
@@ -12,7 +13,8 @@ CREATE TABLE conversations (
   ended_at TIMESTAMPTZ, outcome TEXT, failed_turns INT NOT NULL DEFAULT 0,
   offered_slot_ids INT[] NOT NULL DEFAULT '{}',
   followup_count INT NOT NULL DEFAULT 0,
-  external_id TEXT UNIQUE
+  external_id TEXT UNIQUE,
+  token TEXT NOT NULL DEFAULT encode(gen_random_bytes(16), 'hex')
 );
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY, conversation_id INT NOT NULL REFERENCES conversations(id),
@@ -49,7 +51,7 @@ CREATE TABLE events (
   kind TEXT NOT NULL, detail TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE TABLE eval_runs (
-  id SERIAL PRIMARY KEY, git_sha TEXT, model TEXT, prompt_version TEXT,
+  id SERIAL PRIMARY KEY, git_sha TEXT, model TEXT, prompt_version TEXT, metrics_json JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE TABLE eval_results (

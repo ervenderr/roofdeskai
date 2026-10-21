@@ -48,12 +48,14 @@ def list_conversations(limit: int = 100):
            LEFT JOIN llm_calls l ON l.conversation_id = c.id
            LEFT JOIN LATERAL (SELECT max(created_at) t FROM messages WHERE conversation_id = c.id) max_msg ON true
            WHERE c.channel <> 'eval'
-           GROUP BY c.id, max_msg.t ORDER BY c.id DESC LIMIT :n""", n=min(limit, 500))
+           GROUP BY c.id, max_msg.t ORDER BY c.started_at DESC, c.id DESC LIMIT :n""", n=min(limit, 500))
 
 
 @router.get("/conversations/{cid}")
 def get_conversation(cid: int):
-    convo = _rows("SELECT * FROM conversations WHERE id=:i", i=cid)
+    convo = _rows("""SELECT c.*, (SELECT count(*) FROM llm_calls WHERE conversation_id = c.id) AS llm_calls,
+                            (SELECT COALESCE(sum(cost_estimate), 0) FROM llm_calls WHERE conversation_id = c.id) AS cost
+                     FROM conversations c WHERE c.id=:i""", i=cid)
     if not convo:
         raise HTTPException(404, "conversation not found")
     messages = _rows("SELECT role, content, created_at FROM messages WHERE conversation_id=:i ORDER BY id", i=cid)
@@ -79,10 +81,12 @@ def metrics():
     daily = _rows("""SELECT date_trunc('day', started_at)::date AS day, count(*) conversations,
                             count(*) FILTER (WHERE outcome = 'escalated') escalated
                      FROM conversations WHERE channel <> 'eval' GROUP BY 1 ORDER BY 1 DESC LIMIT 30""")
-    runs = _rows("""SELECT r.id, r.created_at, r.model, r.prompt_version, r.git_sha,
-                           count(e.id) total, count(e.id) FILTER (WHERE e.passed) passed
+    # Runs recorded only as summaries (backfilled from saved reports) carry passed/total in metrics_json.
+    runs = _rows("""SELECT r.id, r.created_at, r.model, r.prompt_version, r.git_sha, r.metrics_json,
+                           COALESCE((r.metrics_json->>'total')::int, count(e.id)) AS total,
+                           COALESCE((r.metrics_json->>'passed')::int, count(e.id) FILTER (WHERE e.passed)) AS passed
                     FROM eval_runs r LEFT JOIN eval_results e ON e.run_id = r.id
-                    GROUP BY r.id ORDER BY r.id DESC LIMIT 10""")
+                    GROUP BY r.id ORDER BY r.created_at DESC LIMIT 10""")
     return {
         "conversations": total,
         "outcomes": outcomes,

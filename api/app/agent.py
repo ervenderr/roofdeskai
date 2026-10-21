@@ -1,4 +1,5 @@
 """One conversation turn. The LLM proposes (reply + extracted fields); this code decides."""
+import hmac
 import json
 import logging
 from datetime import datetime
@@ -204,6 +205,17 @@ def _open(cid: int | None, external_id: str | None = None, channel: str = "web")
         if not c.execute(text("SELECT 1 FROM conversations WHERE id=:i"), {"i": cid}).first():
             raise LookupError("conversation not found")
     return cid
+
+
+def conversation_token(cid: int) -> str:
+    return _row("SELECT token FROM conversations WHERE id=:i", cid)["token"]
+
+
+def token_matches(cid: int, token: str | None) -> bool:
+    """Constant-time check; a missing conversation and a wrong token look the same to the caller."""
+    with engine.connect() as c:
+        real = c.execute(text("SELECT token FROM conversations WHERE id=:i"), {"i": cid}).scalar()
+    return bool(real and token and hmac.compare_digest(real, token))
 
 
 def _row(sql: str, i: int) -> dict:
