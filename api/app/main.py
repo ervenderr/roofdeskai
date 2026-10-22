@@ -13,7 +13,7 @@ from .bootstrap import bootstrap_schema
 from .outreach_routes import router as outreach_router
 from .pilot import router as pilot_router
 from .triage import router as triage_router
-from .agent import conversation_token, handle_turn, token_matches
+from .agent import CLOSED_REPLY, conversation_token, handle_turn, token_matches
 from .config import settings
 from .db import engine
 from .faq import seed_faq
@@ -51,6 +51,7 @@ class ChatOut(BaseModel):
     conversation_id: int
     conversation_token: str
     reply: str
+    closed: bool  # booked, disqualified or handed to a human: the page stops taking messages
 
 
 @app.get("/showcase", include_in_schema=False)
@@ -76,7 +77,9 @@ def chat(body: ChatIn):
     except RuntimeError:
         log.exception("all LLM providers failed (conversation %s)", body.conversation_id)
         raise HTTPException(502, "The assistant is unavailable right now.")
-    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply)
+    with engine.connect() as c:
+        state = c.execute(text("SELECT state FROM conversations WHERE id=:i"), {"i": cid}).scalar()
+    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply, closed=state in CLOSED_REPLY)
 
 
 # The demo page is served by the API itself so one tunnel carries the page, chat and form. Mounted last: API routes win.

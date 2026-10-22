@@ -17,6 +17,12 @@ def test_continuing_a_conversation_needs_its_token(monkeypatch):
     assert ok.status_code == 200 and ok.json()["conversation_id"] == cid
 
 
+def test_chat_says_when_the_conversation_has_ended(monkeypatch):
+    monkeypatch.setattr(settings, "chat_rate_per_min", 1000)
+    out = TestClient(app).post("/chat", json={"message": "let me speak to a real person"}).json()
+    assert out["closed"] is True  # handed to a human: the page should stop taking messages
+
+
 def test_rate_limit_window():
     assert [ratelimit.allow("k", 2, now=t) for t in (0, 1, 2)] == [True, True, False]
     assert ratelimit.allow("k", 2, now=61)  # window slid past the first hit

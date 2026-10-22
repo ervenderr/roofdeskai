@@ -191,26 +191,57 @@ document.getElementById("chat-form").addEventListener("submit", async (e) => {
     const out = await post("/chat", { message, conversation_id: convo && convo.id, conversation_token: convo && convo.token });
     convo = { id: out.conversation_id, token: out.conversation_token };
     wait.remove(); add(out.reply, "bot"); speak(out.reply);
+    if (out.closed) endChat();
   } catch (err) {
     wait.remove();
     add(err.message === "rate" ? "You're sending messages quickly. Wait a moment, then try again." : "The assistant is unavailable right now. Try again in a minute.", "bot");
-  } finally { send.disabled = false; input.focus(); }
+  } finally { if (!input.disabled) { send.disabled = false; input.focus(); } }
 });
+
+function endChat() {
+  document.getElementById("chat-input").disabled = true; document.getElementById("chat-send").disabled = true;
+  if (voice) { voice = false; mic.setAttribute("aria-pressed", false); mic.textContent = "Talk"; if (rec) rec.abort(); }
+  const again = document.createElement("button");
+  again.className = "btn"; again.type = "button"; again.textContent = "Start a new chat";
+  again.addEventListener("click", () => location.reload());
+  document.getElementById("chat-form").appendChild(again);
+}
 
 // Voice: the browser's own speech recognition and synthesis; the words go through the same /chat as typing.
 const Rec = window.SpeechRecognition || window.webkitSpeechRecognition, mic = document.getElementById("mic");
 let voice = false, rec = null;
 function listen() {
   if (!voice) return;
-  rec = new Rec(); rec.lang = "en-US";
-  rec.onresult = (ev) => { document.getElementById("chat-input").value = ev.results[0][0].transcript; document.getElementById("chat-form").requestSubmit(); };
-  rec.onerror = () => setVoice(false);
+  rec = new Rec(); rec.lang = "en-US"; rec.interimResults = true;
+  rec.onstart = () => { mic.textContent = "Listening…"; };
+  rec.onspeechstart = () => { mic.textContent = "Hearing you…"; };
+  rec.onnomatch = () => add("I heard something but could not make out the words. Try again.", "bot");
+  rec.onresult = (ev) => {
+    const r = ev.results[0], input = document.getElementById("chat-input");
+    input.value = r[0].transcript;  // shows your words as you speak
+    if (r.isFinal) document.getElementById("chat-form").requestSubmit();
+  };
+  rec.onerror = (ev) => {
+    if (ev.error === "aborted") return;
+    const why = { "not-allowed": "Microphone blocked. Allow it in the browser's address bar, then try again.",
+                  "service-not-allowed": "Microphone blocked. Allow it in the browser's address bar, then try again.",
+                  "no-speech": "I didn't hear anything. Click Talk and try again.",
+                  "audio-capture": "No microphone found.",
+                  "network": "Speech recognition could not reach the browser's speech service." };
+    add(why[ev.error] || `Voice stopped (${ev.error}).`, "bot"); setVoice(false);
+  };
   rec.onend = () => { if (voice && !speechSynthesis.speaking && !document.getElementById("chat-send").disabled) listen(); };
-  rec.start();
+  try { rec.start(); } catch (e) { add(`Voice could not start (${e.message}).`, "bot"); setVoice(false); }
+}
+// Prefer the nicest English voice installed (Google, Premium/Enhanced, Samantha); the default is often the flattest.
+function bestVoice() {
+  const en = speechSynthesis.getVoices().filter((v) => v.lang.startsWith("en"));
+  const rank = (v) => (/premium|enhanced|natural/i.test(v.name) ? 3 : /google|samantha|ava|allison/i.test(v.name) ? 2 : v.lang === "en-US" ? 1 : 0);
+  return en.sort((a, b) => rank(b) - rank(a))[0] || null;
 }
 function speak(text) {
   if (!voice) return;
-  const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.onend = listen;
+  const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.voice = bestVoice(); u.rate = 1.05; u.onend = listen;
   speechSynthesis.cancel(); speechSynthesis.speak(u);
 }
 function setVoice(on) {
