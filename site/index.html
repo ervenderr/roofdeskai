@@ -230,7 +230,7 @@ function listen() {
                   "network": "Speech recognition could not reach the browser's speech service." };
     add(why[ev.error] || `Voice stopped (${ev.error}).`, "bot"); setVoice(false);
   };
-  rec.onend = () => { if (voice && !speechSynthesis.speaking && !document.getElementById("chat-send").disabled) listen(); };
+  rec.onend = () => { if (voice && !playing && !speechSynthesis.speaking && !document.getElementById("chat-send").disabled) listen(); };
   try { rec.start(); } catch (e) { add(`Voice could not start (${e.message}).`, "bot"); setVoice(false); }
 }
 // Prefer the nicest English voice installed (Google, Premium/Enhanced, Samantha); the default is often the flattest.
@@ -239,10 +239,21 @@ function bestVoice() {
   const rank = (v) => (/premium|enhanced|natural/i.test(v.name) ? 3 : /google|samantha|ava|allison/i.test(v.name) ? 2 : v.lang === "en-US" ? 1 : 0);
   return en.sort((a, b) => rank(b) - rank(a))[0] || null;
 }
-function speak(text) {
+let playing = false;
+async function speak(text) {
   if (!voice) return;
-  const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.voice = bestVoice(); u.rate = 1.05; u.onend = listen;
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  playing = true;
+  try {  // natural voice from the server; the browser voice below is the fallback
+    const r = await fetch(API + "/speak", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: text.slice(0, 600) }) });
+    if (!r.ok) throw new Error("speak " + r.status);
+    const audio = new Audio(URL.createObjectURL(await r.blob()));
+    audio.onended = () => { playing = false; listen(); };
+    await audio.play();
+  } catch (e) {
+    playing = false;
+    const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.voice = bestVoice(); u.rate = 1.05; u.onend = listen;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }
 }
 function setVoice(on) {
   voice = on; mic.setAttribute("aria-pressed", on); mic.textContent = on ? "Stop" : "Talk";

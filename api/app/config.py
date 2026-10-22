@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     nvidia_api_key: str = ""
     openrouter_api_key: str = ""
     gemini_api_key: str = ""
+    tts_model: str = "gemini-2.5-flash-preview-tts"
+    tts_voice: str = "Kore"
     prompts_dir: Path = Path("/srv/prompts")
     clients_dir: Path = Path("/srv/clients")  # one YAML profile per client business
     client_profile: str = "summit-roofing"
