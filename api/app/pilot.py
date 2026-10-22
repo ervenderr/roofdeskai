@@ -2,11 +2,11 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 
-from . import mailer
+from . import mailer, triage
 from .config import settings
 from .db import engine
 from .ratelimit import allow
@@ -53,12 +53,24 @@ def _save(body: PilotIn) -> None:
                   {"p": pid, "d": f"{body.name}: {body.message or ''}"[:500]})
 
 
+def _triage_note(body: PilotIn) -> str:
+    """Category and a draft reply for the owner's email; a failed model call just leaves the note out."""
+    if not body.message:
+        return ""
+    try:
+        r = triage.triage(body.message, triage.load_profile("roofdesk-ai"))
+    except RuntimeError:
+        log.exception("pilot request triage failed")
+        return ""
+    return f"\nSorted as: {r.category} (confidence {r.confidence:.2f})\nSuggested reply (check before sending):\n{r.draft or '-'}\n"
+
+
 def _notify(body: PilotIn) -> None:
     if not settings.owner_email:
         return
     subject = f"Pilot request: {body.business}".replace("\n", " ")[:100]
     text_ = (f"{body.name} from {body.business} asked for a free pilot.\nEmail: {body.email}\nPhone: {body.phone or '-'}\n"
-             f"Message: {body.message or '-'}\n\nReply from your own inbox.")
+             f"Message: {body.message or '-'}\n{_triage_note(body)}\nReply from your own inbox.")
     try:
         mailer.send(settings.owner_email, subject, text_)
     except mailer.MailError:
@@ -66,9 +78,9 @@ def _notify(body: PilotIn) -> None:
 
 
 @router.post("/pilot-requests", dependencies=[Depends(pilot_rate_limit)])
-def pilot_request(body: PilotIn):
+def pilot_request(body: PilotIn, background: BackgroundTasks):
     if body.website:
         return {"ok": True}  # a bot filled the honeypot: say yes, store nothing
     _save(body)
-    _notify(body)
+    background.add_task(_notify, body)  # the model call can take seconds; the visitor should not wait for it
     return {"ok": True}

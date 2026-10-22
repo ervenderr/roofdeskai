@@ -1,0 +1,14 @@
+business: Bright Smile Dental
+about: a family dental clinic that books checkups, cleanings and emergency visits
+confidence_threshold: 0.8
+categories:
+  new_patient: wants to book a first visit, checkup or cleaning
+  booking_change: wants to move, cancel or confirm an appointment
+  emergency: severe pain, swelling, a knocked-out tooth or bleeding
+  insurance_billing: asks about insurance, prices or a bill
+  question: asks about services, hours or how things work
+  other: anything that fits none of the above
+always_human: [emergency, insurance_billing]
+facts:
+  - We are open Monday to Saturday.
+  - We see new patients and emergencies.

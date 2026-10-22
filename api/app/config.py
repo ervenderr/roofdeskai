@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     gemini_api_key: str = ""
     prompts_dir: Path = Path("/srv/prompts")
+    clients_dir: Path = Path("/srv/clients")  # one YAML profile per client business
+    client_profile: str = "summit-roofing"
     site_dir: Path = Path("/srv/site")
     db_dir: Path = Path("/srv/db")
     max_message_chars: int = 2000

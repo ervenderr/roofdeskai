@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-from . import mailer, ratelimit
+from . import mailer, ratelimit, triage
 from .config import settings
 from .db import engine
 from .main import app
@@ -13,6 +13,7 @@ def _client(monkeypatch, sent=None):
     ratelimit._hits.clear()
     monkeypatch.setattr(settings, "owner_email", "owner@example.test")
     monkeypatch.setattr(mailer, "send", lambda *a, **k: sent.append(a) if sent is not None else None)
+    monkeypatch.setattr(triage.llm, "chat", lambda messages: {"content": '{"category": "pilot_interest", "confidence": 0.9, "draft": "Thanks, we will set up your pilot."}'})
     return TestClient(app)
 
 
@@ -24,6 +25,25 @@ def test_pilot_request_is_saved_as_interested_and_owner_is_emailed(monkeypatch):
         row = c.execute(text("SELECT name, status, phone FROM prospects WHERE email='dana@pilot.test' ORDER BY id DESC")).first()
     assert row == ("Cruz Roofing", "interested", "+1 512 555 0100")
     assert sent and sent[0][0] == "owner@example.test" and "Cruz Roofing" in sent[0][1]
+
+
+def test_owner_email_carries_the_triage_and_a_draft_reply(monkeypatch):
+    sent = []
+    _client(monkeypatch, sent).post("/pilot-requests", json=GOOD)
+    body = sent[0][2]
+    assert "pilot_interest" in body and "Thanks, we will set up your pilot." in body
+
+
+def test_pilot_request_still_works_when_triage_fails(monkeypatch):
+    sent = []
+    client = _client(monkeypatch, sent)
+
+    def down(messages):
+        raise RuntimeError("all LLM providers failed or are cooling down")
+
+    monkeypatch.setattr(triage.llm, "chat", down)
+    assert client.post("/pilot-requests", json=GOOD).json() == {"ok": True}
+    assert sent and "Cruz Roofing" in sent[0][1] and "pilot_interest" not in sent[0][2]
 
 
 def test_pilot_request_rejects_bad_input_and_bots(monkeypatch):

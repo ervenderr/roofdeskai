@@ -1,0 +1,13 @@
+business: RoofDesk AI
+about: an AI assistant for small service businesses that answers customer enquiries, qualifies them and books appointments; it is offered with a free 14-day pilot
+confidence_threshold: 0.8
+categories:
+  pilot_interest: wants to try or start the free pilot, or asks how to get started
+  pricing: asks what it costs
+  question: asks how it works or what it can do
+  support: an existing user needing help
+  other: anything that fits none of the above
+always_human: []
+facts:
+  - The pilot is free for 14 days.
+  - After the pilot it is $199 per month, with no setup fee and no contract.

@@ -39,6 +39,7 @@ services:
     volumes:
       - ./api/app:/srv/app
       - ./prompts:/srv/prompts:ro
+      - ./clients:/srv/clients:ro
       - ./site:/srv/site:ro
       - ./db:/srv/db:ro
       - ./evals:/srv/evals
