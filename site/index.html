@@ -94,7 +94,7 @@
 <section class="wrap hero" id="demo">
   <div>
     <h1>Every enquiry answered while you're on the roof.</h1>
-    <p class="sub">RoofDesk AI replies to customer messages in seconds, asks what you need to know, and books the inspection. Try it yourself on the right, as a homeowner with a leak.</p>
+    <p class="sub">RoofDesk AI replies to customer messages in seconds, asks what you need to know, and books the inspection. Ask it anything on the right, or try it as a homeowner with a leak.</p>
     <a class="btn" href="#pilot">Get a free pilot</a>
     <div class="ticket">
       <h2>What it does</h2>
@@ -109,8 +109,8 @@
 
   <div class="phone">
     <div class="modes" role="group" aria-label="Choose a demo">
-      <button type="button" class="mode" data-mode="demo" aria-pressed="true">Try it as a customer</button>
-      <button type="button" class="mode" data-mode="sales" aria-pressed="false">Ask about RoofDesk</button>
+      <button type="button" class="mode" data-mode="sales" aria-pressed="true">Ask about RoofDesk</button>
+      <button type="button" class="mode" data-mode="demo" aria-pressed="false">Try it as a customer</button>
     </div>
     <div class="phone-head"><img src="logo.svg" alt=""><div><b id="head-title">Summit Roofing</b><span id="head-sub">Sample company, Denver area</span></div><i class="ping" title="Online"></i></div>
     <div id="log" aria-live="polite"></div>
@@ -193,7 +193,6 @@ function greet(m) {
   const dots = typing();
   setTimeout(() => { dots.remove(); if (mode === m) add(MODES[m].hello, "bot"); }, 1100);
 }
-greet("demo");
 
 function switchMode(m) {
   mode = m; convo = null; intakeData = {};
@@ -339,6 +338,8 @@ function setVoice(on) {
   stopMic();
 }
 if (navigator.mediaDevices && window.MediaRecorder) { mic.hidden = false; mic.addEventListener("click", () => setVoice(!voice)); }
+
+switchMode("sales");  // starts on RoofDesk's own assistant; after the voice variables exist
 
 document.getElementById("pilot-form").addEventListener("submit", async (e) => {
   e.preventDefault();
