@@ -1,13 +1,14 @@
 """The 'RoofDesk's own assistant' mode of the demo: it answers questions about the service and collects a pilot request.
 Code asks the questions in a fixed order and validates every answer; the model is only used to answer questions from the
 RoofDesk facts (clients/roofdesk-ai.yaml). The page holds the answers so far, so nothing is stored until the request is complete."""
+import json
 import logging
 import re
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from pydantic import BaseModel, Field, field_validator
 
-from . import pilot, policy, triage
+from . import llm, pilot, policy, triage
 from .ratelimit import chat_rate_limit
 from .schemas import EMAIL_RE
 
@@ -88,31 +89,81 @@ def _next(data: dict) -> str | None:
     return next((s for s in STEPS if data.get(s) is None), None)
 
 
-def _side_reply(message: str, step: str) -> str:
-    """The visitor asked something (or wrote a sentence) instead of answering: answer from the facts, then ask again."""
-    if not (policy.looks_like_question(message) or len(message.split()) > 4):
-        return f"Sorry, I didn't catch that. {ASK[step]}"
+_PHONE_IN_TEXT = re.compile(r"\+?\d[\d\-. ()]{5,}\d")
+
+
+def _phone_in(message: str) -> str | None:
+    found = _PHONE_IN_TEXT.search(message)
+    return found.group().strip() if found and 7 <= len(re.sub(r"\D", "", found.group())) <= 15 and len(found.group()) <= 30 else None
+
+
+def _words(text_: str) -> set[str]:
+    return set(re.findall(r"[\w']+", text_.lower()))
+
+
+def _extract(message: str) -> tuple[dict, bool]:
+    """Name and business from a sentence, via the model. Only words the visitor actually wrote are kept.
+    A model failure returns nothing: the caller then just asks again."""
+    _, system = llm.load_prompt("intake.v1")
+    try:
+        raw = llm.chat([{"role": "system", "content": system}, {"role": "user", "content": message}])["content"]
+        data = json.loads(raw[raw.find("{"):raw.rfind("}") + 1])
+    except (RuntimeError, ValueError):
+        log.warning("intake: could not extract details from a sentence")
+        return {}, False
+    if not isinstance(data, dict):
+        return {}, False
+    found = {}
+    for key in ("name", "business"):
+        v = data.get(key)
+        if isinstance(v, str) and 0 < len(v.strip()) <= 100 and _words(v) <= _words(message) and not re.search(r"[\d@]", v if key == "name" else ""):
+            found[key] = v.strip()
+    return found, data.get("question") is True
+
+
+def _fill(message: str, step: str) -> tuple[dict, bool]:
+    """What this message tells us, as (new fields, whether it asked a question). A short answer goes to the
+    current step; a longer message is read by the model so 'my name is John and I sell computer parts' fills two."""
+    asked = policy.looks_like_question(message)
+    found = {}
+    if email := _email(message):
+        found["email"] = email
+    if phone := _phone_in(message):
+        found["phone"] = phone
+    if len(message.split()) <= 4 and not asked:
+        if (v := PARSE[step](message)) is not None:
+            found.setdefault(step, v)
+    elif not asked:
+        extracted, model_asked = _extract(message)
+        found.update(extracted)
+        asked = model_asked and not extracted  # a small model flags statements as questions; trust it only when nothing was captured
+        if step == "need" and not found:
+            found["need"] = message.strip()
+    return found, asked
+
+
+def _answer(message: str) -> str:
+    """Answer from the RoofDesk facts. The safe draft promises a reply nobody will send from a chat, so it is not used."""
     try:
         answer = triage.triage(message, triage.load_profile(PROFILE)).draft
-        if not answer or answer == triage.SAFE_DRAFT:  # the safe draft promises a reply nobody will send from a chat
-            answer = NO_ANSWER
     except RuntimeError:
         log.exception("intake: could not answer a question")
-        answer = NO_ANSWER
-    return f"{answer} {ASK[step]}"
+        return NO_ANSWER
+    return NO_ANSWER if not answer or answer == triage.SAFE_DRAFT else answer
 
 
 @router.post("/intake", response_model=IntakeOut, response_model_exclude_none=True, dependencies=[Depends(chat_rate_limit)])
 def intake(body: IntakeIn, request: Request, background: BackgroundTasks):
-    data = body.data.model_dump(exclude_none=True)
-    step = _next(data)
-    value = None if policy.looks_like_question(body.message) else PARSE[step](body.message)
-    if value is None:
-        return IntakeOut(reply=_side_reply(body.message, step), data=body.data, closed=False)
-    data = {**data, step: value}
+    known = body.data.model_dump(exclude_none=True)
+    step = _next(known)
+    found, asked = _fill(body.message, step)
+    data = {**{k: v for k, v in found.items() if k not in known}, **known}
+    answer = _answer(body.message) if asked or (not found and len(body.message.split()) > 4) else ""
     following = _next(data)
     if following:
-        return IntakeOut(reply=ASK[following], data=IntakeData(**data), closed=False)
+        lead_in = "" if found or answer else "Sorry, I didn't catch that. "
+        greeting = f"Nice to meet you, {data['name']}. " if "name" in found and "name" not in known and not answer else ""
+        return IntakeOut(reply=f"{answer} {lead_in}{greeting}{ASK[following]}".strip(), data=IntakeData(**data), closed=False)
     pilot.pilot_rate_limit(request)  # same hourly cap as the form: a finished chat is a pilot request
     req = pilot.PilotIn(name=data["name"], business=data["business"], email=data["email"], phone=data["phone"] or None,
                         message=f"[via chat] {data['need']}"[:500])

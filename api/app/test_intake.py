@@ -87,3 +87,38 @@ def test_the_form_limit_applies_to_finished_chats(monkeypatch):
 def test_a_malformed_email_in_the_data_is_rejected(monkeypatch):
     r = _client(monkeypatch).post("/intake", json={"message": "hi", "data": {"email": "nope"}})
     assert r.status_code == 422
+
+
+def _extracting(monkeypatch, extraction):
+    """A model that extracts for the intake prompt and triages for everything else."""
+    client = _client(monkeypatch)
+
+    def chat(messages):
+        return {"content": extraction if "Extract contact details" in messages[0]["content"] else FACTS}
+
+    monkeypatch.setattr(triage.llm, "chat", chat)
+    return client
+
+
+def test_a_sentence_with_a_name_and_a_business_fills_both(monkeypatch):
+    client = _extracting(monkeypatch, '{"name": "John", "business": "computer parts selling", "question": false}')
+    out = _say(client, "my name is John and my business is computer parts selling")
+    assert out["data"] == {"name": "John", "business": "computer parts selling"} and "email" in out["reply"]
+
+
+def test_a_business_sentence_before_the_name_is_kept_and_the_name_is_still_asked(monkeypatch):
+    client = _extracting(monkeypatch, '{"name": null, "business": "computer parts selling", "question": false}')
+    out = _say(client, "So my business is about computer parts selling.")
+    assert out["data"] == {"business": "computer parts selling"} and out["reply"].endswith("What's your name?")
+
+
+def test_extracted_words_the_visitor_never_wrote_are_dropped(monkeypatch):
+    client = _extracting(monkeypatch, '{"name": "Dana Cruz", "business": "Cruz Roofing", "question": false}')
+    out = _say(client, "I want to try the pilot for my shop please")
+    assert "name" not in out["data"] and "business" not in out["data"]
+
+
+def test_an_email_and_phone_inside_a_sentence_are_picked_up(monkeypatch):
+    client = _extracting(monkeypatch, '{"name": null, "business": null, "question": false}')
+    out = _say(client, "you can reach me at dana@intake.test or +1 512 555 0100 anytime", {"name": "Dana", "business": "Cruz Roofing"})
+    assert out["data"]["email"] == "dana@intake.test" and out["data"]["phone"] == "+1 512 555 0100"

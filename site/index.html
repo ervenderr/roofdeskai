@@ -298,7 +298,7 @@ async function listen() {
       if (!text) return listen();
       document.getElementById("chat-input").value = text;  // shows what we heard
       document.getElementById("chat-form").requestSubmit();
-    } catch (e) { add("I couldn't process that. Try again, or type your message.", "bot"); listen(); }
+    } catch (e) { console.warn(e); add("I couldn't process that, so voice is paused. Tap Talk to try again, or type your message.", "bot"); setVoice(false); }  // no auto-retry: a failing service would loop
   };
   mic.textContent = "Listening…"; recorder.start();
 }
