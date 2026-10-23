@@ -69,7 +69,7 @@ def test_a_question_is_answered_from_the_facts_and_the_step_is_asked_again(monke
 def test_an_unsupported_answer_is_replaced_by_the_safe_draft(monkeypatch):
     lie = '{"category": "question", "confidence": 0.9, "draft": "It integrates with WhatsApp and Slack."}'
     out = _say(_client(monkeypatch, model=lie), "does it work with whatsapp?")
-    assert "WhatsApp" not in out["reply"] and out["reply"].endswith("What's your name?")
+    assert "WhatsApp" not in out["reply"] and "by email" in out["reply"] and "reply shortly" not in out["reply"]
 
 
 def test_questions_still_get_a_reply_when_the_model_is_down(monkeypatch):

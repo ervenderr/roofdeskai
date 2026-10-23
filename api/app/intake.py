@@ -21,7 +21,7 @@ ASK = {
     "phone": "And a phone number? Say skip if you'd rather not.",
     "need": "Last one: what enquiries do you get, and what should RoofDesk AI handle for you? Say skip if you're not sure.",
 }
-NO_ANSWER = "I can't answer that right now, but we can cover it by email."
+NO_ANSWER = "I'm not sure about that one, but the team can answer it by email once I have your details."
 _SKIP = re.compile(r"^\s*(skip|no|none|n/?a|nope|rather not)\W*$", re.I)
 _PREFIX = re.compile(r"^(?:my name is|my name's|i am|i'm|it's|this is|my business is|my business is called|we are|we're|it's called)\s+", re.I)
 _EMAIL_IN_TEXT = re.compile(r"[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+")
@@ -93,7 +93,9 @@ def _side_reply(message: str, step: str) -> str:
     if not (policy.looks_like_question(message) or len(message.split()) > 4):
         return f"Sorry, I didn't catch that. {ASK[step]}"
     try:
-        answer = triage.triage(message, triage.load_profile(PROFILE)).draft or NO_ANSWER
+        answer = triage.triage(message, triage.load_profile(PROFILE)).draft
+        if not answer or answer == triage.SAFE_DRAFT:  # the safe draft promises a reply nobody will send from a chat
+            answer = NO_ANSWER
     except RuntimeError:
         log.exception("intake: could not answer a question")
         answer = NO_ANSWER
