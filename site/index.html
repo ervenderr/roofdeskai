@@ -265,10 +265,12 @@ async function speak(text) {
   try {  // natural voice from the server; the browser voice below is the fallback
     const r = await fetch(API + "/speak", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: text.slice(0, 600) }) });
     if (!r.ok) throw new Error("speak " + r.status);
-    const audio = player = new Audio(URL.createObjectURL(await r.blob()));
+    const audio = player;  // the element unlocked by the Talk click, so Safari allows autoplay
+    audio.src = URL.createObjectURL(await r.blob());
     audio.onended = () => { playing = false; listen(); };
     await audio.play();
   } catch (e) {
+    console.warn("natural voice failed, using the browser voice:", e);
     playing = false;
     const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.voice = bestVoice(); u.rate = 1.05; u.onend = listen;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
@@ -276,7 +278,11 @@ async function speak(text) {
 }
 function setVoice(on) {
   voice = on; mic.setAttribute("aria-pressed", on); mic.textContent = on ? "Stop" : "Talk";
-  if (on) { listen(); return; }
+  if (on) {
+    player = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+    player.play().catch(() => {});  // unlock playback inside the click; Safari blocks later play() calls otherwise
+    listen(); return;
+  }
   speechSynthesis.cancel(); playing = false; if (player) player.pause();
   if (rec && rec.state === "recording") rec.stop();
   stopMic();
