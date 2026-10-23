@@ -2,3 +2,5 @@
 __pycache__/
 .venv/
 node_modules/
+HANDOVER.md
+.DS_Store

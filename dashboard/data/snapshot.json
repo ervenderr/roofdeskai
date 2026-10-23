@@ -2507,7 +2507,7 @@
    "name": "Pipe Masters Plumbing",
    "category": "Plumber",
    "address": "4 Matina Rd, Davao City",
-   "email": "pipemasters@gmail.com",
+   "email": "pipemasters@example.com",
    "website": "https://pipemasters.example.com",
    "rating": "3.9",
    "review_count": 12,
@@ -3255,7 +3255,7 @@
     "category": "Plumber",
     "address": "4 Matina Rd, Davao City",
     "phone": "+63 82 555 0105",
-    "email": "pipemasters@gmail.com",
+    "email": "pipemasters@example.com",
     "website": "https://pipemasters.example.com",
     "maps_url": null,
     "rating": "3.9",
@@ -3452,7 +3452,7 @@
    "source": "template",
    "created_at": "2026-10-21 01:59:32.565901+00:00",
    "name": "Pipe Masters Plumbing",
-   "email": "pipemasters@gmail.com",
+   "email": "pipemasters@example.com",
    "score": 45
   }
  ],
