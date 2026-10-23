@@ -120,14 +120,32 @@ class InboundIn(BaseModel):
     contact_id: str = Field(min_length=1, max_length=100)
     message: str = Field(min_length=1, max_length=settings.max_message_chars)
     channel: str = Field("sms", max_length=20)
+    message_id: str | None = Field(None, max_length=100)  # the provider's id for this message; a redelivery repeats it
+
+
+def _redelivered(external_id: str, message_id: str) -> dict | None:
+    """The saved reply if this provider message was already processed, else None.
+    shortcut: sequential redeliveries only; two identical deliveries at the same instant could both pass. Add a unique index to close it."""
+    rows = _rows("""SELECT c.id AS conversation_id,
+                           (SELECT content FROM messages WHERE conversation_id = c.id AND role = 'assistant' ORDER BY id DESC LIMIT 1) AS reply
+                    FROM conversations c JOIN events e ON e.conversation_id = c.id
+                    WHERE c.external_id = :x AND e.kind = 'inbound_id' AND e.detail = :m LIMIT 1""", x=external_id, m=message_id)
+    return rows[0] if rows else None
 
 
 @router.post("/webhooks/inbound")
 def inbound(body: InboundIn):
+    external_id = f"{body.channel}:{body.contact_id}"
+    if body.message_id and (seen := _redelivered(external_id, body.message_id)):
+        # No outcome fields on purpose: n8n routes on them, and a redelivery must not repeat the booking email or the alert.
+        return {**seen, "duplicate": True, "link": f"{settings.public_url}/conversations/{seen['conversation_id']}"}
     try:
-        cid, reply = handle_turn(body.message, external_id=f"{body.channel}:{body.contact_id}", channel=body.channel)
+        cid, reply = handle_turn(body.message, external_id=external_id, channel=body.channel)
     except RuntimeError:
         raise HTTPException(502, "The assistant is unavailable right now.")
+    if body.message_id:
+        with engine.begin() as c:
+            c.execute(text("INSERT INTO events (conversation_id, kind, detail) VALUES (:c, 'inbound_id', :m)"), {"c": cid, "m": body.message_id})
     # Outcome details let the n8n flow branch (confirm a booking, alert a human, leave nurture to the scheduler).
     info = _rows(
         """SELECT c.state, c.outcome, l.name, l.email,

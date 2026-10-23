@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -98,3 +100,21 @@ def test_campaign_timezone_and_locale_are_validated(monkeypatch):
     assert ok.status_code == 200
     assert client.post("/admin/campaigns", json={"name": "x", "timezone": "Mars/Base"}, headers=H2).status_code == 422
     assert client.post("/admin/campaigns", json={"name": "x", "locale": "fr-FR"}, headers=H2).status_code == 422
+
+
+def test_a_redelivered_webhook_is_answered_but_not_processed_twice(client):
+    body = {"contact_id": f"dup-{uuid.uuid4()}", "message": "let me speak to a real person", "message_id": "provider-msg-1"}
+    first = client.post("/webhooks/inbound", json=body, headers=H).json()
+    again = client.post("/webhooks/inbound", json=body, headers=H).json()
+    assert again["duplicate"] is True and again["reply"] == first["reply"] and again["conversation_id"] == first["conversation_id"]
+    assert "outcome" not in again  # n8n routes on the outcome: a redelivery must not trigger the booking email or the alert again
+    with engine.connect() as c:
+        n = c.execute(text("SELECT count(*) FROM messages WHERE conversation_id=:c"), {"c": first["conversation_id"]}).scalar()
+    assert n == 2  # one customer message and one reply, not four
+
+
+def test_the_same_text_with_a_new_message_id_is_a_new_message(client):
+    body = {"contact_id": f"dup-{uuid.uuid4()}", "message": "let me speak to a real person"}
+    a = client.post("/webhooks/inbound", json={**body, "message_id": "m-1"}, headers=H).json()
+    b = client.post("/webhooks/inbound", json={**body, "message_id": "m-2"}, headers=H).json()
+    assert "duplicate" not in a and "duplicate" not in b

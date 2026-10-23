@@ -45,7 +45,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "parameters": {
-        "jsCode": "const b = $input.first().json.body ?? $input.first().json;\nconst message = b.body ?? b.message ?? b.text;\nconst contact = b.contactId ?? b.contact_id ?? b.phone ?? b.from;\nif (!message || !contact) throw new Error('payload needs a message and a contact id');\nreturn [{ json: { contact_id: String(contact), message: String(message), channel: b.type === 'Email' ? 'email' : 'sms' } }];"
+        "jsCode": "const b = $input.first().json.body ?? $input.first().json;\nconst message = b.body ?? b.message ?? b.text;\nconst contact = b.contactId ?? b.contact_id ?? b.phone ?? b.from;\nif (!message || !contact) throw new Error('payload needs a message and a contact id');\nconst mid = b.messageId ?? b.message_id;  // the provider's id for this message: lets the API ignore a redelivery\nreturn [{ json: { contact_id: String(contact), message: String(message), channel: b.type === 'Email' ? 'email' : 'sms', ...(mid ? { message_id: String(mid) } : {}) } }];"
       },
       "position": [
         240,
