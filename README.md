@@ -155,9 +155,9 @@ The model proposes and the code decides, again. Drafts are checked against the p
 
 ## Voice
 
-The demo page has a **Talk** button: the browser's speech recognition turns speech into text, which goes through the same `/chat` as typing, and the reply is spoken back with Gemini text-to-speech (`/speak`, rate limited), falling back to the browser's own voice. Spoken numbers and emails are normalised in code before the agent reads them (`api/app/speech.py`). The chat ends visibly after a booking, a decline or a handoff.
+The demo page has a **Talk** button: the page records the microphone, detects when you stop talking, and posts the audio to `/transcribe` (Gemini speech-to-text, rate limited, 1.5 MB cap). The text goes through the same `/chat` as typing, and the reply is spoken back with Gemini text-to-speech (`/speak`, rate limited), falling back to the browser's own voice. Spoken numbers and emails are normalised in code before the agent reads them (`api/app/speech.py`). The chat ends visibly after a booking, a decline or a handoff.
 
-Limits: recognition is the browser's, so it depends on the visitor's browser and network (Chrome sends audio to Google's service; Safari works on-device). A proper phone line needs a hosted voice provider and a paid model, which is not built. Outbound calling is out of scope on purpose (consent rules).
+Limits: each spoken turn takes a few seconds (silence detection, transcription, reply, speech), the silence threshold is not tuned for noisy rooms, and Gemini's free tier is used for both directions, which may not be allowed for paid production use. A proper phone line needs a hosted voice provider and a paid model, which is not built. Outbound calling is out of scope on purpose (consent rules).
 
 ## How I check the output
 
