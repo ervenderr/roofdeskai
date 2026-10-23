@@ -85,7 +85,7 @@
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="42.5">
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="52.9">
       <div class="glow" id="glow-a"></div>
       <div class="glow" id="glow-b"></div>
 
@@ -125,7 +125,7 @@
             <div class="bar"><i></i><i></i><i></i><span>Dashboard · static demo</span></div>
             <div class="shots"><img src="assets/dash-overview.jpg" alt="" /></div>
           </div>
-          <div class="chip sky" id="s3-chip" style="left: 150px; top: 820px">80/80 scenarios passed</div>
+          <div class="chip sky" id="s3-chip" style="left: 150px; top: 820px">Eval scorecard on every run</div>
         </div>
       </section>
 
@@ -158,26 +158,52 @@
       <!-- 6 n8n automation -->
       <section id="s6" class="clip scene" data-start="27.8" data-duration="5.8" data-track-index="6">
         <div class="stage" id="s6-stage">
-          <div class="headline"><span class="ln">Six automations,</span><span class="ln"><em>no babysitting</em></span></div>
+          <div class="headline"><span class="ln">Six workflows,</span><span class="ln"><em>no babysitting</em></span></div>
           <div class="caption">n8n schedules scraping, drafting, sending and reply polling. The API enforces every cap and guard.</div>
           <div class="win" id="s6-win">
             <div class="bar"><i></i><i></i><i></i><span>n8n · Outreach flow</span></div>
             <div class="shots">
               <img id="s6-canvas" src="assets/n8n-canvas.jpg" alt="" style="height: 1474px" />
-              <img id="s6-over" src="assets/n8n-overview.jpg" alt="" />
+              <img id="s6-over" src="assets/n8n-list.png" alt="" />
             </div>
           </div>
-          <div class="chip sky" id="s6-chip" style="left: 150px; top: 820px">250 runs · 0.8% failed</div>
+          <div class="chip sky" id="s6-chip" style="left: 150px; top: 820px">Six workflows, one error handler</div>
+        </div>
+      </section>
+
+      <!-- 7 fails safely -->
+      <section id="s9" class="clip scene" data-start="33.2" data-duration="5.6" data-track-index="9">
+        <div class="stage" id="s9-stage">
+          <div class="headline"><span class="ln">Fails loudly,</span><span class="ln"><em>never twice</em></span></div>
+          <div class="caption">The agent call retries three times. If it still fails you get an alert, and a redelivered message is ignored.</div>
+          <div class="win" id="s9-win">
+            <div class="bar"><i></i><i></i><i></i><span>Failure alert · local test inbox</span></div>
+            <div class="shots"><img src="assets/alert.png" alt="" /></div>
+          </div>
+          <div class="chip orange" id="s9-chip" style="left: 150px; top: 820px">3 retries, then an alert</div>
+        </div>
+      </section>
+
+      <!-- 7b RoofDesk's own assistant -->
+      <section id="s10" class="clip scene" data-start="38.4" data-duration="5.6" data-track-index="10">
+        <div class="stage" id="s10-stage">
+          <div class="headline"><span class="ln">Ask the assistant</span><span class="ln"><em>that sells it</em></span></div>
+          <div class="caption">The live page runs RoofDesk's own assistant: it answers questions from facts it was given, then takes your details.</div>
+          <div class="win" id="s10-win">
+            <div class="bar"><i></i><i></i><i></i><span>roofdeskai.com</span></div>
+            <div class="shots"><img src="assets/sales-chat.png" alt="" /></div>
+          </div>
+          <div class="chip sky" id="s10-chip" style="left: 150px; top: 820px">No made-up prices or promises</div>
         </div>
       </section>
 
       <!-- 7 trust -->
-      <section id="s7" class="clip scene" data-start="33.2" data-duration="5.6" data-track-index="7">
+      <section id="s7" class="clip scene" data-start="43.6" data-duration="5.6" data-track-index="7">
         <div class="stage" id="s7-stage">
           <div class="headline" style="width: 1500px"><span class="ln">The model proposes.</span><span class="ln"><em>The code decides.</em></span></div>
           <div class="pill-row" id="s7-pills">
-            <div class="pill">80-scenario eval</div>
-            <div class="pill">138 automated tests</div>
+            <div class="pill">96-scenario eval</div>
+            <div class="pill">205 automated tests</div>
             <div class="pill">Opt-out handled in code</div>
             <div class="pill">LLM provider failover</div>
             <div class="pill">Live on Railway</div>
@@ -187,7 +213,7 @@
       </section>
 
       <!-- 8 end card -->
-      <section id="s8" class="clip scene" data-start="38.4" data-duration="4.1" data-track-index="8">
+      <section id="s8" class="clip scene" data-start="48.8" data-duration="4.1" data-track-index="8">
         <div class="stage" id="s8-stage">
           <img id="end-logo" src="assets/logo.svg" alt="" />
           <div id="end-name">RoofDesk AI</div>
@@ -197,21 +223,23 @@
         </div>
       </section>
 
-      <audio id="bgm" src="assets/bgm.mp3" data-start="0" data-duration="42.5" data-track-index="20" data-volume="0.85"></audio>
+      <audio id="bgm" src="assets/bgm.mp3" data-start="0" data-duration="52.9" data-track-index="20" data-volume="0.85"></audio>
       <audio id="whoosh1" src="assets/whoosh.mp3" data-start="3.8" data-duration="0.6" data-track-index="21" data-volume="0.35"></audio>
       <audio id="whoosh2" src="assets/whoosh.mp3" data-start="12.1" data-duration="0.6" data-track-index="22" data-volume="0.35"></audio>
       <audio id="whoosh3" src="assets/whoosh.mp3" data-start="18.1" data-duration="0.6" data-track-index="23" data-volume="0.35"></audio>
       <audio id="whoosh4" src="assets/whoosh.mp3" data-start="22.9" data-duration="0.6" data-track-index="24" data-volume="0.35"></audio>
       <audio id="whoosh5" src="assets/whoosh.mp3" data-start="27.7" data-duration="0.6" data-track-index="25" data-volume="0.35"></audio>
-      <audio id="whoosh6" src="assets/whoosh.mp3" data-start="33.1" data-duration="0.6" data-track-index="26" data-volume="0.35"></audio>
-      <audio id="whoosh7" src="assets/whoosh.mp3" data-start="38.3" data-duration="0.6" data-track-index="27" data-volume="0.35"></audio>
+      <audio id="whoosh6" src="assets/whoosh.mp3" data-start="43.5" data-duration="0.6" data-track-index="26" data-volume="0.35"></audio>
+      <audio id="whoosh7" src="assets/whoosh.mp3" data-start="48.7" data-duration="0.6" data-track-index="27" data-volume="0.35"></audio>
+      <audio id="whoosh8" src="assets/whoosh.mp3" data-start="33.1" data-duration="0.6" data-track-index="28" data-volume="0.35"></audio>
+      <audio id="whoosh9" src="assets/whoosh.mp3" data-start="38.3" data-duration="0.6" data-track-index="29" data-volume="0.35"></audio>
     </div>
 
     <script>
       const tl = gsap.timeline({ paused: true });
 
-      tl.to("#glow-a", { x: 200, y: 160, duration: 42.5, ease: "none" }, 0);
-      tl.to("#glow-b", { x: -180, y: -140, duration: 42.5, ease: "none" }, 0);
+      tl.to("#glow-a", { x: 200, y: 160, duration: 52.9, ease: "none" }, 0);
+      tl.to("#glow-b", { x: -180, y: -140, duration: 52.9, ease: "none" }, 0);
 
       // 1 hook
       tl.fromTo("#h1", { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.2);
@@ -233,6 +261,8 @@
       scene("s4", 18.2, 5.2);
       scene("s5", 23, 5.2);
       scene("s6", 27.8, 5.8, 31.9); // chip lands with the stats frame
+scene("s9", 33.2, 5.6);
+scene("s10", 38.4, 5.6);
 
       // chat frames cross-fade: first reply, qualifying questions, booking
       tl.set("#s2-b", { opacity: 0 }, 0);
@@ -246,17 +276,17 @@
       tl.to("#s6-over", { opacity: 1, duration: 0.5, ease: "none" }, 31.8);
 
       // 7 trust
-      tl.fromTo("#s7 .headline .ln", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "expo.out", stagger: 0.12 }, 33.35);
-      tl.fromTo("#s7-pills .pill", { y: 50, opacity: 0, scale: 0.88 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.8)", stagger: 0.12 }, 34.1);
-      tl.fromTo("#t-note", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 35.8);
-      tl.to("#s7-stage", { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, 38.4);
+      tl.fromTo("#s7 .headline .ln", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "expo.out", stagger: 0.12 }, 43.75);
+      tl.fromTo("#s7-pills .pill", { y: 50, opacity: 0, scale: 0.88 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.8)", stagger: 0.12 }, 44.5);
+      tl.fromTo("#t-note", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 46.2);
+      tl.to("#s7-stage", { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, 48.8);
 
       // 8 end card
-      tl.fromTo("#end-logo", { scale: 0.5, opacity: 0, rotation: -10 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)" }, 38.5);
-      tl.fromTo("#end-name", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 38.75);
-      tl.fromTo("#end-sub", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 39.0);
-      tl.fromTo("#end-url", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 39.25);
-      tl.fromTo("#end-credit", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 39.5);
+      tl.fromTo("#end-logo", { scale: 0.5, opacity: 0, rotation: -10 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)" }, 48.9);
+      tl.fromTo("#end-name", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 49.15);
+      tl.fromTo("#end-sub", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 49.4);
+      tl.fromTo("#end-url", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 49.65);
+      tl.fromTo("#end-credit", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 49.9);
 
       window.__timelines["main"] = tl;
     </script>
