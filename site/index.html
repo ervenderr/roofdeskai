@@ -54,6 +54,10 @@
   input, textarea { font:inherit; padding:11px 13px; border:1px solid var(--line); border-radius:var(--r-ctl); width:100%; background:var(--paper); color:var(--shingle) }
   .phone input { border:0 }
   #mic[aria-pressed="true"] { background:var(--caution); color:var(--shingle) }
+  .modes { display:flex; gap:6px; padding:2px 4px 10px }
+  .mode { font:inherit; font-size:14px; font-weight:600; border:0; border-radius:999px; padding:7px 14px; background:rgba(255,255,255,.12); color:#fff; cursor:pointer }
+  .mode[aria-pressed="true"] { background:#fff; color:var(--shingle) }
+  .actions { display:flex; flex-wrap:wrap; gap:8px; align-self:flex-start }
   .fine { color:rgba(255,255,255,.65); font-size:13px; margin:10px 8px 4px }
 
   .flow { padding-block:8px 72px }
@@ -104,14 +108,18 @@
   </div>
 
   <div class="phone">
-    <div class="phone-head"><img src="logo.svg" alt=""><div><b>Summit Roofing</b><span>Sample company, Denver area</span></div><i class="ping" title="Online"></i></div>
+    <div class="modes" role="group" aria-label="Choose a demo">
+      <button type="button" class="mode" data-mode="demo" aria-pressed="true">Try it as a customer</button>
+      <button type="button" class="mode" data-mode="sales" aria-pressed="false">Ask about RoofDesk</button>
+    </div>
+    <div class="phone-head"><img src="logo.svg" alt=""><div><b id="head-title">Summit Roofing</b><span id="head-sub">Sample company, Denver area</span></div><i class="ping" title="Online"></i></div>
     <div id="log" aria-live="polite"></div>
     <form id="chat-form">
       <input id="chat-input" maxlength="500" placeholder="Type as a homeowner, e.g. I have a leak" autocomplete="off" aria-label="Your message" required>
       <button class="btn" id="chat-send">Send</button>
       <button class="btn" id="mic" type="button" hidden aria-pressed="false">Talk</button>
     </form>
-    <p class="fine">Demo company serving the Denver area. To see a booking, give a Denver address, for example 120 Main St, Denver. Please don't enter real personal details.</p>
+    <p class="fine" id="fine">Demo company serving the Denver area. To see a booking, give a Denver address, for example 120 Main St, Denver. Please don't enter real personal details.</p>
   </div>
 </section>
 
@@ -156,6 +164,15 @@ contact.href = "mailto:" + window.ROOFDESK.contact;
 
 const log = document.getElementById("log");
 let convo = null;  // {id, token}, kept in memory only
+let mode = "demo", intakeData = {};  // demo: a customer of Summit Roofing; sales: RoofDesk's own assistant collecting a pilot request
+const MODES = {
+  demo: { title: "Summit Roofing", sub: "Sample company, Denver area", placeholder: "Type as a homeowner, e.g. I have a leak",
+          hello: "Hi! I'm the assistant for Summit Roofing. How can I help you today?",
+          fine: document.getElementById("fine").textContent },
+  sales: { title: "RoofDesk AI", sub: "Ask about the service or start your pilot", placeholder: "Ask a question, or answer me",
+           hello: "Hi! I'm RoofDesk AI's own assistant. Ask me anything about the service, or I can set up your free 14-day pilot. What's your name?",
+           fine: "This chat asks for your name, business and email to set up your pilot. It does the same as the form below. Don't share anything you wouldn't put in the form." },
+};
 
 function add(text, who) {
   const el = document.createElement("div");
@@ -172,8 +189,25 @@ function typing() {
   return el;
 }
 // The one entrance moment: the assistant types its greeting once.
-const dots = typing();
-setTimeout(() => { dots.remove(); add("Hi! I'm the assistant for Summit Roofing. How can I help you today?", "bot"); }, 1100);
+function greet(m) {
+  const dots = typing();
+  setTimeout(() => { dots.remove(); if (mode === m) add(MODES[m].hello, "bot"); }, 1100);
+}
+greet("demo");
+
+function switchMode(m) {
+  mode = m; convo = null; intakeData = {};
+  if (voice) setVoice(false);
+  log.replaceChildren();
+  const form = document.getElementById("chat-form"), input = document.getElementById("chat-input");
+  form.querySelectorAll(".again").forEach((el) => el.remove());
+  input.disabled = false; document.getElementById("chat-send").disabled = false; input.placeholder = MODES[m].placeholder;
+  document.getElementById("head-title").textContent = MODES[m].title; document.getElementById("head-sub").textContent = MODES[m].sub;
+  document.getElementById("fine").textContent = MODES[m].fine;
+  document.querySelectorAll(".mode").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === m));
+  greet(m);
+}
+document.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => b.dataset.mode !== mode && switchMode(b.dataset.mode)));
 
 async function post(path, body) {
   const r = await fetch(API + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -189,23 +223,40 @@ document.getElementById("chat-form").addEventListener("submit", async (e) => {
   add(message, "me"); input.value = ""; send.disabled = true;
   const wait = typing();
   try {
-    const out = await post("/chat", { message, conversation_id: convo && convo.id, conversation_token: convo && convo.token });
-    convo = { id: out.conversation_id, token: out.conversation_token };
+    let out;
+    if (mode === "sales") { out = await post("/intake", { message, data: intakeData }); intakeData = out.data; }
+    else { out = await post("/chat", { message, conversation_id: convo && convo.id, conversation_token: convo && convo.token }); convo = { id: out.conversation_id, token: out.conversation_token }; }
     wait.remove(); add(out.reply, "bot"); speak(out.reply);
-    if (out.closed) endChat();
+    if (out.closed) endChat(out.lead);
   } catch (err) {
     wait.remove();
     add(err.message === "rate" ? "You're sending messages quickly. Wait a moment, then try again." : "The assistant is unavailable right now. Try again in a minute.", "bot");
   } finally { if (!input.disabled) { send.disabled = false; input.focus(); } }
 });
 
-function endChat() {
+function endChat(lead) {
   document.getElementById("chat-input").disabled = true; document.getElementById("chat-send").disabled = true;
   if (voice) setVoice(false);
   const again = document.createElement("button");
-  again.className = "btn"; again.type = "button"; again.textContent = "Start a new chat";
-  again.addEventListener("click", () => location.reload());
+  again.className = "btn again"; again.type = "button"; again.textContent = "Start a new chat";
+  again.addEventListener("click", () => switchMode(mode));
   document.getElementById("chat-form").appendChild(again);
+  if (mode === "demo") offerPilot(lead || {});
+}
+
+// After the sample chat: offer RoofDesk's own assistant, or the pilot form with what the visitor already typed.
+function offerPilot(lead) {
+  add("That was RoofDesk AI answering for a sample roofer. Want it answering your customers? The pilot is free for 14 days.", "bot");
+  const row = document.createElement("div"); row.className = "actions";
+  const ask = document.createElement("button"); ask.className = "btn"; ask.type = "button"; ask.textContent = "Talk to RoofDesk's assistant";
+  ask.addEventListener("click", () => switchMode("sales"));
+  const form = document.createElement("button"); form.className = "btn"; form.type = "button"; form.textContent = "Use the pilot form";
+  form.addEventListener("click", () => {
+    const f = document.getElementById("pilot-form");
+    for (const k of ["name", "email", "phone"]) if (lead[k]) f.elements[k].value = lead[k];
+    location.hash = "#pilot"; f.elements.business.focus({ preventScroll: true });
+  });
+  row.append(ask, form); log.appendChild(row); log.scrollTop = log.scrollHeight;
 }
 
 // Voice: the page records the microphone, the server transcribes it (/transcribe), and the words go through /chat like typed text.

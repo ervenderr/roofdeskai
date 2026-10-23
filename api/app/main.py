@@ -11,6 +11,7 @@ from sqlalchemy import text
 from .admin import router as admin_router
 from .bootstrap import bootstrap_schema
 from .outreach_routes import router as outreach_router
+from .intake import router as intake_router
 from .pilot import router as pilot_router
 from .triage import router as triage_router
 from .stt import router as stt_router
@@ -38,6 +39,7 @@ app = FastAPI(title="RoofDesk AI", lifespan=lifespan)
 app.include_router(admin_router)
 app.include_router(outreach_router)
 app.include_router(pilot_router)
+app.include_router(intake_router)
 app.include_router(triage_router)
 app.include_router(tts_router)
 app.include_router(stt_router)
@@ -56,6 +58,7 @@ class ChatOut(BaseModel):
     conversation_token: str
     reply: str
     closed: bool  # booked, disqualified or handed to a human: the page stops taking messages
+    lead: dict[str, str] | None = None  # what the visitor typed, to prefill the pilot form once the chat has ended
 
 
 @app.get("/showcase", include_in_schema=False)
@@ -83,7 +86,10 @@ def chat(body: ChatIn):
         raise HTTPException(502, "The assistant is unavailable right now.")
     with engine.connect() as c:
         state = c.execute(text("SELECT state FROM conversations WHERE id=:i"), {"i": cid}).scalar()
-    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply, closed=state in CLOSED_REPLY)
+        lead = c.execute(text("SELECT l.name, l.email, l.phone FROM leads l JOIN conversations v ON v.lead_id=l.id WHERE v.id=:i"),
+                         {"i": cid}).mappings().one() if state in CLOSED_REPLY else {}
+    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply, closed=state in CLOSED_REPLY,
+                   lead={k: v for k, v in lead.items() if v} or None)
 
 
 # The demo page is served by the API itself so one tunnel carries the page, chat and form. Mounted last: API routes win.

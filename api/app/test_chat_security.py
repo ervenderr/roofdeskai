@@ -1,7 +1,9 @@
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 from . import ratelimit
 from .config import settings
+from .db import engine
 from .main import app
 
 
@@ -21,6 +23,15 @@ def test_chat_says_when_the_conversation_has_ended(monkeypatch):
     monkeypatch.setattr(settings, "chat_rate_per_min", 1000)
     out = TestClient(app).post("/chat", json={"message": "let me speak to a real person"}).json()
     assert out["closed"] is True  # handed to a human: the page should stop taking messages
+
+
+def test_a_closed_chat_returns_what_the_visitor_typed_for_the_pilot_form(monkeypatch):
+    monkeypatch.setattr(settings, "chat_rate_per_min", 1000)
+    with engine.begin() as c:
+        lead = c.execute(text("INSERT INTO leads (name, email) VALUES ('Dana Cruz', 'dana@closed.test') RETURNING id")).scalar_one()
+        cid, token = c.execute(text("INSERT INTO conversations (lead_id, state) VALUES (:l, 'ESCALATE') RETURNING id, token"), {"l": lead}).one()
+    out = TestClient(app).post("/chat", json={"message": "hi", "conversation_id": cid, "conversation_token": token}).json()
+    assert out["closed"] and out["lead"] == {"name": "Dana Cruz", "email": "dana@closed.test"}
 
 
 def test_rate_limit_window():
