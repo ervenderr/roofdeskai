@@ -1,6 +1,6 @@
 # RoofDesk AI
 
-An AI agent a small business could run on. It qualifies inbound leads by chat, checks a calendar, books roof inspections, updates a CRM, and hands off to a human when it should. An automated eval suite of 80 scenarios tests it, with published pass rates, latency and cost, and a write-up of what failed and how I fixed it.
+An AI agent a small business could run on. It qualifies inbound leads by chat, checks a calendar, books roof inspections, updates a CRM, and hands off to a human when it should. An automated eval suite of 96 scenarios tests it, with published pass rates, latency and cost, and a write-up of what failed and how I fixed it.
 
 The business is **Summit Roofing**, a made-up company. Every name, number and address in this repo is synthetic. Nothing comes from a client or employer.
 
@@ -25,15 +25,15 @@ That ran through the n8n flow below and sent a real confirmation email (to Mailp
 
 ## Scorecard
 
-Latest run: **80/80 scenarios**, 2026-10-21, commit `0b6f67b`, prompt `agent.v2`, model `llama3.1:8b` (local, Ollama, temperature 0).
+Latest run: **94/96 scenarios** (all 80 original scenarios pass; 14 of the 16 spoken-style ones), 2026-10-21, commit `88319aa`, prompt `agent.v2`, model `llama3.1:8b` (local, Ollama, temperature 0).
 
 | Metric | Result |
 |---|---|
 | Booking validity (must be 100%) | **100%** |
 | Escalation precision / recall | 100% / 100% |
-| Schema validity (first try) | 95% over 181 model calls |
-| Turn latency p50 / p95 | 6.8s / 9.8s (16 GB laptop, no GPU server) |
-| Tokens | 121k prompt / 12k completion; cost $0 (local) |
+| Schema validity (first try) | 95% over 232 model calls |
+| Turn latency p50 / p95 | 6.7s / 14.4s (16 GB laptop, no GPU server) |
+| Tokens | 155k prompt / 16k completion; cost $0 (local) |
 
 | Category | Passed |
 |---|---|
@@ -46,8 +46,9 @@ Latest run: **80/80 scenarios**, 2026-10-21, commit `0b6f67b`, prompt `agent.v2`
 | Escalation required | 8/8 |
 | Prompt injection / jailbreak | 8/8 |
 | Slot edge cases | 6/6 |
+| Spoken-style messages ("five one two" for 512, "at" and "dot" in emails) | 14/16 |
 
-**Read this with the right amount of salt.** I wrote all 80 scenarios while building, and I fixed failures against those same scenarios, so this is a regression suite and not a held-out test. The first full run scored 74/80 (`evals/reports/baseline-80-agent.v2.md`). An unseen test set would score lower. Everything ran on one 8B model. Cost is "$0" because the model is local; hosted-API cost is not estimated.
+**Read this with the right amount of salt.** I wrote all 96 scenarios while building, and I fixed failures against those same scenarios, so this is a regression suite and not a held-out test. The first full run scored 74/80 (`evals/reports/baseline-80-agent.v2.md`). An unseen test set would score lower. Everything ran on one 8B model. Cost is "$0" because the model is local; hosted-API cost is not estimated.
 
 ## Architecture
 
@@ -55,7 +56,7 @@ Latest run: **80/80 scenarios**, 2026-10-21, commit `0b6f67b`, prompt `agent.v2`
  Web chat ──┐
  SMS / GHL- │
  style      ┴─► n8n (lead flow, schedules) ─► Agent API (FastAPI) ─► LLM (provider chain, all OpenAI-compatible)
- webhook                                          │                   local Ollama → Groq → NVIDIA NIM → OpenRouter → OVH
+ webhook                                          │                   local Ollama → Groq → NVIDIA NIM → Gemini → OpenRouter → OVH
                                                   ├─► Postgres + pgvector: leads, conversations, slots, FAQ chunks,
                                                   │    tool/LLM call logs, escalations, eval results
                                                   ├─► Tool layer: get_available_slots, book_appointment, update_lead,
@@ -140,6 +141,24 @@ Most scraped businesses have no usable email, so the same prospect table drives 
 
 **Not built yet (Phase 2):** real sending and real inbound email (replies arrive by webhook today). Not through Resend: its acceptable-use policy prohibits cold outreach and scraped contact data, so cold email needs your own mailbox over SMTP/IMAP (see `docs/deploy.md`). Also not built: handing an interested prospect to a booking agent configured for sales calls (the booking agent is still the roofing one). The scraper itself has not been run; the importer was written against its documented field names and checked on a synthetic file, so check it on a real export.
 
+## Message triage for any business
+
+Beyond booking, the API can sort any incoming customer message, draft a reply, and flag it for a person: `POST /triage` (admin key). The business is one YAML file in [`clients/`](clients/): its categories, the facts a draft may use, a confidence threshold, and which categories always go to a human. A new business is a new file, with no code change. Two profiles ship: a roofing company and a dental clinic.
+
+```
+message → model picks category + confidence + draft → code decides if a person must look:
+          legal / safety / angry words, "other" or a sensitive category, confidence under the threshold,
+          or unusable model output → owner gets an email with the message and the suggested reply
+```
+
+The model proposes and the code decides, again. Drafts are checked against the profile's facts; one that states a figure or reuses too little of them is replaced with a safe "a team member will confirm". That check is imperfect (a draft claiming an unsupported feature can still pass), so the owner email says to read the draft before sending. The demo page's pilot form uses this to sort each request and suggest a reply. Messages are not stored yet.
+
+## Voice
+
+The demo page has a **Talk** button: the browser's speech recognition turns speech into text, which goes through the same `/chat` as typing, and the reply is spoken back with Gemini text-to-speech (`/speak`, rate limited), falling back to the browser's own voice. Spoken numbers and emails are normalised in code before the agent reads them (`api/app/speech.py`). The chat ends visibly after a booking, a decline or a handoff.
+
+Limits: recognition is the browser's, so it depends on the visitor's browser and network (Chrome sends audio to Google's service; Safari works on-device). A proper phone line needs a hosted voice provider and a paid model, which is not built. Outbound calling is out of scope on purpose (consent rules).
+
 ## How I check the output
 
 **Guardrails in code** (`api/app/`):
@@ -194,7 +213,8 @@ The LLM client is provider-agnostic. If a provider is rate limited, times out or
 - The eval set is self-written and was tuned against; build a held-out set and measure the gap.
 - One model so far. Run the suite through a second model and publish a side-by-side scorecard.
 - Hosted-API cost is not estimated, only local ($0).
-- No real SMS or phone integration; the channel is simulated by a webhook.
+- No real SMS or phone integration; the channel is simulated by a webhook. Voice works in the browser only.
+- The spoken-style scenarios were tuned against too (14/16); the two failures are an over-long explanation and an indecisive customer.
 - Admin pages use a shared key. Clerk login and Resend email are planned, not built.
 - The rate limiter is in-process, so it is per instance.
 - Embeddings need an Ollama-compatible endpoint, which complicates hosting the API on a free tier.
