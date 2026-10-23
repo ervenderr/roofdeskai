@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     tts_model: str = "gemini-2.5-flash-preview-tts"
     tts_voice: str = "Kore"
+    stt_model: str = "gemini-2.5-flash"
     prompts_dir: Path = Path("/srv/prompts")
     clients_dir: Path = Path("/srv/clients")  # one YAML profile per client business
     client_profile: str = "summit-roofing"

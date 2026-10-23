@@ -13,6 +13,7 @@ from .bootstrap import bootstrap_schema
 from .outreach_routes import router as outreach_router
 from .pilot import router as pilot_router
 from .triage import router as triage_router
+from .stt import router as stt_router
 from .tts import router as tts_router
 from .agent import CLOSED_REPLY, conversation_token, handle_turn, token_matches
 from .config import settings
@@ -39,6 +40,7 @@ app.include_router(outreach_router)
 app.include_router(pilot_router)
 app.include_router(triage_router)
 app.include_router(tts_router)
+app.include_router(stt_router)
 if settings.cors_origins:
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["POST"], allow_headers=["content-type"])
 

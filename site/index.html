@@ -201,38 +201,56 @@ document.getElementById("chat-form").addEventListener("submit", async (e) => {
 
 function endChat() {
   document.getElementById("chat-input").disabled = true; document.getElementById("chat-send").disabled = true;
-  if (voice) { voice = false; mic.setAttribute("aria-pressed", false); mic.textContent = "Talk"; if (rec) rec.abort(); }
+  if (voice) setVoice(false);
   const again = document.createElement("button");
   again.className = "btn"; again.type = "button"; again.textContent = "Start a new chat";
   again.addEventListener("click", () => location.reload());
   document.getElementById("chat-form").appendChild(again);
 }
 
-// Voice: the browser's own speech recognition and synthesis; the words go through the same /chat as typing.
-const Rec = window.SpeechRecognition || window.webkitSpeechRecognition, mic = document.getElementById("mic");
-let voice = false, rec = null;
-function listen() {
-  if (!voice) return;
-  rec = new Rec(); rec.lang = "en-US"; rec.interimResults = true;
-  rec.onstart = () => { mic.textContent = "Listening…"; };
-  rec.onspeechstart = () => { mic.textContent = "Hearing you…"; };
-  rec.onnomatch = () => add("I heard something but could not make out the words. Try again.", "bot");
-  rec.onresult = (ev) => {
-    const r = ev.results[0], input = document.getElementById("chat-input");
-    input.value = r[0].transcript;  // shows your words as you speak
-    if (r.isFinal) document.getElementById("chat-form").requestSubmit();
+// Voice: the page records the microphone, the server transcribes it (/transcribe), and the words go through /chat like typed text.
+const mic = document.getElementById("mic");
+let voice = false, rec = null, stream = null, player = null;
+const SPEECH_RMS = 0.02, END_SILENCE_MS = 1300, WAIT_MS = 10000, MAX_MS = 20000;  // loudness that counts as speech; silence that ends a turn; limits
+
+function stopMic() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } }
+
+async function listen() {
+  if (!voice || playing) return;
+  try { stream = stream || await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) {
+    add(e.name === "NotFoundError" ? "No microphone found." : "Microphone blocked. Allow it in the browser's address bar, then try again.", "bot");
+    setVoice(false); return;
+  }
+  if (!voice) { stopMic(); return; }  // stopped while the permission prompt was open
+  const ctx = new (window.AudioContext || window.webkitAudioContext)(), analyser = ctx.createAnalyser();
+  ctx.resume(); analyser.fftSize = 1024; ctx.createMediaStreamSource(stream).connect(analyser);
+  const level = new Float32Array(analyser.fftSize), chunks = [];
+  rec = new MediaRecorder(stream);
+  rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  let spoke = false; const started = Date.now(); let lastLoud = started;
+  const timer = setInterval(() => {
+    analyser.getFloatTimeDomainData(level);
+    const rms = Math.sqrt(level.reduce((a, v) => a + v * v, 0) / level.length), now = Date.now();
+    if (rms > SPEECH_RMS) { if (!spoke) mic.textContent = "Hearing you…"; spoke = true; lastLoud = now; }
+    if ((spoke && now - lastLoud > END_SILENCE_MS) || (!spoke && now - started > WAIT_MS) || now - started > MAX_MS) rec.stop();
+  }, 100);
+  const recorder = rec;
+  recorder.onstop = async () => {
+    clearInterval(timer); ctx.close();
+    if (!voice) return;
+    if (!spoke) return listen();  // nothing said: keep listening
+    mic.textContent = "Thinking…";
+    try {
+      const r = await fetch(API + "/transcribe", { method: "POST", headers: { "content-type": recorder.mimeType || "audio/webm" }, body: new Blob(chunks, { type: recorder.mimeType }) });
+      if (!r.ok) throw new Error("transcribe " + r.status);
+      const { text } = await r.json();
+      if (!text) return listen();
+      document.getElementById("chat-input").value = text;  // shows what we heard
+      document.getElementById("chat-form").requestSubmit();
+    } catch (e) { add("I couldn't process that. Try again, or type your message.", "bot"); listen(); }
   };
-  rec.onerror = (ev) => {
-    if (ev.error === "aborted") return;
-    const why = { "not-allowed": "Microphone blocked. Allow it in the browser's address bar, then try again.",
-                  "service-not-allowed": "Microphone blocked. Allow it in the browser's address bar, then try again.",
-                  "no-speech": "I didn't hear anything. Click Talk and try again.",
-                  "audio-capture": "No microphone found.",
-                  "network": "Speech recognition could not reach the browser's speech service." };
-    add(why[ev.error] || `Voice stopped (${ev.error}).`, "bot"); setVoice(false);
-  };
-  rec.onend = () => { if (voice && !playing && !speechSynthesis.speaking && !document.getElementById("chat-send").disabled) listen(); };
-  try { rec.start(); } catch (e) { add(`Voice could not start (${e.message}).`, "bot"); setVoice(false); }
+  mic.textContent = "Listening…"; recorder.start();
 }
 // Prefer the nicest English voice installed (Google, Premium/Enhanced, Samantha); the default is often the flattest.
 function bestVoice() {
@@ -243,11 +261,11 @@ function bestVoice() {
 let playing = false;
 async function speak(text) {
   if (!voice) return;
-  playing = true;
+  playing = true; mic.textContent = "Speaking…";
   try {  // natural voice from the server; the browser voice below is the fallback
     const r = await fetch(API + "/speak", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: text.slice(0, 600) }) });
     if (!r.ok) throw new Error("speak " + r.status);
-    const audio = new Audio(URL.createObjectURL(await r.blob()));
+    const audio = player = new Audio(URL.createObjectURL(await r.blob()));
     audio.onended = () => { playing = false; listen(); };
     await audio.play();
   } catch (e) {
@@ -258,9 +276,12 @@ async function speak(text) {
 }
 function setVoice(on) {
   voice = on; mic.setAttribute("aria-pressed", on); mic.textContent = on ? "Stop" : "Talk";
-  if (on) listen(); else { speechSynthesis.cancel(); if (rec) rec.abort(); }
+  if (on) { listen(); return; }
+  speechSynthesis.cancel(); playing = false; if (player) player.pause();
+  if (rec && rec.state === "recording") rec.stop();
+  stopMic();
 }
-if (Rec && window.speechSynthesis) { mic.hidden = false; mic.addEventListener("click", () => setVoice(!voice)); }
+if (navigator.mediaDevices && window.MediaRecorder) { mic.hidden = false; mic.addEventListener("click", () => setVoice(!voice)); }
 
 document.getElementById("pilot-form").addEventListener("submit", async (e) => {
   e.preventDefault();

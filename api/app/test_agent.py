@@ -63,7 +63,7 @@ def test_taken_slot_is_not_double_booked(monkeypatch):
     script(monkeypatch, FULL, {"reply": "ok"})
     cid, _ = agent.handle_turn(MSG)
     with engine.begin() as c:
-        c.execute(text("UPDATE slots SET is_booked=true WHERE id=1"))
+        c.execute(text("UPDATE slots SET is_booked=true WHERE id=(SELECT offered_slot_ids[1] FROM conversations WHERE id=:c)"), {"c": cid})  # the slot offered first, whatever its id
     _, reply = agent.handle_turn("first", cid)
     assert "isn't available" in reply and state(cid).state == "BOOK"
 
