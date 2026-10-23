@@ -1,0 +1,75 @@
+{
+  "id": "error-handler",
+  "name": "Error handler",
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "id": "error-trigger",
+      "name": "Error trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "describe-failure",
+      "name": "Describe failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: { workflow: j.workflow?.name, node: j.execution?.lastNodeExecuted, error: j.execution?.error?.message, execution: j.execution?.id, url: j.execution?.url } }];"
+      }
+    },
+    {
+      "id": "alert-owner",
+      "name": "Alert me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@roofdeskai.test', Name: 'RoofDesk AI'}, To: [{Email: 'owner@roofdeskai.test'}], Subject: 'Workflow failed: ' + $json.workflow, Text: 'A workflow failed.\\nWorkflow: ' + $json.workflow + '\\nStep: ' + $json.node + '\\nError: ' + $json.error + '\\nExecution: ' + $json.url}) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Error trigger": {
+      "main": [
+        [
+          {
+            "node": "Describe failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Describe failure": {
+      "main": [
+        [
+          {
+            "node": "Alert me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

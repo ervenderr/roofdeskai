@@ -3,7 +3,8 @@
   "name": "Escalation alert",
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
   },
   "nodes": [
     {

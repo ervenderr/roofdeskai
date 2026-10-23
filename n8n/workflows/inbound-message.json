@@ -3,7 +3,8 @@
   "name": "Lead flow (inbound to outcome)",
   "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler"
   },
   "nodes": [
     {
@@ -49,7 +50,8 @@
       "position": [
         240,
         0
-      ]
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "id": "call-agent",
@@ -75,7 +77,11 @@
       "position": [
         480,
         0
-      ]
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
     },
     {
       "id": "send-reply",
@@ -255,6 +261,53 @@
         1000,
         400
       ]
+    },
+    {
+      "id": "reject-bad-payload",
+      "name": "Reject bad payload",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({error: 'payload needs a message and a contact id'}) }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "agent-unavailable",
+      "name": "Agent unavailable",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        740,
+        260
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({error: 'The assistant is unavailable right now. Please try again shortly.'}) }}",
+        "options": {
+          "responseCode": 502
+        }
+      }
+    },
+    {
+      "id": "raise-failure",
+      "name": "Raise failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        260
+      ],
+      "parameters": {
+        "errorMessage": "The agent API still failed after 3 tries"
+      }
     }
   ],
   "connections": {
@@ -277,6 +330,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Reject bad payload",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -290,6 +350,13 @@
           },
           {
             "node": "Route by outcome",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent unavailable",
             "type": "main",
             "index": 0
           }
@@ -333,6 +400,17 @@
         [
           {
             "node": "Email booking confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent unavailable": {
+      "main": [
+        [
+          {
+            "node": "Raise failure",
             "type": "main",
             "index": 0
           }

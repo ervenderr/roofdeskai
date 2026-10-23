@@ -35,7 +35,8 @@ def handle_turn(message: str, cid: int | None = None, external_id: str | None = 
     `external_id` (e.g. an SMS contact) finds or creates the conversation instead of `cid`."""
     cid = _open(cid, external_id, channel)
     message = speech.normalize(message)
-    _save(cid, "user", message)
+    if _last_message(cid) != ("user", message):  # a retry after a failed turn (502) must not repeat the customer's message
+        _save(cid, "user", message)
     reply = _decide(cid, message)
     _save(cid, "assistant", reply)
     return cid, reply
@@ -254,6 +255,12 @@ def _exec(sql: str, **params) -> None:
 
 def _save(cid: int, role: str, content: str) -> None:
     _exec("INSERT INTO messages (conversation_id, role, content) VALUES (:c, :r, :m)", c=cid, r=role, m=content)
+
+
+def _last_message(cid: int) -> tuple[str, str] | None:
+    with engine.connect() as c:
+        row = c.execute(text("SELECT role, content FROM messages WHERE conversation_id=:c ORDER BY id DESC LIMIT 1"), {"c": cid}).first()
+    return (row.role, row.content) if row else None
 
 
 def _history(cid: int) -> list[dict]:

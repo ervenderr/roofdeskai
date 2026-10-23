@@ -1,5 +1,6 @@
 """Agent flow with a scripted fake LLM against the real Postgres (run inside the api container)."""
 import json
+import uuid
 
 import pytest
 from sqlalchemy import text
@@ -152,3 +153,20 @@ def test_slots_are_topped_up_when_the_calendar_runs_short():
         last = c.execute(text("SELECT max(start_time) > now() + interval '10 days' FROM slots")).scalar()
         dupes = c.execute(text("SELECT count(*) FROM (SELECT start_time FROM slots GROUP BY 1 HAVING count(*) > 1) x")).scalar()
     assert last and dupes == 0
+
+
+def test_retrying_a_message_after_a_failed_turn_does_not_save_it_twice(monkeypatch):
+    """n8n retries the agent call when the API returns 502; the retry must not duplicate the customer's message."""
+    ext = f"sms:retry-{uuid.uuid4()}"
+
+    def down(messages):
+        raise RuntimeError("all LLM providers failed or are cooling down")
+
+    monkeypatch.setattr(llm, "chat", down)
+    with pytest.raises(RuntimeError):
+        agent.handle_turn("my roof leaks", external_id=ext, channel="sms")
+    script(monkeypatch, {"reply": "ok"})
+    cid, _ = agent.handle_turn("my roof leaks", external_id=ext, channel="sms")
+    with engine.connect() as c:
+        n = c.execute(text("SELECT count(*) FROM messages WHERE conversation_id=:c AND role='user'"), {"c": cid}).scalar()
+    assert n == 1
