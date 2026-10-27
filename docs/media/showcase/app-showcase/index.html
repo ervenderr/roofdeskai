@@ -7,14 +7,14 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
     <style>
       :root {
-        --bg: #0d1b2a;
-        --bg2: #16283a;
-        --chalk: #6ea1ff;
-        --chalk-deep: #1d5bd8;
-        --orange: #f2790f;
+        --bg: #0c0b07;
+        --bg2: #1a1810;
+        --chalk: #ffc800;
+        --chalk-deep: #ffc800;
+        --orange: #ffe27a;
         --green: #4ade80;
-        --ink: #f4f7fb;
-        --dim: #8aa0b8;
+        --ink: #f6efd2;
+        --dim: #c9bf92;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
@@ -25,8 +25,8 @@
         background: linear-gradient(135deg, var(--bg2) 0%, var(--bg) 70%);
       }
       .glow { position: absolute; border-radius: 50%; filter: blur(140px); opacity: 0.45; }
-      #glow-a { width: 800px; height: 800px; left: -260px; top: -240px; background: #1d5bd8; }
-      #glow-b { width: 560px; height: 560px; right: -160px; bottom: -200px; background: #f2790f; opacity: 0.18; }
+      #glow-a { width: 800px; height: 800px; left: -260px; top: -240px; background: #ffc800; opacity: 0.2; }
+      #glow-b { width: 560px; height: 560px; right: -160px; bottom: -200px; background: #8f6a00; opacity: 0.28; }
       .scene { position: absolute; inset: 0; }
       .stage { position: absolute; inset: 0; }
 
@@ -42,9 +42,9 @@
         position: absolute; left: 830px; top: 200px; width: 1010px; border-radius: 18px; overflow: hidden;
         background: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,0.08), 0 50px 120px rgba(0,0,0,0.6);
       }
-      .win .bar { height: 40px; background: #1e2c3d; display: flex; align-items: center; padding-left: 16px; gap: 9px; }
-      .win .bar i { width: 13px; height: 13px; border-radius: 50%; background: #3b4b60; display: block; }
-      .win .bar span { margin-left: 18px; font-size: 18px; color: #d3deec; }
+      .win .bar { height: 40px; background: #26221a; display: flex; align-items: center; padding-left: 16px; gap: 9px; }
+      .win .bar i { width: 13px; height: 13px; border-radius: 50%; background: #4a4430; display: block; }
+      .win .bar span { margin-left: 18px; font-size: 18px; color: #f6efd2; }
       .win .shots { position: relative; width: 1010px; height: 631px; overflow: hidden; }
       .win img { position: absolute; left: 0; top: 0; width: 1010px; height: 631px; display: block; }
       .win.mail { left: 1000px; top: 120px; width: 700px; }
@@ -53,18 +53,18 @@
 
       .chip {
         position: absolute; padding: 20px 34px; border-radius: 999px; font-size: 34px; font-weight: 750;
-        background: rgba(8, 16, 28, 0.94); border: 3px solid rgba(255,255,255,0.16);
+        background: rgba(12, 11, 7, 0.94); border: 3px solid rgba(255,255,255,0.16);
         box-shadow: 0 24px 60px rgba(0,0,0,0.55); white-space: nowrap;
       }
       .chip.green { color: var(--green); border-color: rgba(74,222,128,0.55); }
-      .chip.sky { color: var(--chalk); border-color: rgba(110,161,255,0.6); }
-      .chip.orange { color: #ffa24d; border-color: rgba(242,121,15,0.6); }
+      .chip.sky { color: var(--chalk); border-color: rgba(255,200,0,0.6); }
+      .chip.orange { color: #ffe27a; border-color: rgba(255,226,122,0.6); }
 
       /* hook */
       .hook-line { position: absolute; left: 140px; right: 140px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-size: 104px; }
-      #h1 { top: 270px; color: #5d7189; }
-      #h2 { top: 410px; color: #90a4bb; }
-      #h3 { top: 550px; color: #ffa24d; }
+      #h1 { top: 270px; color: #6b6446; }
+      #h2 { top: 410px; color: #a79f78; }
+      #h3 { top: 550px; color: #ffe27a; }
       #h4 { top: 730px; font-size: 140px; color: var(--ink); }
       #h4 em { font-style: normal; color: var(--chalk); }
 
