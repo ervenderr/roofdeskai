@@ -5,6 +5,7 @@ from urllib.parse import quote
 from .config import settings
 
 INK, MUTED, BG = "#1f2937", "#6b7280", "#f3f4f6"
+ON_BRAND = "#14120B"  # text on the yellow brand colour: white would fail contrast
 
 
 def _paragraphs(body: str) -> str:
@@ -13,7 +14,7 @@ def _paragraphs(body: str) -> str:
 
 
 def _services(points: list[str], color: str) -> str:
-    rows = "".join(f'<tr><td style="padding:5px 10px 5px 0;color:{color};font-weight:bold;vertical-align:top">&#10003;</td>'
+    rows = "".join(f'<tr><td style="padding:5px 10px 5px 0;color:{ON_BRAND};font-weight:bold;vertical-align:top">&#10003;</td>'
                    f'<td style="padding:5px 0;font-size:14px;line-height:1.5;color:{INK}">{escape(pt)}</td></tr>' for pt in points)
     return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0;background:{BG};'
             f'border-left:4px solid {color};border-radius:6px"><tr><td style="padding:14px 18px">'
@@ -25,7 +26,7 @@ def _button(subject: str, color: str) -> str:
     href = f"mailto:{settings.sender_email}?subject={quote('Re: ' + subject)}&body={quote('Yes, show me how it works.')}"
     return (f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 22px"><tr><td style="background:{color};'
             f'border-radius:6px"><a href="{escape(href)}" style="display:inline-block;padding:11px 22px;font-size:15px;'
-            f'font-weight:bold;color:#ffffff;text-decoration:none">Reply &ldquo;yes&rdquo; for a quick walkthrough</a></td></tr></table>')
+            f'font-weight:bold;color:{ON_BRAND};text-decoration:none">Reply &ldquo;yes&rdquo; for a quick walkthrough</a></td></tr></table>')
 
 
 def render(body: str, subject: str, step: int, points: list[str]) -> str:
@@ -40,7 +41,7 @@ def render(body: str, subject: str, step: int, points: list[str]) -> str:
             f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:24px 12px"><tr><td align="center">'
             f'<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;'
             f'border-radius:10px;overflow:hidden;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">'
-            f'<tr><td style="background:{color};padding:16px 28px;font-size:17px;font-weight:bold;color:#ffffff">{escape(settings.sender_name)}</td></tr>'
+            f'<tr><td style="background:{color};padding:16px 28px;font-size:17px;font-weight:bold;color:{ON_BRAND}">{escape(settings.sender_name)}</td></tr>'
             f'<tr><td style="padding:26px 28px 8px">{content}</td></tr>'
             f'<tr><td style="padding:16px 28px 22px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.6;color:{MUTED}">'
             f'<strong>{escape(settings.sender_name)}</strong><br>{escape(settings.sender_address)}<br>'

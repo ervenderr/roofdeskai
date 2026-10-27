@@ -46,7 +46,7 @@ class Settings(BaseSettings):
         "Books appointments straight into your schedule",
         "Hands the conversation to you when a person is needed",
     ]
-    brand_color: str = "#1D5BD8"  # header, bullets and button in the HTML email
+    brand_color: str = "#FFC800"  # header, bullets and button in the HTML email; text on it is dark (email_html.ON_BRAND)
     outreach_enforce_window: bool = True
     outreach_send_hours: str = "9-17"  # local hours, weekdays only
     outreach_timezone: str = "Asia/Manila"
