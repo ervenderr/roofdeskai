@@ -56,18 +56,6 @@ Latest run: **94/96 scenarios** (all 80 original scenarios pass; 14 of the 16 sp
 
 The diagram above is generated from the code with [Archify](https://github.com/tt-a1i/archify); every box cites the file and lines it comes from. The interactive version is `docs/architecture.html` (open it in a browser). The website chat calls the API directly; only messages from an outside channel go through n8n.
 
-```
- Web chat ──┐
- SMS / GHL- │
- style      ┴─► n8n (lead flow, schedules) ─► Agent API (FastAPI) ─► LLM (provider chain, all OpenAI-compatible)
- webhook                                          │                   local Ollama → Groq → NVIDIA NIM → Gemini → OpenRouter → OVH
-                                                  ├─► Postgres + pgvector: leads, conversations, slots, FAQ chunks,
-                                                  │    tool/LLM call logs, escalations, eval results
-                                                  ├─► Tool layer: get_available_slots, book_appointment, update_lead,
-                                                  │    lookup_faq, escalate_to_human
-                                                  └─► Dashboard (Next.js) + eval runner
-```
-
 Conversation states: `GREETING → COLLECT → (BOOK → DONE | NURTURE | DISQUALIFY)`, and any state can go to `ESCALATE`. Qualification: owner, in the service area, repair/replacement/inspection, within 6 months. Budget is recorded but never disqualifies.
 
 ### n8n flow
