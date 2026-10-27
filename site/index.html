@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RoofDesk AI: every enquiry answered while you're on the roof</title>
 <meta name="description" content="RoofDesk AI replies to customer enquiries in seconds, asks the right questions and books the inspection. Try it live.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.svg?v=2" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -71,7 +71,9 @@
   .bot { background:var(--well); color:var(--cream); align-self:flex-start; border-bottom-left-radius:3px }
   .me { background:var(--tape); color:var(--case); font-weight:500; align-self:flex-end; border-bottom-right-radius:3px }
   .typing { display:inline-flex; gap:4px; padding:13px 15px } .typing i { width:7px; height:7px; border-radius:50%; background:var(--cream-soft); animation:blink 1s infinite } .typing i:nth-child(2){animation-delay:.15s} .typing i:nth-child(3){animation-delay:.3s}
-  #chat-form { display:flex; gap:8px; padding-top:12px }
+  #chat-form { display:flex; flex-wrap:wrap; gap:8px; padding-top:12px }
+  #chat-input { flex:1 1 140px; width:auto; min-width:0 }
+  #chat-form .again { flex:1 1 100% }
   input, textarea { font:inherit; padding:12px 14px; border:2px solid transparent; border-radius:var(--r-ctl); width:100%; background:var(--blade); color:var(--case) }
   input::placeholder, textarea::placeholder { color:#6B5A12 }
   .slab input { background:var(--well); color:var(--cream) } .slab input::placeholder { color:#A39A72 }
@@ -133,7 +135,7 @@
 <body>
 <div class="tape" aria-hidden="true"><div class="nums" id="nums"></div></div>
 <header><div class="wrap">
-  <a class="brand" href="#"><img src="logo.svg" alt="" width="40" height="40">RoofDesk AI</a>
+  <a class="brand" href="#"><img src="logo.svg?v=2" alt="" width="40" height="40">RoofDesk AI</a>
   <nav><a href="#demo">Try the demo</a> <a href="showcase.html">Watch the video</a> <a class="cta" href="#pilot">Get a free pilot</a></nav>
 </div></header>
 
@@ -155,7 +157,7 @@
       <button type="button" class="mode" data-mode="sales" aria-pressed="true">Ask about RoofDesk</button>
       <button type="button" class="mode" data-mode="demo" aria-pressed="false">Try it as a customer</button>
     </div>
-    <div class="slab-head"><img src="logo.svg" alt=""><div><b id="head-title">Summit Roofing</b><span id="head-sub">Sample company, Denver area</span></div><i class="ping" title="Online"></i></div>
+    <div class="slab-head"><img src="logo.svg?v=2" alt=""><div><b id="head-title">Summit Roofing</b><span id="head-sub">Sample company, Denver area</span></div><i class="ping" title="Online"></i></div>
     <div id="log" aria-live="polite"></div>
     <form id="chat-form">
       <input id="chat-input" maxlength="500" placeholder="Type as a homeowner, e.g. I have a leak" autocomplete="off" aria-label="Your message" required>
