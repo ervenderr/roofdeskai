@@ -52,6 +52,10 @@ Latest run: **94/96 scenarios** (all 80 original scenarios pass; 14 of the 16 sp
 
 ## Architecture
 
+![How a message becomes a booking: demo page and n8n feed the FastAPI agent, which uses an LLM provider chain, Postgres and SMTP](docs/img/architecture.png)
+
+The diagram above is generated from the code with [Archify](https://github.com/tt-a1i/archify); every box cites the file and lines it comes from. The interactive version is `docs/architecture.html` (open it in a browser). The website chat calls the API directly; only messages from an outside channel go through n8n.
+
 ```
  Web chat ──┐
  SMS / GHL- │
