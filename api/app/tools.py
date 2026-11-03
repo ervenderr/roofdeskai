@@ -10,7 +10,7 @@ from sqlalchemy import text
 
 from . import llm
 from .config import settings
-from .db import tx
+from .db import record_event, tx
 from .faq import vector_literal
 from .schemas import LeadFields
 
@@ -107,12 +107,22 @@ def _faq_keywords(query: str, k: int, tenant_id: str | None = None) -> list[str]
     return [r.text for r in rows]
 
 
+def _safe_event(tenant_id, conversation_id, kind, payload) -> None:
+    """An audit side-table must never block a booking or handoff: log and carry on."""
+    try:
+        with tx(tenant_id) as c:
+            record_event(c, _tid(tenant_id), conversation_id, kind, payload)
+    except Exception:
+        log.exception("agent_events write failed (kind=%s)", kind)
+
+
 def escalate_to_human(conversation_id: int, reason: str, tenant_id: str | None = None) -> dict:
     with tx(tenant_id) as c:
         c.execute(text("INSERT INTO escalations (tenant_id, conversation_id, reason) VALUES (:t, :c, :r)"),
                   {"t": _tid(tenant_id), "c": conversation_id, "r": reason})
         c.execute(text("UPDATE conversations SET state='ESCALATE', outcome=CASE WHEN outcome='booked' THEN outcome ELSE 'escalated' END, ended_at=now() WHERE id=:c AND tenant_id=:t"),
                   {"c": conversation_id, "t": _tid(tenant_id)})
+    _safe_event(tenant_id, conversation_id, "escalation", {"reason": reason})
     _notify_escalation(conversation_id, reason, tenant_id)
     return {"reason": reason}
 
@@ -148,11 +158,13 @@ def run(cid: int, name: str, args: dict, fn, tenant_id: str | None = None) -> tu
     except Exception as e:  # infra failure (e.g. embedding service down): degrade, but log it
         log.error("tool %s crashed: %s", name, type(e).__name__)
         result, ok = {"error": type(e).__name__}, False
+    ms = int((time.perf_counter() - start) * 1000)
     with tx(tenant_id) as c:
         c.execute(
             text("INSERT INTO tool_calls (tenant_id, conversation_id, tool_name, args_json, result_json, ok, latency_ms) "
                  "VALUES (:t, :c, :n, CAST(:a AS jsonb), CAST(:r AS jsonb), :ok, :l)"),
             {"t": _tid(tenant_id), "c": cid, "n": name, "a": json.dumps(args, default=str), "r": json.dumps(result, default=str),
-             "ok": ok, "l": int((time.perf_counter() - start) * 1000)},
+             "ok": ok, "l": ms},
         )
+    _safe_event(tenant_id, cid, "tool_call", {"name": name, "ok": ok, "ms": ms})
     return ok, result
