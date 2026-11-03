@@ -95,3 +95,76 @@ def test_chf_claims_caught_and_supported_amounts_pass():
     assert policy.unsupported_claim("That is 450 francs.", faq)
     assert policy.unsupported_claim("It is CHF 1'200.", faq)
     assert not policy.unsupported_claim("Happy to help, a team member will confirm.", faq)
+
+
+# ---- plan 03: scenario set (written before tuning; never weakened) ----
+from evals.runner import load_scenarios  # noqa: E402
+
+from .qualify import address_status  # noqa: E402
+from .speech import normalize  # noqa: E402
+
+COUNTS = {"qualified": 4, "disqualified": 4, "slots": 4, "faq": 5, "escalation": 8, "injection": 4,
+          "out_of_knowledge": 4, "out_of_order": 3, "vague": 3, "voice": 4}
+
+
+@pytest.fixture(scope="module")
+def scenarios():
+    return load_scenarios(SLUG)  # real validate path: unique ids, known categories/keys
+
+
+def test_scenarios_counts_and_ids(scenarios):
+    assert len(scenarios) == 43
+    assert all(s["id"].startswith("d") for s in scenarios)
+    counts = {}
+    for s in scenarios:
+        counts[s["category"]] = counts.get(s["category"], 0) + 1
+    assert counts == COUNTS
+
+
+def test_scenario_recall_is_deterministic_and_total(pack, scenarios):
+    emergency = [s for s in scenarios if s["expect"].get("state") == "ESCALATE"]
+    assert len(emergency) == 9  # 8 in escalation.yaml + dvoice-emergency
+    matched = 0
+    for s in emergency:
+        reasons = [policy.escalation_reason(t, pack=pack) for t in s["turns"]]
+        # the escalating turn is the last one (first for single-turn scenarios)
+        if reasons[-1] in ("safety", "human_request") and not any(reasons[:-1]):
+            matched += 1
+    assert matched / len(emergency) == 1.0
+
+
+def test_no_other_scenario_turn_escalates(pack, scenarios):
+    bad = [(s["id"], t) for s in scenarios if s["expect"].get("state") != "ESCALATE"
+           for t in s["turns"] if policy.escalation_reason(t, pack=pack)]
+    assert bad == []
+
+
+@pytest.mark.parametrize("addr,want", [
+    ("Rosenweg 12, 8001 Zurich", "in"), ("Rue du Lac 5, Geneva", "out"),
+    ("Via Roma 3, Lugano", "out"), ("Hauptstrasse 7, Dietikon", "in")])
+def test_address_status_fixtures(addr, want):
+    cities = load_pack(SLUG).qualification.rules[1].cities
+    assert address_status(cities, addr) == want
+
+
+def test_speech_normalize_voice_fixtures():
+    assert "rosenweg 12 zurich" in normalize("its rosenweg twelve zurich")
+    digits = re.sub(r"\D", "", normalize("anna keller and my number is oh four four five five five oh one four two"))
+    assert digits == "0445550142"
+    assert "ben.frei@example.com" in normalize("ben frei and my email is ben dot frei at example dot com")
+
+
+@pytest.mark.parametrize("msg,field,value", [
+    ("Hi, I'd like to book a teeth cleaning.", "service_type", "cleaning"),
+    ("I'm a new patient and need a checkup.", "service_type", "checkup"),
+    ("Do you do teeth whitening? I'd like to book it.", "service_type", "whitening"),
+    ("I lost a filling", "service_type", "filling")])
+def test_ground_keeps_service_words(pack, msg, field, value):
+    kept, dropped = policy.ground(pack, {field: value}, msg)
+    assert kept == {field: value} and dropped == []
+
+
+@pytest.mark.parametrize("msg", ["I want dental implants.", "My daughter needs braces."])
+def test_ground_keeps_non_business_service_for_disqualify(pack, msg):
+    kept, _ = policy.ground(pack, {"service_type": "other"}, msg)
+    assert kept == {"service_type": "other"}
