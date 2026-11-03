@@ -4,11 +4,12 @@ import re
 import sys
 import threading
 from pathlib import Path
+from typing import Annotated, Literal
 from string import Formatter
 from zoneinfo import ZoneInfo
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from sqlalchemy import text
 
 from .config import settings
@@ -16,7 +17,7 @@ from .db import system
 from .schemas import ServiceType
 
 SLUG_RE = re.compile(r"[a-z0-9-]+")
-ASK_KEYS = {"service_type", "is_owner", "address", "timeline_months", "name", "phone or email"}
+CORE_ASK = {"name", "phone or email"}
 CLOSED_KEYS = {"DONE", "DISQUALIFY", "ESCALATE"}
 # Required fields per template; {business} is allowed in every template.
 TEMPLATE_FIELDS = {
@@ -98,10 +99,46 @@ class Calendar(M):
         return v
 
 
+class RuleBase(M):
+    id: str = Field(pattern=r"[a-z][a-z0-9_]*")
+    field: str
+    required: bool = True
+
+
+class InList(RuleBase):
+    rule: Literal["in_list"]
+    values: tuple[str, ...] = Field(min_length=1)
+
+
+class YesNo(RuleBase):
+    rule: Literal["yes_no"]
+
+
+class MaxNumber(RuleBase):
+    rule: Literal["max_number"]
+    max: int = Field(ge=0)
+
+
+class InArea(RuleBase):
+    rule: Literal["in_area"]
+    cities: tuple[str, ...] = Field(min_length=1)
+
+    @field_validator("cities")
+    @classmethod
+    def _area(cls, v):
+        if any(c != c.lower() or not c or re.search(r"\s", c) for c in v):
+            raise ValueError("cities must be lowercase single tokens")
+        return v
+
+
+Rule = Annotated[InList | YesNo | MaxNumber | InArea, Field(discriminator="rule")]
+# Which lead fields each rule type may read; keeps pack data from naming arbitrary fields (name/phone/email stay core).
+RULE_FIELDS = {"in_list": {"service_type", "property_type", "budget_range"}, "yes_no": {"is_owner"},
+               "max_number": {"timeline_months"}, "in_area": {"address"}}
+
+
 class Qualification(M):
-    service_area: tuple[str, ...]
-    qualifying_services: frozenset[ServiceType]
-    max_timeline_months: int = Field(ge=0)
+    rules: tuple[Rule, ...] = Field(min_length=1)
     service_synonyms: dict[ServiceType, str]
     non_business_pattern: str
     owner_yes_pattern: str
@@ -120,12 +157,37 @@ class Qualification(M):
             _regex(pat)
         return v
 
-    @field_validator("service_area")
-    @classmethod
-    def _area(cls, v):
-        if any(c != c.lower() or not c or re.search(r"\s", c) for c in v):
-            raise ValueError("cities must be lowercase single tokens")
-        return v
+    @model_validator(mode="after")
+    def _rules(self):
+        ids = [r.id for r in self.rules]
+        fields = [r.field for r in self.rules]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"rules: duplicate id in {ids}")
+        if len(set(fields)) != len(fields):
+            raise ValueError(f"rules: duplicate field in {fields}")
+        if "name" in ids:
+            raise ValueError("rules: id 'name' is reserved for the core contact question")
+        syn = {s.value for s in self.service_synonyms}
+        for r in self.rules:
+            if r.field not in RULE_FIELDS[r.rule]:
+                raise ValueError(f"rules: rule {r.id!r}: field {r.field!r} is not allowed for {r.rule}")
+            if isinstance(r, InList) and r.field == "service_type" and not set(r.values) <= syn:
+                raise ValueError(f"rules: rule {r.id!r}: values must be a subset of service_synonyms")
+        return self
+
+    # Read-only compat for the old policy.py path during the dual run; deleted in plan 05.
+    @property
+    def service_area(self) -> tuple[str, ...]:
+        return next((r.cities for r in self.rules if isinstance(r, InArea)), ())
+
+    @property
+    def qualifying_services(self) -> frozenset:
+        return frozenset(ServiceType(v) for r in self.rules if isinstance(r, InList) and r.field == "service_type"
+                         for v in r.values)
+
+    @property
+    def max_timeline_months(self) -> int:
+        return next((r.max for r in self.rules if isinstance(r, MaxNumber)), 0)
 
 
 class Escalation(M):
@@ -174,8 +236,8 @@ class Messages(M):
     @field_validator("ask")
     @classmethod
     def _ask(cls, v):
-        if set(v) != ASK_KEYS:
-            raise ValueError(f"keys must be exactly {sorted(ASK_KEYS)}")
+        if not CORE_ASK <= set(v):
+            raise ValueError(f"keys must include {sorted(CORE_ASK)}")
         return v
 
 
@@ -236,8 +298,10 @@ def load_pack(slug: str) -> Pack:
     if parts["pack"].slug != slug:
         raise PackError(f"{root / 'pack.yaml'}: slug: {parts['pack'].slug!r} does not match folder {slug!r}")
     q = parts["qualification"]
-    if not q.qualifying_services <= set(q.service_synonyms):
-        raise PackError(f"{root / 'qualification.yaml'}: qualifying_services: must be a subset of service_synonyms")
+    expected = {r.id for r in q.rules} | CORE_ASK
+    got = set(parts["messages"].ask)
+    if got != expected:
+        raise PackError(f"{root / 'messages.yaml'}: ask: missing {sorted(expected - got)}, unexpected {sorted(got - expected)}")
     return Pack(slug=slug, hash=pack_hash(root), meta=parts["pack"], calendar=parts["calendar"],
                 qualification=q, escalation=parts["escalation"], messages=parts["messages"],
                 faq=parts["faq"].entries)

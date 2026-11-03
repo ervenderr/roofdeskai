@@ -1,6 +1,9 @@
-service_area: [denver, aurora, lakewood, arvada, centennial, littleton]
-qualifying_services: [repair, replacement, inspection]
-max_timeline_months: 6
+# Rules are evaluated and asked in file order; name and phone-or-email are core and asked after them.
+rules:
+  - {id: service_type, field: service_type, rule: in_list, values: [repair, replacement, inspection]}
+  - {id: is_owner, field: is_owner, rule: yes_no}
+  - {id: address, field: address, rule: in_area, cities: [denver, aurora, lakewood, arvada, centennial, littleton]}
+  - {id: timeline_months, field: timeline_months, rule: max_number, max: 6}
 service_synonyms:
   repair: 'repair|fix|patch|leak|damage|missing shingle'
   replacement: 'replac|new roof|re-?roof|tear.?off'
