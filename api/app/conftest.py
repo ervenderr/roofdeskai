@@ -63,3 +63,9 @@ def scratch_db():
     eng.dispose()
     with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as c:
         c.execute(text(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)"))
+
+
+@pytest.fixture(scope="module")
+def roofing_pack():
+    from .pack import load_pack
+    return load_pack("summit-roofing")
