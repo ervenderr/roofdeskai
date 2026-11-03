@@ -9,6 +9,7 @@ from . import outreach
 from .agent import handle_turn
 from .config import settings
 from .db import system, tx
+from .pack import get_pack
 
 MAX_FOLLOWUPS = 3
 
@@ -184,10 +185,11 @@ def draft_followup(cid: int):
         c.execute(text("INSERT INTO events (tenant_id, conversation_id, kind, detail) VALUES (:t, :c, 'followup', :d)"),
                   {"t": settings.default_tenant_id, "c": cid, "d": f"follow-up {row.followup_count} of {MAX_FOLLOWUPS}"})
     greeting = f"Hi {lead.name}," if lead.name else "Hi,"
+    pack = get_pack(settings.default_tenant_id)  # Phase 6 scopes admin per tenant
+    kw = dict(greeting=greeting, business=pack.meta.business)
     return {
         "to": lead.email,
-        "subject": "Your free roof inspection with Summit Roofing",
-        "body": f"{greeting}\n\nThanks for your interest in a free roof inspection. Whenever you're ready, "
-                "just reply to this email or message us and we'll find a time that works.\n\nSummit Roofing",
+        "subject": pack.messages.followup_subject.format(**kw),
+        "body": pack.messages.followup_body.format(**kw),
         "followup_number": row.followup_count,
     }

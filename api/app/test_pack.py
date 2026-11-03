@@ -164,9 +164,11 @@ def _check(p, o):
     assert p.escalation.safety == o["escalation"]["safety"]
     m = p.messages
     assert m.ask == o["ask"] and m.safe_fallback == o["fallback"]
-    assert m.closed == o["closed"] and m.disqualify == o["disq"] and m.nurture == o["nurture"] and m.no_slots == o["noslots"]
+    if "closed" in o:  # live constants were deleted in 03-03; only the frozen oracle checks these
+        assert m.closed == o["closed"] and m.disqualify == o["disq"] and m.nurture == o["nurture"] and m.no_slots == o["noslots"]
     assert tuple((e.source, e.text) for e in p.faq) == tuple(o["faq"])
-    assert tuple(p.calendar.slot_hours) == tuple(o["hours"]) and p.calendar.days_ahead == o["days"]
+    if "hours" in o:
+        assert tuple(p.calendar.slot_hours) == tuple(o["hours"]) and p.calendar.days_ahead == o["days"]
     assert q.extra_stopwords | (set(o["generic"]) - {"roof", "roofing", "summit"}) == set(o["generic"])
     assert set(q.extra_stopwords) == {"roof", "roofing", "summit"}
 
@@ -175,9 +177,7 @@ def _live():
     return dict(area=policy.SERVICE_AREA, qual=policy.QUALIFYING_SERVICES, months=policy.MAX_TIMELINE_MONTHS,
                 yes=policy._OWN_YES, no=policy._OWN_NO, nonbiz=policy._NON_ROOF, service=policy._SERVICE,
                 escalation=policy._ESCALATION_PATTERNS, ask=policy.ASK, fallback=policy.SAFE_FALLBACK,
-                closed=agent.CLOSED_REPLY, disq=agent.DISQUALIFY_REPLY, nurture=agent.NURTURE_REPLY,
-                noslots=agent.NO_SLOTS_REPLY, faq=faq.FAQ, hours=tools.SLOT_HOURS, days=tools.SLOT_DAYS_AHEAD,
-                generic=policy._GENERIC)
+                faq=faq.FAQ, generic=policy._GENERIC)
 
 
 def _frozen():

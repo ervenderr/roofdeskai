@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 
@@ -17,18 +18,10 @@ log = logging.getLogger("leadpilot.agent")
 
 PROMPT = "agent.v2"
 
-CLOSED_REPLY = {
-    "DONE": "Your inspection is booked. If you need to change it, a team member will help you.",
-    "DISQUALIFY": "Thanks again for your interest. Unfortunately we can't help with this one.",
-    "ESCALATE": "A team member has your details and will follow up with you shortly.",
-}
-DISQUALIFY_REPLY = (
-    "Thanks for the details. Unfortunately we can only book inspections for property owners "
-    "with a repair, replacement or inspection need in our service area within the next 6 months, "
-    "so we can't help with this one. We appreciate you reaching out!"
-)
-NURTURE_REPLY = "No problem at all! We'll check back with you later. Reach out any time you're ready for a free inspection."
-NO_SLOTS_REPLY = "You qualify for a free inspection, but we have no openings right now. We'll reach out as soon as new times open up."
+CLOSED_STATES = ("DONE", "DISQUALIFY", "ESCALATE")
+# Core text: only the business name comes from the pack (D-10).
+DEMO_NOTICE = ("This was a demo of RoofDesk AI with a sample company ({business}). No one will visit, "
+               "and nothing was scheduled.\n\nTo try RoofDesk AI for your own business, reply to this email.\n\n")
 
 
 def handle_turn(message: str, cid: int | None = None, external_id: str | None = None,
@@ -63,29 +56,29 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
     convo = _row("SELECT * FROM conversations WHERE id=:i", cid, t)
     state, lead_id = convo["state"], convo["lead_id"]
     if state == "ESCALATE":
-        return CLOSED_REPLY[state]
+        return pack.messages.closed[state]
     # Safety and legal messages reach a human even after the conversation is closed.
-    reason = policy.escalation_reason(message, only=("safety", "legal") if state in CLOSED_REPLY else None)
+    reason = policy.escalation_reason(message, only=("safety", "legal") if state in CLOSED_STATES else None)
     if reason:
-        return _escalate(cid, reason, t)
-    if state in CLOSED_REPLY:
-        return CLOSED_REPLY[state]
+        return _escalate(cid, reason, t, pack)
+    if state in CLOSED_STATES:
+        return pack.messages.closed[state]
 
     ok, res = tools.run(cid, "lookup_faq", {"query": message}, tools.lookup_faq, tenant_id=t)
     faq = res["chunks"] if ok else []
 
     turn = _ask_llm(cid, state, _row("SELECT * FROM leads WHERE id=:i", lead_id, t), faq, t, pack)
     if turn is None:
-        return _escalate(cid, "validation_failure", t)
+        return _escalate(cid, "validation_failure", t, pack)
     if turn.escalate_reason:
-        return _escalate(cid, turn.escalate_reason, t)
+        return _escalate(cid, turn.escalate_reason, t, pack)
 
     asked = next((m["content"] for m in reversed(_history(cid, t)[:-1]) if m["role"] == "assistant"), "")
     fields, dropped = policy.ground(turn.extracted.model_dump(exclude_none=True, mode="json"), message, asked)
     if dropped:
         log.warning("conversation %s: dropped ungrounded fields %s", cid, dropped)
     if fields and not tools.run(cid, "update_lead", {"lead_id": lead_id, "fields": fields}, tools.update_lead, tenant_id=t)[0]:
-        return _escalate(cid, "validation_failure", t)
+        return _escalate(cid, "validation_failure", t, pack)
 
     lead = _row("SELECT * FROM leads WHERE id=:i", lead_id, t)
     verdict = policy.qualification(lead)
@@ -93,11 +86,11 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
     if verdict == "disqualified":
         _set_lead_status(lead_id, "disqualified", t)
         _set_state(cid, "DISQUALIFY", "disqualified", t=t)
-        return DISQUALIFY_REPLY
+        return pack.messages.disqualify
     if turn.not_ready and policy.not_ready_grounded(message):
         _set_lead_status(lead_id, "nurture", t)
         _set_state(cid, "NURTURE", "nurture", t=t)
-        return NURTURE_REPLY
+        return pack.messages.nurture
 
     slot_id = policy.pick_slot(message, convo["offered_slot_ids"]) if state == "BOOK" else None
     is_question = turn.is_question or policy.looks_like_question(message)
@@ -105,21 +98,21 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
     failed = 0 if made_progress else convo["failed_turns"] + 1
     _exec("UPDATE conversations SET failed_turns=:f WHERE id=:i", t, f=failed, i=cid)
     if failed >= policy.MAX_FAILED_TURNS:
-        return _escalate(cid, "repeated_misunderstanding", t)
+        return _escalate(cid, "repeated_misunderstanding", t, pack)
 
     if verdict == "qualified" and policy.has_contact(lead):
         _set_lead_status(lead_id, "qualified", t)
         if state != "BOOK":
-            return _offer_slots(cid, lead_id, "Good news, you qualify for a free roof inspection! ", t)
+            return _offer_slots(cid, lead_id, pack.messages.qualified_prefix, t, pack)
         if slot_id is not None:
             ok, res = tools.run(cid, "book_appointment", {"lead_id": lead_id, "slot_id": slot_id},
                                 tools.book_appointment, tenant_id=t)
             if ok:
                 _set_state(cid, "DONE", "booked", t=t)
-                _notify_booking(lead_id, _fmt(res["start"]), t)
-                return f"You're booked for {_fmt(res['start'])}. We'll see you then!"
-            return _offer_slots(cid, lead_id, "Sorry, that time isn't available. ", t)
-        return _answer(cid, turn, is_question, faq, message, "Which of those openings works for you? Just say first, second, and so on.", t, pack)
+                _notify_booking(lead_id, _fmt(res["start"], pack), t, pack)
+                return pack.messages.booked.format(when=_fmt(res["start"], pack))
+            return _offer_slots(cid, lead_id, pack.messages.slot_unavailable_prefix, t, pack)
+        return _answer(cid, turn, is_question, faq, message, pack.messages.pick_prompt, t, pack)
 
     if state == "GREETING":
         _set_state(cid, "COLLECT", t=t)
@@ -151,16 +144,16 @@ def _faq_answer(cid: int, question: str, faq: list[str], t: str, pack: Pack) -> 
     return "" if "NO_ANSWER" in text_ else text_
 
 
-def _offer_slots(cid: int, lead_id: int, prefix: str, t: str) -> str:
+def _offer_slots(cid: int, lead_id: int, prefix: str, t: str, pack: Pack) -> str:
     slots = tools.run(cid, "get_available_slots", {}, tools.get_available_slots, tenant_id=t)[1].get("slots", [])
     if not slots:
         _set_lead_status(lead_id, "nurture", t)
         _set_state(cid, "NURTURE", "nurture", t=t)
-        return NO_SLOTS_REPLY
+        return pack.messages.no_slots
     _exec("UPDATE conversations SET offered_slot_ids=:ids WHERE id=:i", t, ids=[s["id"] for s in slots], i=cid)
     _set_state(cid, "BOOK", t=t)
-    options = "; ".join(f"{i}) {_fmt(s['start'])}" for i, s in enumerate(slots, 1))
-    return f"{prefix}Here are the next openings: {options}. Which one works for you?"
+    options = "; ".join(f"{i}) {_fmt(s['start'], pack)}" for i, s in enumerate(slots, 1))
+    return pack.messages.offer_slots.format(prefix=prefix, options=options)
 
 
 def _ask_llm(cid: int, state: str, lead: dict, faq: list[str], t: str, pack: Pack) -> Turn | None:
@@ -202,27 +195,27 @@ def _parse(raw: str) -> Turn:
     return Turn.model_validate(json.loads(raw[start:end + 1]))  # pydantic ValidationError is a ValueError
 
 
-def _escalate(cid: int, reason: str, t: str) -> str:
+def _escalate(cid: int, reason: str, t: str, pack: Pack) -> str:
     ok, _ = tools.run(cid, "escalate_to_human", {"conversation_id": cid, "reason": reason}, tools.escalate_to_human, tenant_id=t)
     if not ok:  # never promise a handoff that was not recorded
         raise RuntimeError("escalation could not be recorded")
-    return CLOSED_REPLY["ESCALATE"]
+    return pack.messages.closed["ESCALATE"]
 
 
-def _notify_booking(lead_id: int, when: str, t: str) -> None:
+def _notify_booking(lead_id: int, when: str, t: str, pack: Pack) -> None:
     """Email the owner, and the lead if they gave an address. A failed email never blocks the booking."""
     lead = _row("SELECT name, phone, email, address, service_type FROM leads WHERE id=:i", lead_id, t)
+    m = pack.messages
     messages = []
     if settings.owner_email:
-        messages.append((settings.owner_email, f"New booking: {lead['name']} ({when})",
-                         f"{lead['name']} booked a free roof inspection for {when}.\nPhone: {lead['phone'] or '-'}\n"
-                         f"Email: {lead['email'] or '-'}\nAddress: {lead['address']}\nNeed: {lead['service_type']}"))
+        kw = dict(name=lead["name"], when=when, phone=lead["phone"] or "-", email=lead["email"] or "-",
+                  address=lead["address"], need=lead["service_type"])
+        messages.append((settings.owner_email, m.owner_alert_subject.format(**kw), m.owner_alert_body.format(**kw)))
     if lead["email"]:
-        messages.append((lead["email"], f"Your inspection is booked: {when}",
-                         f"Hi {lead['name']},\n\nYour free roof inspection is booked for {when}.\n\n"
-                         "This was a demo of RoofDesk AI with a sample company (Summit Roofing). No one will visit, "
-                         "and nothing was scheduled.\n\nTo try RoofDesk AI for your own business, reply to this email.\n\n"
-                         f"{settings.sender_name}\n{settings.sender_address}"))
+        messages.append((lead["email"], m.customer_subject.format(when=when),
+                         m.customer_intro.format(name=lead["name"], when=when)
+                         + DEMO_NOTICE.format(business=pack.meta.business)
+                         + f"{settings.sender_name}\n{settings.sender_address}"))
     for to, subject, body in messages:
         try:
             mailer.send(to, subject, body)
@@ -230,8 +223,8 @@ def _notify_booking(lead_id: int, when: str, t: str) -> None:
             log.exception("booking saved but an email failed")
 
 
-def _fmt(iso: str) -> str:
-    return datetime.fromisoformat(iso).strftime("%a %b %d, %I:%M %p")
+def _fmt(iso: str, pack: Pack) -> str:
+    return datetime.fromisoformat(iso).astimezone(ZoneInfo(pack.calendar.timezone)).strftime("%a %b %d, %I:%M %p")
 
 
 # --- persistence helpers -------------------------------------------------------------------------

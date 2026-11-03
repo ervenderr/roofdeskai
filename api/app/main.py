@@ -16,7 +16,7 @@ from .pilot import router as pilot_router
 from .triage import router as triage_router
 from .stt import router as stt_router
 from .tts import router as tts_router
-from .agent import CLOSED_REPLY, conversation_token, handle_turn, token_matches
+from .agent import CLOSED_STATES, conversation_token, handle_turn, token_matches
 from .config import settings
 from .db import system, tx
 from .logctx import TenantFilter
@@ -95,8 +95,8 @@ def chat(body: ChatIn):
     with tx() as c:
         state = c.execute(text("SELECT state FROM conversations WHERE id=:i"), {"i": cid}).scalar()
         lead = c.execute(text("SELECT l.name, l.email, l.phone FROM leads l JOIN conversations v ON v.lead_id=l.id WHERE v.id=:i"),
-                         {"i": cid}).mappings().one() if state in CLOSED_REPLY else {}
-    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply, closed=state in CLOSED_REPLY,
+                         {"i": cid}).mappings().one() if state in CLOSED_STATES else {}
+    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply, closed=state in CLOSED_STATES,
                    lead={k: v for k, v in lead.items() if v} or None)
 
 
