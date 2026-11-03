@@ -12,7 +12,7 @@ from string import Formatter
 from zoneinfo import ZoneInfo
 
 import yaml
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints, ValidationError, field_validator, model_validator
 from sqlalchemy import text
 
 from .config import settings
@@ -115,6 +115,32 @@ class Reviews(M):
     max_words: int = Field(120, ge=10, le=500)
 
 
+# shortcut: dotted keys only (no list indexes, no JSONPath); upgrade when a real source needs arrays.
+IntakePath = Annotated[str, StringConstraints(pattern=r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$", max_length=200)]
+
+
+class EventMap(M):
+    person_key: tuple[IntakePath, ...] = Field(min_length=1, max_length=3)
+    name: IntakePath | None = None
+    occurred_at: IntakePath | None = None
+    fields: dict[str, IntakePath] = Field(default_factory=dict, max_length=20)
+
+
+class Intake(M):
+    waiver: EventMap | None = None
+    checkin: EventMap | None = None
+    result: EventMap | None = None
+
+    @model_validator(mode="after")
+    def _check(self):
+        if not (self.waiver or self.checkin or self.result):
+            raise ValueError("intake must map at least one of waiver, checkin, result")
+        for k in ("waiver", "checkin"):
+            if getattr(self, k) and getattr(self, k).fields:
+                raise ValueError(f"{k}: fields are only valid on result")
+        return self
+
+
 class PackMeta(M):
     slug: str
     business: str
@@ -124,6 +150,7 @@ class PackMeta(M):
     locale: str = "en-US"
     owner_email: str | None = None
     reviews: Reviews | None = None
+    intake: Intake | None = None
 
     check_tz = field_validator("timezone")(_tz)
 

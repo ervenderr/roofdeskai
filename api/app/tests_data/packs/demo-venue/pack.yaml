@@ -10,3 +10,7 @@ reviews:
   forbidden_topics: [pricing, staff names]
   health_privacy: false
   max_words: 120
+intake:
+  waiver:  {person_key: [guest.email, guest.phone], name: guest.name, occurred_at: signed_at}
+  checkin: {person_key: [guest.email, guest.phone], name: guest.name, occurred_at: arrived_at}
+  result:  {person_key: [guest.email], name: guest.name, occurred_at: finished_at, fields: {score: game.score, team: team.name, time_seconds: game.time}}
