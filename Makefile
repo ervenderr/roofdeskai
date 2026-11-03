@@ -14,3 +14,15 @@ eval-outreach:
 	docker compose exec api python -m evals.outreach_runner
 scraper:
 	docker compose --profile scraper up -d scraper
+
+GCOMPOSE = docker compose -p roofdesk-global -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.global.yml
+g-up:
+	$(GCOMPOSE) up -d --build
+g-down:
+	$(GCOMPOSE) down
+g-reset:
+	$(GCOMPOSE) down -v
+g-logs:
+	$(GCOMPOSE) logs -f api
+g-eval:
+	$(GCOMPOSE) exec -e GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) api python -m evals.runner $(ARGS)

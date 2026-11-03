@@ -1,0 +1,11 @@
+# Isolated RoofDesk Global branch stack: host ports that do not collide with the live stack.
+# Use via `make g-up` (compose project roofdesk-global => separate volumes).
+services:
+  db:
+    ports: !override ["55432:5432"]
+  mailpit:
+    ports: !override ["18025:8025", "11025:1025"]
+  n8n:
+    ports: !override ["15679:5678"]
+  scraper:
+    ports: !override ["18081:8080"]
