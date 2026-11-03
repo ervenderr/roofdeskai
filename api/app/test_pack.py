@@ -16,7 +16,11 @@ MIN_PACK = {
              "timezone": "America/Denver"},
     "calendar": {"timezone": "Etc/UTC", "slot_hours": [9, 11], "slot_minutes": 60, "days_ahead": 14,
                  "weekdays_only": True, "buffer_minutes": 0},
-    "qualification": {"service_area": ["denver"], "qualifying_services": ["repair"], "max_timeline_months": 6,
+    "qualification": {"rules": [
+                          {"id": "service_type", "field": "service_type", "rule": "in_list", "values": ["repair"]},
+                          {"id": "is_owner", "field": "is_owner", "rule": "yes_no"},
+                          {"id": "address", "field": "address", "rule": "in_area", "cities": ["denver"]},
+                          {"id": "timeline_months", "field": "timeline_months", "rule": "max_number", "max": 6}],
                       "service_synonyms": {"repair": "fix", "inspection": "look"},
                       "non_business_pattern": "gutter", "owner_yes_pattern": "yes", "owner_no_pattern": "rent",
                       "extra_stopwords": ["demo"]},
@@ -68,10 +72,30 @@ def test_minimal_pack_loads(biz):
     assert p.slug == SLUG and p.meta.business == "Demo Biz" and len(p.hash) == 64
 
 
+def _rule(q, rid):
+    return next(r for r in q["rules"] if r["id"] == rid)
+
+
+def _rules(q, fn):
+    fn(q["rules"])
+
+
 # (file, mutation, expected field in message)
 CASES = {
     "unknown_key": ("calendar", lambda c: c.update(bogus=1), "bogus"),
-    "missing_field": ("qualification", lambda q: q.pop("max_timeline_months"), "max_timeline_months"),
+    "missing_field": ("qualification", lambda q: q.pop("rules"), "rules"),
+    "unknown_rule_type": ("qualification", lambda q: _rule(q, "timeline_months").update(rule="between"), "rules"),
+    "wrong_field_for_rule": ("qualification", lambda q: _rule(q, "is_owner").update(field="address"), "rules"),
+    "duplicate_rule_id": ("qualification", lambda q: _rule(q, "is_owner").update(id="address"), "rules"),
+    "duplicate_field": ("qualification", lambda q: q["rules"].append(
+        {"id": "service2", "field": "service_type", "rule": "in_list", "values": ["repair"]}), "rules"),
+    "empty_rules": ("qualification", lambda q: q.update(rules=[]), "rules"),
+    "rule_question_key": ("qualification", lambda q: _rule(q, "is_owner").update(question="x"), "rules"),
+    "rule_typo_key": ("qualification", lambda q: _rule(q, "address").update(citys=["x"]), "rules"),
+    "negative_max": ("qualification", lambda q: _rule(q, "timeline_months").update(max=-1), "rules"),
+    "in_list_not_in_synonyms": ("qualification", lambda q: _rule(q, "service_type").update(values=["replacement"]), "rules"),
+    "ask_missing_rule_key": ("messages", lambda m: m["ask"].pop("address"), "ask"),
+    "ask_unmatched_key": ("messages", lambda m: m["ask"].update(extra="x?"), "ask"),
     "bad_regex": ("escalation", lambda e: e.update(safety="(unclosed"), "safety"),
     "bad_tz": ("calendar", lambda c: c.update(timezone="Mars/Base"), "timezone"),
     "hours_not_increasing": ("calendar", lambda c: c.update(slot_hours=[11, 9]), "slot_hours"),
@@ -81,7 +105,7 @@ CASES = {
     "template_stray_brace": ("messages", lambda m: m.update(nurture="hi {"), "nurture"),
     "ask_missing_key": ("messages", lambda m: m["ask"].pop("name"), "ask"),
     "closed_missing_key": ("messages", lambda m: m["closed"].pop("DONE"), "closed"),
-    "service_area_not_lower": ("qualification", lambda q: q.update(service_area=["Denver"]), "service_area"),
+    "service_area_not_lower": ("qualification", lambda q: _rule(q, "address").update(cities=["Denver"]), "rules"),
 }
 
 
@@ -125,10 +149,10 @@ def test_malformed_slug_folder_mismatch(biz):
         load_pack(SLUG)
 
 
-def test_malformed_qualifying_not_in_synonyms(biz):
-    write_pack(biz, _mut("qualification", lambda q: q.update(qualifying_services=["replacement"])))
-    with pytest.raises(PackError, match="qualification.yaml"):
-        load_pack(SLUG)
+def test_required_false_loads(biz):
+    write_pack(biz, _mut("qualification", lambda q: _rule(q, "timeline_months").update(required=False)))
+    r = _rule_by_id(load_pack(SLUG).qualification, "timeline_months")
+    assert r.required is False
 
 
 def test_get_pack_missing(biz):
@@ -156,11 +180,16 @@ from . import agent, faq, policy, tools  # noqa: E402
 from .tests_data import frozen_old as F  # noqa: E402
 
 
+def _rule_by_id(q, rid):
+    return next(r for r in q.rules if r.id == rid)
+
+
 def _check(p, o):
     q = p.qualification
-    assert set(q.service_area) == set(o["area"]) and len(q.service_area) == len(o["area"])
-    assert set(q.qualifying_services) == set(o["qual"])
-    assert q.max_timeline_months == o["months"]
+    cities = _rule_by_id(q, "address").cities
+    assert set(cities) == set(o["area"]) and len(cities) == len(o["area"])
+    assert set(_rule_by_id(q, "service_type").values) == set(o["qual"])
+    assert _rule_by_id(q, "timeline_months").max == o["months"]
     assert q.owner_yes_pattern == o["yes"] and q.owner_no_pattern == o["no"] and q.non_business_pattern == o["nonbiz"]
     assert {k.value: v for k, v in q.service_synonyms.items()} == o["service"]
     assert list(q.service_synonyms) and [k.value for k in q.service_synonyms] == list(o["service"])
@@ -187,6 +216,14 @@ def _frozen():
 
 def test_golden_frozen(roofing_pack):
     _check(roofing_pack, _frozen())
+
+
+def test_compat_properties(roofing_pack):
+    # compat properties exist only for the dual run; deleted in plan 05
+    q = roofing_pack.qualification
+    assert set(q.service_area) == set(F.FROZEN_SERVICE_AREA)
+    assert set(q.qualifying_services) == set(F.FROZEN_QUALIFYING_SERVICES)
+    assert q.max_timeline_months == F.FROZEN_MAX_TIMELINE_MONTHS
 
 
 def test_golden_always_human_matches_client_profile(roofing_pack):
