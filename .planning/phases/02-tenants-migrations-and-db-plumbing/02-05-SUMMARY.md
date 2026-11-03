@@ -29,3 +29,9 @@ RLS pattern, dump-restore migration and call-site gates pass. The full eval gate
 - Gate log: scratchpad/gate.log.
 
 ## Self-Check: PASSED (proofs); eval gate evidence inconclusive
+
+## Eval gate result (orchestrator follow-up)
+
+The executor's first gate run was not clean: local timeouts cascaded into hosted fallbacks, so the gate (which had no local-only guard) printed PASSED on a contaminated run. Fixed in 96f64cc: `gate` now calls `assert_local_only` over all run and rerun conversations. A second run aborted correctly (groq answered after a local timeout under memory pressure). Third run, `LLM_TIMEOUT_S=300`, model kept warm, no other changes: **94/96, Models: local:llama3.1:8b, failures only voice-over-explainer and voice-indecisive, regressions [], flaky-pass [], GATE PASSED, exit 0** (git sha 96f64cc).
+
+Operational note: on this 16 GB laptop under memory pressure the default 60s LLM timeout can trip; run the gate with `LLM_TIMEOUT_S=300`.
