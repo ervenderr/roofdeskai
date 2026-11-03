@@ -1,6 +1,7 @@
 """One conversation turn. The LLM proposes (reply + extracted fields); this code decides."""
 import hmac
 import json
+import uuid
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -25,10 +26,10 @@ DEMO_NOTICE = ("This was a demo of RoofDesk AI with a sample company ({business}
 
 
 def handle_turn(message: str, cid: int | None = None, external_id: str | None = None,
-                channel: str = "web", tenant_id: str | None = None) -> tuple[int, str]:
+                channel: str = "web", *, tenant_id: str) -> tuple[int, str]:
     """Process one user message; returns (conversation_id, reply). Raises LookupError for an unknown conversation.
     `external_id` (e.g. an SMS contact) finds or creates the conversation instead of `cid`."""
-    t = str(tenant_id or settings.default_tenant_id)
+    t = str(uuid.UUID(str(tenant_id)))  # None raises: no silent default tenant
     token = current_tenant.set(t)  # set here, not in middleware: sync endpoints run in a threadpool
     try:
         cid = _open(cid, external_id, channel, t)
@@ -245,20 +246,16 @@ def _open(cid: int | None, external_id: str | None, channel: str, t: str) -> int
     return cid
 
 
-def conversation_token(cid: int, tenant_id: str | None = None) -> str:
-    return _row("SELECT token FROM conversations WHERE id=:i", cid, _t(tenant_id))["token"]
+def conversation_token(cid: int, tenant_id: str) -> str:
+    return _row("SELECT token FROM conversations WHERE id=:i", cid, str(tenant_id))["token"]
 
 
-def token_matches(cid: int, token: str | None, tenant_id: str | None = None) -> bool:
+def token_matches(cid: int, token: str | None, tenant_id: str) -> bool:
     """Constant-time check; a missing conversation and a wrong token look the same to the caller."""
-    t = _t(tenant_id)
+    t = str(tenant_id)
     with tx(t) as c:
         real = c.execute(text("SELECT token FROM conversations WHERE id=:i AND tenant_id=:t"), {"i": cid, "t": t}).scalar()
     return bool(real and token and hmac.compare_digest(real, token))
-
-
-def _t(tenant_id: str | None) -> str:
-    return str(tenant_id or settings.default_tenant_id)
 
 
 def _row(sql: str, i: int, t: str) -> dict:

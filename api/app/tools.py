@@ -43,11 +43,11 @@ def slot_instants(cal: Calendar, now: datetime) -> list[tuple[datetime, datetime
     return out
 
 
-def _tid(tenant_id: str | None) -> str:
-    return str(tenant_id or settings.default_tenant_id)
+def _tid(tenant_id) -> str:
+    return str(tenant_id)
 
 
-def ensure_slots(tenant_id: str | None = None) -> None:
+def ensure_slots(tenant_id: str) -> None:
     """Top up the tenant's pack-defined slots; safe to repeat, so the calendar never runs dry."""
     t = _tid(tenant_id)
     rows = slot_instants(get_pack(t).calendar, datetime.now(timezone.utc))
@@ -62,7 +62,7 @@ def ensure_slots(tenant_id: str | None = None) -> None:
             {"t": t, "starts": [r[0] for r in rows], "ends": [r[1] for r in rows]})
 
 
-def get_available_slots(limit: int = 5, tenant_id: str | None = None) -> dict:
+def get_available_slots(limit: int = 5, *, tenant_id: str) -> dict:
     ensure_slots(tenant_id)
     with tx(tenant_id) as c:
         rows = c.execute(
@@ -73,7 +73,7 @@ def get_available_slots(limit: int = 5, tenant_id: str | None = None) -> dict:
     return {"slots": [{"id": r.id, "start": r.start_time.isoformat()} for r in rows]}
 
 
-def book_appointment(lead_id: int, slot_id: int, tenant_id: str | None = None) -> dict:
+def book_appointment(lead_id: int, slot_id: int, tenant_id: str) -> dict:
     t = _tid(tenant_id)
     with tx(tenant_id) as c:
         status = c.execute(text("SELECT status FROM leads WHERE id=:i AND tenant_id=:t"), {"i": lead_id, "t": t}).scalar()
@@ -92,7 +92,7 @@ def book_appointment(lead_id: int, slot_id: int, tenant_id: str | None = None) -
     return {"start": slot.start_time.isoformat()}
 
 
-def update_lead(lead_id: int, fields: dict, tenant_id: str | None = None) -> dict:
+def update_lead(lead_id: int, fields: dict, tenant_id: str) -> dict:
     """Validated against LeadFields: unknown fields or bad values raise."""
     clean = LeadFields.model_validate(fields).model_dump(exclude_none=True, mode="json")
     if clean:
@@ -104,7 +104,7 @@ def update_lead(lead_id: int, fields: dict, tenant_id: str | None = None) -> dic
     return {"updated": sorted(clean)}
 
 
-def lookup_faq(query: str, k: int = 3, tenant_id: str | None = None) -> dict:
+def lookup_faq(query: str, k: int = 3, *, tenant_id: str) -> dict:
     try:
         vector = vector_literal(llm.embed(query))
     except openai.OpenAIError:  # no Ollama (hosted deploy): fall back to keyword search
@@ -115,7 +115,7 @@ def lookup_faq(query: str, k: int = 3, tenant_id: str | None = None) -> dict:
     return {"chunks": [r.text for r in rows]}
 
 
-def _faq_keywords(query: str, k: int, tenant_id: str | None = None) -> list[str]:
+def _faq_keywords(query: str, k: int, tenant_id: str) -> list[str]:
     terms = [w for w in re.findall(r"[a-z0-9]+", query.lower()) if len(w) > 2]  # alphanumerics only, so to_tsquery input is safe
     if not terms:
         return []
@@ -135,7 +135,7 @@ def _safe_event(tenant_id, conversation_id, kind, payload) -> None:
         log.exception("agent_events write failed (kind=%s)", kind)
 
 
-def escalate_to_human(conversation_id: int, reason: str, tenant_id: str | None = None) -> dict:
+def escalate_to_human(conversation_id: int, reason: str, tenant_id: str) -> dict:
     with tx(tenant_id) as c:
         c.execute(text("INSERT INTO escalations (tenant_id, conversation_id, reason) VALUES (:t, :c, :r)"),
                   {"t": _tid(tenant_id), "c": conversation_id, "r": reason})
@@ -146,7 +146,7 @@ def escalate_to_human(conversation_id: int, reason: str, tenant_id: str | None =
     return {"reason": reason}
 
 
-def _notify_escalation(conversation_id: int, reason: str, tenant_id: str | None = None) -> None:
+def _notify_escalation(conversation_id: int, reason: str, tenant_id: str) -> None:
     """Fire-and-forget alert to n8n for web-chat escalations. Carries no customer data, only a link. A failure never blocks the handoff."""
     if not settings.escalation_webhook_url:
         return
@@ -163,13 +163,12 @@ def _notify_escalation(conversation_id: int, reason: str, tenant_id: str | None 
         log.warning("escalation alert for conversation %s failed: %s", conversation_id, type(e).__name__)
 
 
-def run(cid: int, name: str, args: dict, fn, tenant_id: str | None = None) -> tuple[bool, dict]:
+def run(cid: int, name: str, args: dict, fn, *, tenant_id: str) -> tuple[bool, dict]:
     """Execute a tool, log it to tool_calls, and return (ok, result). Tool failures are results, not crashes.
     tenant_id is the caller's own parameter; a tenant_id inside model-supplied args is dropped."""
     start = time.perf_counter()
     kwargs = {k: v for k, v in args.items() if k != "tenant_id"}
-    if tenant_id:
-        kwargs["tenant_id"] = tenant_id
+    kwargs["tenant_id"] = tenant_id
     try:
         result, ok = fn(**kwargs), True
     except (ToolError, ValueError) as e:  # ValueError covers pydantic ValidationError

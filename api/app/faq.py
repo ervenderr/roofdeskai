@@ -1,17 +1,17 @@
 import logging
+import uuid
 
 from sqlalchemy import text
 
 from . import llm
-from .config import settings
 from .db import tx
 from .pack import get_pack
 
 log = logging.getLogger("leadpilot.faq")
 
-def seed_faq(tenant_id: str | None = None, reload: bool = False) -> None:
+def seed_faq(tenant_id: str, reload: bool = False) -> None:
     """Embed and insert the FAQ if this tenant has none (reload: replace its rows). Embedding failures are logged, not fatal."""
-    t = str(tenant_id or settings.default_tenant_id)
+    t = str(uuid.UUID(str(tenant_id)))
     entries = get_pack(t).faq  # before the transaction: a tenant without a pack raises PackError
     with tx(t) as c:
         if reload:

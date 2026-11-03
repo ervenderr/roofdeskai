@@ -41,10 +41,10 @@ def main() -> None:
     for i, (channel, turns) in enumerate(STORIES, 1):
         cid = None
         for t in turns:
-            cid, _ = handle_turn(t, cid, channel=channel)
+            cid, _ = handle_turn(t, cid, channel=channel, tenant_id=TENANT)
         # Spread over the last two weeks so the daily charts have shape (the data is synthetic either way).
         days = random.randint(0, 13)
-        with tx() as c:
+        with tx(TENANT) as c:
             for table, col in (("conversations", "started_at"), ("conversations", "ended_at"),
                                ("messages", "created_at"), ("tool_calls", "created_at")):
                 key = "id" if table == "conversations" else "conversation_id"

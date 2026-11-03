@@ -2,6 +2,7 @@
 import hashlib
 import re
 import sys
+import uuid
 import threading
 from pathlib import Path
 from typing import Annotated, Literal
@@ -311,8 +312,8 @@ _CACHE: dict[tuple[str, str], Pack] = {}  # (tenant_id, pack_hash) -> Pack; not 
 _LOCK = threading.Lock()
 
 
-def get_pack(tenant_id=None) -> Pack:
-    t = str(tenant_id or settings.default_tenant_id)
+def get_pack(tenant_id) -> Pack:
+    t = str(uuid.UUID(str(tenant_id)))
     with system() as c:  # tenants is directory data, read in the explicit system context
         slug = c.execute(text("SELECT pack_slug FROM tenants WHERE id = :t"), {"t": t}).scalar()
     if not slug:
