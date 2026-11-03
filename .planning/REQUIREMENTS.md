@@ -8,10 +8,10 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 ## v1 Requirements
 
 ### Baseline (BASE)
-- [ ] **BASE-01**: Operator can tag the current commit `v1-roofing` and has a machine-readable per-scenario baseline of eval results
-- [ ] **BASE-02**: Operator can see eval flake rate (3 runs, model tag and temperature pinned) so the regression gate has a known tolerance
-- [ ] **BASE-03**: Operator can run the branch on an isolated compose project/volume so the live roofdeskai.com demo is untouched
-- [ ] **BASE-04**: Every migration step reruns the eval and fails on any per-scenario-id difference from the baseline (flipped scenarios rerun twice before counting)
+- [x] **BASE-01**: Operator can tag the current commit `v1-roofing` and has a machine-readable per-scenario baseline of eval results
+- [x] **BASE-02**: Operator can see eval flake rate (3 runs, model tag and temperature pinned) so the regression gate has a known tolerance
+- [x] **BASE-03**: Operator can run the branch on an isolated compose project/volume so the live roofdeskai.com demo is untouched
+- [x] **BASE-04**: Every migration step reruns the eval and fails on any per-scenario-id difference from the baseline (flipped scenarios rerun twice before counting)
 
 ### Tenancy (TEN)
 - [ ] **TEN-01**: Operator can apply numbered SQL migrations to a live database without recreating the volume
@@ -107,10 +107,10 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BASE-01 | Phase 1 | Pending |
-| BASE-02 | Phase 1 | Pending |
-| BASE-03 | Phase 1 | Pending |
-| BASE-04 | Phase 1 | Pending |
+| BASE-01 | Phase 1 | Complete |
+| BASE-02 | Phase 1 | Complete |
+| BASE-03 | Phase 1 | Complete |
+| BASE-04 | Phase 1 | Complete |
 | TEN-01 | Phase 2 | Pending |
 | TEN-02 | Phase 2 | Pending |
 | TEN-03 | Phase 2 | Pending |
