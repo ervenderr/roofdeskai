@@ -218,14 +218,6 @@ def test_golden_frozen(roofing_pack):
     _check(roofing_pack, _frozen())
 
 
-def test_compat_properties(roofing_pack):
-    # compat properties exist only for the dual run; deleted in plan 05
-    q = roofing_pack.qualification
-    assert set(q.service_area) == set(F.FROZEN_SERVICE_AREA)
-    assert set(q.qualifying_services) == set(F.FROZEN_QUALIFYING_SERVICES)
-    assert q.max_timeline_months == F.FROZEN_MAX_TIMELINE_MONTHS
-
-
 def test_golden_always_human_matches_client_profile(roofing_pack):
     prof = yaml.safe_load((settings.clients_dir / "summit-roofing.yaml").read_text())
     assert list(roofing_pack.escalation.always_human) == prof["always_human"]

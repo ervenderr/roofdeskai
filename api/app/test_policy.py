@@ -1,14 +1,18 @@
 import pytest
 from pydantic import ValidationError
 
-from . import policy
+from . import policy, qualify
 from .schemas import LeadFields
+
+def _cities(pack):
+    return next(r.cities for r in pack.qualification.rules if r.rule == "in_area")
+
 
 GOOD = {"service_type": "repair", "is_owner": True, "address": "12 Oak St, Denver", "timeline_months": 2}
 
 
 def test_qualified(roofing_pack):
-    assert policy.qualification(roofing_pack, GOOD) == "qualified"
+    assert qualify.qualify(roofing_pack, GOOD) == "qualified"
 
 
 @pytest.mark.parametrize("change", [
@@ -18,12 +22,12 @@ def test_qualified(roofing_pack):
     {"service_type": "other"},
 ])
 def test_each_criterion_disqualifies(roofing_pack, change):
-    assert policy.qualification(roofing_pack, {**GOOD, **change}) == "disqualified"
+    assert qualify.qualify(roofing_pack, {**GOOD, **change}) == "disqualified"
 
 
 def test_address_without_city_is_incomplete_not_disqualified(roofing_pack):
-    assert policy.qualification(roofing_pack, {**GOOD, "address": "1 Oak St"}) == "incomplete"
-    assert "address" in policy.missing_fields(roofing_pack, {**GOOD, "address": "1 Oak St"})
+    assert qualify.qualify(roofing_pack, {**GOOD, "address": "1 Oak St"}) == "incomplete"
+    assert "address" in qualify.missing_fields(roofing_pack, {**GOOD, "address": "1 Oak St"})
 
 
 def test_pick_slot_only_from_offered():
@@ -34,11 +38,11 @@ def test_pick_slot_only_from_offered():
 
 
 def test_incomplete_until_all_known(roofing_pack):
-    assert policy.qualification(roofing_pack, {"is_owner": True}) == "incomplete"
+    assert qualify.qualify(roofing_pack, {"is_owner": True}) == "incomplete"
 
 
 def test_budget_never_disqualifies(roofing_pack):
-    assert policy.qualification(roofing_pack, {**GOOD, "budget_range": "under 100"}) == "qualified"
+    assert qualify.qualify(roofing_pack, {**GOOD, "budget_range": "under 100"}) == "qualified"
 
 
 @pytest.mark.parametrize("msg,reason", [
@@ -98,7 +102,7 @@ def test_pick_slot_ignores_stray_numbers_and_negation():
     ("somewhere in Denver", "incomplete"),
 ])
 def test_address_status(roofing_pack, addr, expected):
-    assert policy.address_status(roofing_pack, addr) == expected
+    assert qualify.address_status(_cities(roofing_pack), addr) == expected
 
 
 def test_names_and_streets_do_not_trigger_escalation(roofing_pack):
@@ -139,7 +143,7 @@ def test_answer_guard_accepts_inflections_but_not_new_claims(roofing_pack):
 
 
 def test_address_status_handles_state_without_a_comma_and_zip_codes(roofing_pack):
-    address_status = policy.address_status
+    address_status = lambda pack, a: qualify.address_status(_cities(pack), a)
     for addr in ("412 Oak Lane, Denver CO", "412 Oak Lane, Aurora CO 80012", "412 Oak Lane, Denver, CO", "120 Main St, Lakewood Colorado"):
         assert address_status(roofing_pack, addr) == "in", addr
     for addr in ("412 Oak Lane, Austin TX", "412 Aurora Ave, Austin TX", "9 Elm St, Boulder CO 80302"):

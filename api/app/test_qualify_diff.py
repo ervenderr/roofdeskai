@@ -1,11 +1,11 @@
-"""Dual-run: old hardcoded policy functions (oracle) vs data-driven qualify over a large grid."""
+"""Zero-diff proof: data-driven qualify over a large grid reproduces digests frozen from the old policy path."""
 import hashlib
 import itertools
 import random
 import string
 import time
 
-from . import policy, qualify
+from . import qualify
 
 CURATED = [None, "", "   ", "Denver", "123 Main St", "123 Main St, Denver", "123 main st, DENVER",
            "123 Main St, Denver CO", "123 Main St, Denver, CO", "123 Main St, Denver, CO 80202",
@@ -76,38 +76,6 @@ ADDR_COUNT = len(address_corpus())
 
 def test_grid_not_shrunk():
     assert GRID_COUNT == 84_720 and ADDR_COUNT == 10_052
-
-
-def test_zero_diff_grid(roofing_pack):
-    t0, diffs, n = time.time(), [], 0
-    for lead in iter_leads():
-        n += 1
-        for name, old, new in (("qualification", policy.qualification, qualify.qualify),
-                               ("missing_fields", policy.missing_fields, qualify.missing_fields),
-                               ("next_question", policy.next_question, qualify.next_question)):
-            o, w = old(roofing_pack, lead), new(roofing_pack, lead)
-            if o != w:
-                diffs.append((lead, name, o, w))
-    print(f"grid leads={n} runtime={time.time() - t0:.1f}s")
-    assert n == GRID_COUNT
-    assert not diffs, diffs[:10]
-
-
-def test_address_zero_diff(roofing_pack):
-    cities = roofing_pack.qualification.service_area
-    corpus = address_corpus()
-    assert len(corpus) == ADDR_COUNT
-    diffs = [(a, policy.address_status(roofing_pack, a), qualify.address_status(cities, a))
-             for a in corpus if policy.address_status(roofing_pack, a) != qualify.address_status(cities, a)]
-    assert not diffs, diffs[:10]
-
-
-def test_frozen_digest_old(roofing_pack):  # temporary: removed with the old path
-    from .tests_data import frozen_qualify as Q
-    p = roofing_pack
-    assert grid_digest(lambda l: policy.qualification(p, l), lambda l: policy.missing_fields(p, l),
-                       lambda l: policy.next_question(p, l)) == Q.GRID_SHA256
-    assert addr_digest(lambda a: policy.address_status(p, a)) == Q.ADDR_SHA256
 
 
 def test_frozen_digest_new(roofing_pack):
