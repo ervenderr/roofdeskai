@@ -44,11 +44,11 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [ ] **EVAL-06**: 20 held-out scenarios are written before tuning, run once, and the score is published even if low
 
 ### Access Control (SEC)
-- [ ] **SEC-01**: Operator can issue, rotate and revoke per-tenant API keys; keys are hashed at rest and shown once
-- [ ] **SEC-02**: Tenant is derived from the credential, never from the request body; requests without a key get 401
-- [ ] **SEC-03**: Row-level security is enforced (FORCE, non-owner app role) on all tenant tables with the default-tenant column default dropped
-- [ ] **SEC-04**: A cross-tenant leak test covering chat, FAQ, slots and metrics passes on an RLS-enabled database
-- [ ] **SEC-05**: Admin endpoints use a separate super-admin scope and no longer return cross-tenant data to tenant keys
+- [x] **SEC-01**: Operator can issue, rotate and revoke per-tenant API keys; keys are hashed at rest and shown once
+- [x] **SEC-02**: Tenant is derived from the credential, never from the request body; requests without a key get 401
+- [x] **SEC-03**: Row-level security is enforced (FORCE, non-owner app role) on all tenant tables with the default-tenant column default dropped
+- [x] **SEC-04**: A cross-tenant leak test covering chat, FAQ, slots and metrics passes on an RLS-enabled database
+- [x] **SEC-05**: Admin endpoints use a separate super-admin scope and no longer return cross-tenant data to tenant keys
 
 ### Engine Modules (MOD)
 - [ ] **MOD-01**: Quote builder turns a request plus `services.yaml` into line items and a Decimal total; a missing price asks or escalates, never guesses
@@ -131,11 +131,11 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | EVAL-02 | Phase 5 | Complete |
 | EVAL-03 | Phase 5 | Complete |
 | EVAL-04 | Phase 5 | Complete |
-| SEC-01 | Phase 6 | Pending |
-| SEC-02 | Phase 6 | Pending |
-| SEC-03 | Phase 6 | Pending |
-| SEC-04 | Phase 6 | Pending |
-| SEC-05 | Phase 6 | Pending |
+| SEC-01 | Phase 6 | Complete |
+| SEC-02 | Phase 6 | Complete |
+| SEC-03 | Phase 6 | Complete |
+| SEC-04 | Phase 6 | Complete |
+| SEC-05 | Phase 6 | Complete |
 | MOD-01 | Phase 7 | Pending |
 | MOD-02 | Phase 7 | Pending |
 | MOD-03 | Phase 7 | Pending |

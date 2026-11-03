@@ -11,7 +11,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 - [x] **Phase 3: Pack Loader and Roofing Extraction** - Validated pack format; roofing constants, prompts and messages moved into pack #1 with zero behaviour change (completed 2026-11-03)
 - [x] **Phase 4: Rule Interpreter** - Data-driven qualification proven identical to the old code, then old path deleted (completed 2026-11-03)
 - [x] **Phase 5: Per-Pack Eval Runner and Dental Pack** - Per-pack reports, dental pack at 90%+ per category, no cross-tenant leakage (completed 2026-11-03)
-- [ ] **Phase 6: Per-Tenant Keys and RLS Enforcement** - Hashed tenant keys, credential-derived tenant, enforced row-level security
+- [x] **Phase 6: Per-Tenant Keys and RLS Enforcement** - Hashed tenant keys, credential-derived tenant, enforced row-level security (completed 2026-11-03)
 - [ ] **Phase 7: Engine Modules and Connectors** - Quote builder, capacity checker, connectors, daily brief, review responder, intake_event, each with deterministic evals
 - [ ] **Phase 8: Tenant-Aware n8n** - 11 tenant-aware workflows, API-only operation, CI header check
 - [ ] **Phase 9: Docs, PII/Retention and make new-business** - Masking, retention, data map, generated SOPs, onboarding command, grep gate, README
@@ -160,7 +160,7 @@ Plans:
 | 3. Pack Loader and Roofing Extraction | 5/5 | Complete    | 2026-11-03 |
 | 4. Rule Interpreter | 5/5 | Complete    | 2026-11-03 |
 | 5. Per-Pack Eval Runner and Dental Pack | 6/6 | Complete    | 2026-11-03 |
-| 6. Per-Tenant Keys and RLS Enforcement | 0/TBD | Not started | - |
+| 6. Per-Tenant Keys and RLS Enforcement | 6/6 | Complete    | 2026-11-03 |
 | 7. Engine Modules and Connectors | 0/TBD | Not started | - |
 | 8. Tenant-Aware n8n | 0/TBD | Not started | - |
 | 9. Docs, PII/Retention and make new-business | 0/TBD | Not started | - |
