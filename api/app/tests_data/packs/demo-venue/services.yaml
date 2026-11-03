@@ -1,0 +1,28 @@
+currency: CHF
+services:
+  - id: escape_room
+    name: Escape room
+    unit: per_person
+    price: "35.00"
+    min_qty: 2
+    add_ons:
+      - {id: photo, name: Photo package, unit: flat, price: "50.00"}
+      - {id: drinks, name: Drinks, unit: per_person, price: "8.50"}
+    rules:
+      - rule: group_discount
+        tiers: [{min_qty: 10, percent: "10"}, {min_qty: 20, percent: "15"}]
+      - {rule: customer_surcharge, customer_type: corporate, percent: "20"}
+  - id: private_event
+    name: Private event
+    unit: flat
+    price: "600.00"
+    rules:
+      - {rule: customer_surcharge, customer_type: corporate, fixed: "75.00"}
+  - id: team_building
+    name: Team building
+    unit: per_hour
+    price: "280.00"
+    min_qty: 2
+  - id: vip_experience
+    name: VIP experience
+    unit: per_person

@@ -33,6 +33,11 @@ def test_base_dir_loads_and_default_unchanged(tmp_path, monkeypatch):
         load_pack(SLUG)
 
 
+@pytest.mark.parametrize("slug", PINNED)
+def test_shipped_packs_have_no_modules(slug):
+    assert load_pack(slug).services is None
+
+
 def test_demo_venue_fixture_loads():
     p = load_pack("demo-venue", base=FIXTURES)
     assert p.meta.timezone == "Europe/Zurich" and p.calendar.slot_hours == (10, 12, 14, 16, 18)

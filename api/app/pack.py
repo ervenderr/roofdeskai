@@ -283,6 +283,79 @@ def _validate_messages(m: Messages) -> None:
             _check_template(name, t)
 
 
+class AddOn(M):
+    id: str = Field(pattern=r"[a-z][a-z0-9_]*")
+    name: str
+    unit: Literal["per_person", "flat", "per_hour"]
+    price: Money | None = None  # None = missing price, the quote builder escalates
+
+
+class Tier(M):
+    min_qty: int = Field(ge=1)
+    percent: Percent
+
+
+class GroupDiscount(M):
+    rule: Literal["group_discount"]
+    tiers: tuple[Tier, ...] = Field(min_length=1)
+
+    @field_validator("tiers")
+    @classmethod
+    def _increasing(cls, v):
+        if any(a.min_qty >= b.min_qty for a, b in zip(v, v[1:])):
+            raise ValueError("tiers must be strictly increasing in min_qty")
+        return v
+
+
+class CustomerSurcharge(M):
+    rule: Literal["customer_surcharge"]
+    customer_type: Literal["consumer", "corporate"]
+    percent: Percent | None = None
+    fixed: Money | None = None
+
+    @model_validator(mode="after")
+    def _one(self):
+        if (self.percent is None) == (self.fixed is None):
+            raise ValueError("surcharge needs exactly one of percent or fixed")
+        return self
+
+
+ServiceRule = Annotated[GroupDiscount | CustomerSurcharge, Field(discriminator="rule")]
+
+
+class Service(M):
+    id: str = Field(pattern=r"[a-z][a-z0-9_]*")
+    name: str
+    unit: Literal["per_person", "flat", "per_hour"]
+    price: Money | None = None
+    min_qty: int = Field(1, ge=1)
+    add_ons: tuple[AddOn, ...] = ()
+    rules: tuple[ServiceRule, ...] = ()
+
+    @model_validator(mode="after")
+    def _check(self):
+        ids = [a.id for a in self.add_ons]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"service {self.id!r}: duplicate add-on id in {ids}")
+        kinds = [r.rule for r in self.rules]
+        if len(set(kinds)) != len(kinds):
+            raise ValueError(f"service {self.id!r}: at most one rule of each type")
+        return self
+
+
+class Services(M):
+    currency: str = Field(pattern=r"^[A-Z]{3}$")
+    services: tuple[Service, ...] = Field(min_length=1)
+
+    @field_validator("services")
+    @classmethod
+    def _unique(cls, v):
+        ids = [s.id for s in v]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"duplicate service id in {ids}")
+        return v
+
+
 class Pack(M):
     slug: str
     hash: str
@@ -292,6 +365,7 @@ class Pack(M):
     escalation: Escalation
     messages: Messages
     faq: tuple[FaqEntry, ...]
+    services: Services | None = None
 
 
 FILES = {"pack": PackMeta, "calendar": Calendar, "qualification": Qualification,
@@ -326,7 +400,7 @@ def _parse(path: Path, model: type[M]):
 
 # Optional module files (services, capacity, connectors): name -> model. Later plans register them and add
 # the matching Pack fields; absent file = module disabled, present-but-bad = PackError.
-OPTIONAL_FILES: dict[str, type[M]] = {}
+OPTIONAL_FILES: dict[str, type[M]] = {"services": Services}
 
 
 def _parse_optional(path: Path, model: type[M]):
@@ -341,7 +415,7 @@ def load_pack(slug: str, base: Path | None = None) -> Pack:
     parts = {name: _parse(root / f"{name}.yaml", model) for name, model in FILES.items()}
     if parts["pack"].slug != slug:
         raise PackError(f"{root / 'pack.yaml'}: slug: {parts['pack'].slug!r} does not match folder {slug!r}")
-    optional = {n: _parse_optional(root / f"{n}.yaml", m) for n, m in OPTIONAL_FILES.items()}  # noqa: F841 (validated here; plans 03-05 attach to Pack)
+    optional = {n: _parse_optional(root / f"{n}.yaml", m) for n, m in OPTIONAL_FILES.items()}
     q = parts["qualification"]
     expected = {r.id for r in q.rules} | CORE_ASK
     got = set(parts["messages"].ask)
@@ -349,7 +423,7 @@ def load_pack(slug: str, base: Path | None = None) -> Pack:
         raise PackError(f"{root / 'messages.yaml'}: ask: missing {sorted(expected - got)}, unexpected {sorted(got - expected)}")
     return Pack(slug=slug, hash=pack_hash(root), meta=parts["pack"], calendar=parts["calendar"],
                 qualification=q, escalation=parts["escalation"], messages=parts["messages"],
-                faq=parts["faq"].entries)
+                faq=parts["faq"].entries, services=optional.get("services"))
 
 
 def render(template: str, pack: Pack) -> str:
