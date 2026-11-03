@@ -3,7 +3,8 @@ import logging
 from sqlalchemy import text
 
 from . import llm
-from .db import engine
+from .config import settings
+from .db import tx
 
 log = logging.getLogger("leadpilot.faq")
 
@@ -24,16 +25,19 @@ FAQ = [
 ]
 
 
-def seed_faq() -> None:
-    """Embed and insert the FAQ if the table is empty. Embedding failures are logged, not fatal."""
-    with engine.begin() as c:
-        if c.execute(text("SELECT 1 FROM faq_chunks LIMIT 1")).first():
+def seed_faq(tenant_id: str | None = None, reload: bool = False) -> None:
+    """Embed and insert the FAQ if this tenant has none (reload: replace its rows). Embedding failures are logged, not fatal."""
+    t = str(tenant_id or settings.default_tenant_id)
+    with tx(t) as c:
+        if reload:
+            c.execute(text("DELETE FROM faq_chunks WHERE tenant_id = :t"), {"t": t})
+        elif c.execute(text("SELECT 1 FROM faq_chunks WHERE tenant_id = :t LIMIT 1"), {"t": t}).first():
             return
         try:
             for source, chunk in FAQ:
                 c.execute(
-                    text("INSERT INTO faq_chunks (source, text, embedding) VALUES (:s, :t, CAST(:e AS vector))"),
-                    {"s": source, "t": chunk, "e": vector_literal(llm.embed(chunk))},
+                    text("INSERT INTO faq_chunks (tenant_id, source, text, embedding) VALUES (:tn, :s, :t, CAST(:e AS vector))"),
+                    {"tn": t, "s": source, "t": chunk, "e": vector_literal(llm.embed(chunk))},
                 )
         except Exception:
             log.exception("FAQ seeding failed; lookup_faq will return nothing")

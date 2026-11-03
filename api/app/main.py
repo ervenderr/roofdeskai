@@ -18,7 +18,7 @@ from .stt import router as stt_router
 from .tts import router as tts_router
 from .agent import CLOSED_REPLY, conversation_token, handle_turn, token_matches
 from .config import settings
-from .db import engine
+from .db import engine, system
 from .faq import seed_faq
 from .ratelimit import chat_rate_limit
 
@@ -28,10 +28,13 @@ log = logging.getLogger("leadpilot")
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     bootstrap_schema()  # a failure here should stop the start: nothing works without a schema
-    try:
-        seed_faq()
-    except Exception:
-        pass  # already logged; the API still serves, FAQ lookups just return nothing
+    with system() as c:
+        tenants = [str(r[0]) for r in c.execute(text("SELECT id FROM tenants"))]
+    for tenant in tenants:
+        try:
+            seed_faq(tenant)
+        except Exception:
+            pass  # already logged; the API still serves, FAQ lookups just return nothing
     yield
 
 

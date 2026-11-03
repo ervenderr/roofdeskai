@@ -139,3 +139,132 @@ def test_agent_events_append_only(two):
     for sql in ("UPDATE agent_events SET kind='x'", "DELETE FROM agent_events", "TRUNCATE agent_events"):
         with pytest.raises(DBAPIError, match="append-only"), two.begin() as c:
             c.execute(text(sql))
+
+
+# ---- tools / faq per tenant (plan 02-03); runs on the dev DB, conftest removes test-* tenants ----
+import logging
+
+from . import db, faq, tools
+
+TB = "00000000-0000-0000-0000-0000000000b3"
+VEC = [0.1] * 384
+
+
+@pytest.fixture
+def tb():
+    with db.system() as c:
+        c.execute(text("INSERT INTO tenants (id, slug, name, timezone) VALUES (:b, 'test-b3', 'B', 'UTC') "
+                       "ON CONFLICT DO NOTHING"), {"b": TB})
+    return TB
+
+
+def _count(table, t, where=""):
+    with db.system() as c:
+        return c.execute(text(f"SELECT count(*) FROM {table} WHERE tenant_id=:t {where}"), {"t": t}).scalar()
+
+
+def test_ensure_slots_second_tenant(tb):
+    tools.ensure_slots()  # A already has slots
+    a = _count("slots", A)
+    assert _count("slots", tb) == 0 and a > 0
+    tools.ensure_slots(tenant_id=tb)
+    b = _count("slots", tb)
+    assert b > 0 and _count("slots", A) == a
+    tools.ensure_slots(tenant_id=tb)
+    assert _count("slots", tb) == b
+
+
+def test_get_available_slots_scoped(tb):
+    with db.tx(tb) as c:
+        sid = _slot(c, tb, "2031-01-01 09:00+00")
+    ids = {s["id"] for s in tools.get_available_slots(limit=1000, tenant_id=tb)["slots"]}
+    assert sid in ids
+    assert sid not in {s["id"] for s in tools.get_available_slots(limit=1000)["slots"]}
+
+
+def test_seed_faq_per_tenant(tb, monkeypatch):
+    monkeypatch.setattr(faq.llm, "embed", lambda t: VEC)
+    a = _count("faq_chunks", A)
+    faq.seed_faq(tenant_id=tb)
+    n = _count("faq_chunks", tb)
+    assert n == len(faq.FAQ) and _count("faq_chunks", A) == a
+    faq.seed_faq(tenant_id=tb)
+    assert _count("faq_chunks", tb) == n
+    with db.system() as c:
+        old = {r[0] for r in c.execute(text("SELECT id FROM faq_chunks WHERE tenant_id=:t"), {"t": tb})}
+    faq.seed_faq(tenant_id=tb, reload=True)
+    with db.system() as c:
+        new = {r[0] for r in c.execute(text("SELECT id FROM faq_chunks WHERE tenant_id=:t"), {"t": tb})}
+    assert len(new) == n and not (old & new) and _count("faq_chunks", A) == a
+
+
+def test_lookup_faq_scoped(tb, monkeypatch):
+    monkeypatch.setattr(tools.llm, "embed", lambda t: VEC)
+    with db.tx(tb) as c:
+        c.execute(text("DELETE FROM faq_chunks WHERE tenant_id=:t"), {"t": tb})
+        c.execute(text("INSERT INTO faq_chunks (tenant_id, source, text, embedding) VALUES (:t,'x','zebra only here',CAST(:e AS vector))"),
+                  {"t": tb, "e": faq.vector_literal(VEC)})
+    assert tools.lookup_faq("q", tenant_id=tb)["chunks"] == ["zebra only here"]
+    assert "zebra only here" not in tools.lookup_faq("q", k=50)["chunks"]
+    assert tools._faq_keywords("zebra", 5, tenant_id=tb) == ["zebra only here"]
+    assert tools._faq_keywords("zebra", 5) == []
+
+
+def _convo(tenant, **kw):
+    with db.tx(tenant) as c:
+        lead = _lead(c, tenant)
+        return lead, c.execute(text("INSERT INTO conversations (tenant_id, lead_id) VALUES (:t,:l) RETURNING id"),
+                               {"t": tenant, "l": lead}).scalar()
+
+
+def test_cross_tenant_lead_untouched(tb):
+    lead_a, _ = _convo(A)
+    with db.tx(tb) as c:
+        slot_b = _slot(c, tb, "2031-02-01 09:00+00")
+    with db.system() as c:
+        c.execute(text("UPDATE leads SET status='qualified' WHERE id=:i"), {"i": lead_a})
+    with pytest.raises(tools.ToolError):
+        tools.book_appointment(lead_a, slot_b, tenant_id=tb)
+    tools.update_lead(lead_a, {"name": "Hacked"}, tenant_id=tb)
+    with db.system() as c:
+        assert c.execute(text("SELECT name FROM leads WHERE id=:i"), {"i": lead_a}).scalar() is None
+        assert c.execute(text("SELECT status FROM leads WHERE id=:i"), {"i": lead_a}).scalar() == "qualified"
+        assert not c.execute(text("SELECT is_booked FROM slots WHERE id=:i"), {"i": slot_b}).scalar()
+
+
+def _events(t, cid):
+    with db.system() as c:
+        return c.execute(text("SELECT kind, payload FROM agent_events WHERE tenant_id=:t AND conversation_id=:c ORDER BY id"),
+                         {"t": t, "c": cid}).all()
+
+
+def test_run_writes_tool_call_event(tb):
+    _, cid = _convo(tb)
+    ok, _ = tools.run(cid, "get_available_slots", {"limit": 1}, tools.get_available_slots, tenant_id=tb)
+    assert ok
+    [(kind, payload)] = _events(tb, cid)
+    assert kind == "tool_call" and set(payload) == {"name", "ok", "ms"} and payload["name"] == "get_available_slots"
+    with db.system() as c:
+        assert c.execute(text("SELECT tenant_id::text FROM tool_calls WHERE conversation_id=:c"), {"c": cid}).scalar() == tb
+
+
+def test_run_ignores_model_supplied_tenant(tb):
+    _, cid = _convo(tb)
+    ok, res = tools.run(cid, "get_available_slots", {"limit": 1, "tenant_id": A}, tools.get_available_slots, tenant_id=tb)
+    assert ok and _events(tb, cid) and not _events(A, cid)
+
+
+def test_escalation_event_stamped(tb):
+    _, cid = _convo(tb)
+    tools.escalate_to_human(cid, "wants human", tenant_id=tb)
+    assert [(k, p) for k, p in _events(tb, cid)] == [("escalation", {"reason": "wants human"})]
+
+
+def test_event_failure_does_not_block_tool(tb, monkeypatch, caplog):
+    _, cid = _convo(tb)
+    def boom(*a, **k):
+        raise RuntimeError("x")
+    monkeypatch.setattr(tools, "record_event", boom)
+    with caplog.at_level(logging.ERROR, logger="leadpilot.tools"):
+        ok, _ = tools.run(cid, "get_available_slots", {"limit": 1}, tools.get_available_slots, tenant_id=tb)
+    assert ok and "agent_events" in caplog.text
