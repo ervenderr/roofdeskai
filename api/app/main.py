@@ -28,13 +28,24 @@ from .auth import chat_tenant
 from .agent import CLOSED_STATES, conversation_token, handle_turn, token_matches
 from .config import settings
 from .db import assert_rls_enforced, system, tx
-from .logctx import TenantFilter
+from .logctx import PiiMaskFilter, TenantFilter
 from .faq import seed_faq
 from .ratelimit import chat_rate_limit
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s tenant=%(tenant_id)s %(message)s")
-for _h in logging.getLogger().handlers:
-    _h.addFilter(TenantFilter())  # handler filter: stamps records from every logger, children and third parties included
+
+
+def install_log_filters() -> None:
+    """Handler filters see records from every logger; uvicorn keeps its own handlers, so cover them too."""
+    for name in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
+        for h in logging.getLogger(name).handlers:
+            for f in (TenantFilter, PiiMaskFilter):
+                if name == "" or f is PiiMaskFilter:
+                    if not any(isinstance(x, f) for x in h.filters):
+                        h.addFilter(f())
+
+
+install_log_filters()
 
 log = logging.getLogger("leadpilot")
 
