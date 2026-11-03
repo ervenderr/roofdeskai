@@ -19,7 +19,6 @@ def remove_test_data():
     """Tests run against the dev database; delete what they created so dashboards and snapshots stay clean."""
     with engine.connect() as c:
         first = {t: _max(c, t) for t in ("conversations", "prospects", "campaigns")}
-        first_event = _max(c, "agent_events")
     yield
     with engine.begin() as c:
         f = {"c": first["conversations"], "p": first["prospects"], "k": first["campaigns"]}
@@ -36,13 +35,16 @@ def remove_test_data():
         c.execute(text("DELETE FROM prospects WHERE id > :p"), f)
         c.execute(text("DELETE FROM campaigns WHERE id > :k"), f)
         c.execute(text("DELETE FROM suppressions WHERE email LIKE '%@outreach.test'"))
+        test_tenants = "(SELECT id FROM tenants WHERE slug LIKE 'test-%')"
         # agent_events is append-only: lift the trigger only inside this cleanup transaction.
         c.execute(text("ALTER TABLE agent_events DISABLE TRIGGER USER"))
-        c.execute(text("DELETE FROM agent_events WHERE id > :e"), {"e": first_event})
+        c.execute(text(f"DELETE FROM agent_events WHERE tenant_id IN {test_tenants}"))
         c.execute(text("ALTER TABLE agent_events ENABLE TRIGGER USER"))
         for t in ("appointments", "tool_calls", "escalations", "events", "llm_calls", "messages",
                   "conversations", "slots", "leads", "faq_chunks"):
-            c.execute(text(f"DELETE FROM {t} WHERE tenant_id <> :d"), {"d": settings.default_tenant_id})
+            c.execute(text(f"DELETE FROM {t} WHERE tenant_id IN {test_tenants}"))
+        c.execute(text("DO $$ BEGIN IF to_regclass('tenant_api_keys') IS NOT NULL THEN "
+                       f"DELETE FROM tenant_api_keys WHERE tenant_id IN {test_tenants}; END IF; END $$"))
         c.execute(text("DELETE FROM tenants WHERE slug LIKE 'test-%'"))
 
 

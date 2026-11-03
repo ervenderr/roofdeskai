@@ -151,7 +151,7 @@ def test_slots_are_topped_up_when_the_calendar_runs_short():
     tools.get_available_slots()
     with engine.connect() as c:
         last = c.execute(text("SELECT max(start_time) > now() + interval '10 days' FROM slots")).scalar()
-        dupes = c.execute(text("SELECT count(*) FROM (SELECT start_time FROM slots GROUP BY 1 HAVING count(*) > 1) x")).scalar()
+        dupes = c.execute(text("SELECT count(*) FROM (SELECT 1 FROM slots GROUP BY tenant_id, start_time HAVING count(*) > 1) x")).scalar()
     assert last and dupes == 0
 
 
