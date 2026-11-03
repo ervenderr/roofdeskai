@@ -268,3 +268,66 @@ def test_event_failure_does_not_block_tool(tb, monkeypatch, caplog):
     with caplog.at_level(logging.ERROR, logger="leadpilot.tools"):
         ok, _ = tools.run(cid, "get_available_slots", {"limit": 1}, tools.get_available_slots, tenant_id=tb)
     assert ok and "agent_events" in caplog.text
+
+
+# ---- full turn per tenant (plan 02-04) ----
+import json
+
+from . import agent, llm
+
+TURN_TABLES = ("leads", "conversations", "messages", "tool_calls", "llm_calls", "escalations", "events", "agent_events")
+BOOK_MSG = "I own 1 A St, Denver and need a repair within 1 month. Sam, 303-555-0142"
+FULL_TURN = {"reply": "ok", "extracted": {"service_type": "repair", "is_owner": True, "address": "1 A St, Denver",
+                                           "timeline_months": 1, "name": "Sam", "phone": "303-555-0142"}}
+
+
+def _fake_llm(monkeypatch, *turns):
+    it = iter(turns)
+    monkeypatch.setattr(llm, "chat", lambda m: {"content": json.dumps(next(it)), "model": "fake", "prompt_tokens": 1,
+                                                "completion_tokens": 1, "latency_ms": 1})
+    monkeypatch.setattr(tools.llm, "embed", lambda q: VEC)
+    monkeypatch.setattr(agent.mailer, "send", lambda *a, **k: None)
+
+
+def _a_counts():
+    with db.system() as c:
+        return {t: c.execute(text(f"SELECT count(*) FROM {t} WHERE tenant_id=:a"), {"a": A}).scalar() for t in TURN_TABLES}
+
+
+def test_turn_stamps_tenant_b_everywhere(tb, monkeypatch):
+    _fake_llm(monkeypatch, FULL_TURN, {"reply": "ok"})
+    before = _a_counts()
+    cid, reply = agent.handle_turn(BOOK_MSG, tenant_id=tb)
+    agent.handle_turn("the first", cid, tenant_id=tb)
+    with db.system() as c:
+        assert c.execute(text("SELECT tenant_id::text FROM conversations WHERE id=:i"), {"i": cid}).scalar() == tb
+        assert c.execute(text("SELECT state FROM conversations WHERE id=:i"), {"i": cid}).scalar() == "DONE"
+    assert before == _a_counts()  # nothing leaked onto Summit
+    for t in ("leads", "conversations", "messages", "tool_calls", "llm_calls", "agent_events"):
+        assert _count(t, tb) > 0, t
+    assert _count("appointments", tb) == 1
+
+
+def test_turn_start_event_once_per_turn(tb, monkeypatch):
+    _fake_llm(monkeypatch, FULL_TURN, {"reply": "ok"})
+    cid, _ = agent.handle_turn(BOOK_MSG, tenant_id=tb)
+    assert [p for k, p in _events(tb, cid) if k == "turn_start"] == [{"channel": "web"}]
+    agent.handle_turn("the first", cid, tenant_id=tb)
+    assert len([1 for k, _ in _events(tb, cid) if k == "turn_start"]) == 2
+
+
+def test_cannot_continue_other_tenants_conversation(tb, monkeypatch):
+    _fake_llm(monkeypatch, FULL_TURN)
+    _, cid = _convo(A)
+    token = agent.conversation_token(cid, tenant_id=A)
+    assert agent.token_matches(cid, token, tenant_id=A)
+    assert not agent.token_matches(cid, token, tenant_id=tb)
+    with pytest.raises(LookupError):
+        agent.handle_turn("hello", cid, tenant_id=tb)
+    with db.system() as c:
+        assert c.execute(text("SELECT count(*) FROM messages WHERE conversation_id=:i"), {"i": cid}).scalar() == 0
+
+
+def test_outreach_llm_calls_stay_untenanted():
+    with db.system() as c:
+        assert c.execute(text("SELECT count(*) FROM llm_calls WHERE tenant_id IS NOT NULL AND conversation_id IS NULL")).scalar() == 0

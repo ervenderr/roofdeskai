@@ -96,7 +96,7 @@ def test_empty_reply_falls_back_to_next_question(monkeypatch):
 
 def test_question_is_answered_even_if_model_forgets_the_flag(monkeypatch):
     script(monkeypatch, {"reply": "The inspection is free and takes about 45 to 60 minutes."})
-    monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3: {"chunks": ["The roof inspection is free and takes about 45 to 60 minutes."]})
+    monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3, tenant_id=None: {"chunks": ["The roof inspection is free and takes about 45 to 60 minutes."]})
     _, reply = agent.handle_turn("How long does the inspection take?")
     assert "45" in reply
 
@@ -105,13 +105,13 @@ def test_empty_model_answer_gets_a_second_focused_call(monkeypatch):
     calls = iter([json.dumps({"reply": "", "is_question": True}), "It takes about 45 to 60 minutes."])
     monkeypatch.setattr(llm, "chat", lambda m: {"content": next(calls), "model": "fake", "prompt_tokens": 1,
                                                  "completion_tokens": 1, "latency_ms": 1})
-    monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3: {"chunks": ["The roof inspection is free and takes about 45 to 60 minutes."]})
+    monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3, tenant_id=None: {"chunks": ["The roof inspection is free and takes about 45 to 60 minutes."]})
     _, reply = agent.handle_turn("How long does the inspection take?")
     assert "45" in reply
 
 
 def test_invented_credentials_become_fallback(monkeypatch):
-    monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3: {"chunks": ["The roof inspection is free."]})
+    monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3, tenant_id=None: {"chunks": ["The roof inspection is free."]})
     script(monkeypatch, {"reply": "Yes, we are fully licensed and insured.", "is_question": True})
     _, reply = agent.handle_turn("Are you licensed and insured?")
     assert "licensed" not in reply and "don't have that information" in reply

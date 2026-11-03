@@ -9,7 +9,7 @@ import random
 from sqlalchemy import text
 
 from app.agent import handle_turn
-from app.db import engine
+from app.db import tx
 
 STORIES = [
     ("web", ["Hi, I have a leak in my roof after the storm and need a repair.", "I own the house, 41 Alder St, Denver.",
@@ -44,7 +44,7 @@ def main() -> None:
             cid, _ = handle_turn(t, cid, channel=channel)
         # Spread over the last two weeks so the daily charts have shape (the data is synthetic either way).
         days = random.randint(0, 13)
-        with engine.begin() as c:
+        with tx() as c:
             for table, col in (("conversations", "started_at"), ("conversations", "ended_at"),
                                ("messages", "created_at"), ("tool_calls", "created_at")):
                 key = "id" if table == "conversations" else "conversation_id"

@@ -21,7 +21,8 @@ from sqlalchemy import text
 from app import policy
 from app.agent import PROMPT, handle_turn
 from app.config import settings
-from app.db import engine
+from app.config import settings
+from app.db import system, tx
 from app.llm import LLM_TEMPERATURE, load_prompt
 
 HERE = Path(__file__).parent
@@ -63,15 +64,16 @@ def load_scenarios() -> list[dict]:
 
 
 def reset_db(setup: str | None) -> None:
-    with engine.begin() as c:
-        c.execute(text("DELETE FROM appointments"))
-        c.execute(text("UPDATE slots SET is_booked=:b"), {"b": setup == "no_slots"})
+    with tx() as c:
+        t = settings.default_tenant_id
+        c.execute(text("DELETE FROM appointments WHERE tenant_id=:t"), {"t": t})
+        c.execute(text("UPDATE slots SET is_booked=:b WHERE tenant_id=:t"), {"b": setup == "no_slots", "t": t})
 
 
 def steal_first_slot() -> None:
-    with engine.begin() as c:
-        c.execute(text("UPDATE slots SET is_booked=true WHERE id=(SELECT id FROM slots WHERE NOT is_booked "
-                       "AND start_time > now() ORDER BY start_time LIMIT 1)"))
+    with tx() as c:
+        c.execute(text("UPDATE slots SET is_booked=true WHERE id=(SELECT id FROM slots WHERE tenant_id=:t AND NOT is_booked "
+                       "AND start_time > now() ORDER BY start_time LIMIT 1)"), {"t": settings.default_tenant_id})
 
 
 def run_scenario(sc: dict) -> dict:
@@ -84,7 +86,7 @@ def run_scenario(sc: dict) -> dict:
         cid, reply = handle_turn(turn, cid, channel="eval")
         times.append(time.perf_counter() - start)
         replies.append(reply)
-    with engine.connect() as c:
+    with tx() as c:
         convo = c.execute(text("SELECT c.state, c.outcome, l.status AS lead_status, l.id AS lead_id FROM conversations c "
                                "JOIN leads l ON l.id=c.lead_id WHERE c.id=:i"), {"i": cid}).mappings().one()
         called = {r[0] for r in c.execute(text("SELECT tool_name FROM tool_calls WHERE conversation_id=:i AND ok"),
@@ -141,7 +143,7 @@ def run_suite(scenarios: list[dict]) -> tuple[list, list]:
 
 def assert_local_only(cids: list) -> None:
     """BASE-02: a hosted fallback answering would pollute a baseline; abort."""
-    with engine.connect() as c:
+    with tx() as c:
         models = [r[0] for r in c.execute(text("SELECT DISTINCT model FROM llm_calls WHERE conversation_id = ANY(:c)"), {"c": cids})]
     bad = [m for m in models if not (m or "").startswith("local:")]
     if bad:
@@ -260,14 +262,14 @@ def write_report(results, cids) -> None:
     actual = sum(1 for sc, _ in ran if sc.get("expect", {}).get("state") == "ESCALATE")
     invalid = sum(1 for _, r in ran if r["invalid_booking"])
     turn_times = [t for _, r in ran for t in r["times"]]
-    with engine.connect() as c:
+    with tx() as c:
         llm = c.execute(text("SELECT count(*) n, avg((schema_valid)::int) valid, sum(prompt_tokens) pt, "
                              "sum(completion_tokens) ct, array_agg(DISTINCT model) models FROM llm_calls "
                              "WHERE conversation_id = ANY(:c)"), {"c": cids}).one()
     prompt_version = load_prompt(PROMPT)[0]
     sha = os.environ.get("GIT_SHA", "unknown")
 
-    with engine.begin() as c:
+    with system() as c:
         metrics = {
             "passed": passed, "total": len(results),
             "booking_validity": 1 - invalid / max(len(ran), 1),

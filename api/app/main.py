@@ -18,9 +18,14 @@ from .stt import router as stt_router
 from .tts import router as tts_router
 from .agent import CLOSED_REPLY, conversation_token, handle_turn, token_matches
 from .config import settings
-from .db import engine, system
+from .db import system, tx
+from .logctx import TenantFilter
 from .faq import seed_faq
 from .ratelimit import chat_rate_limit
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s tenant=%(tenant_id)s %(message)s")
+for _h in logging.getLogger().handlers:
+    _h.addFilter(TenantFilter())  # handler filter: stamps records from every logger, children and third parties included
 
 log = logging.getLogger("leadpilot")
 
@@ -71,7 +76,7 @@ def showcase():
 
 @app.get("/health")
 def health():
-    with engine.connect() as c:
+    with system() as c:
         c.execute(text("SELECT 1"))
     return {"ok": True}
 
@@ -87,7 +92,7 @@ def chat(body: ChatIn):
     except RuntimeError:
         log.exception("all LLM providers failed (conversation %s)", body.conversation_id)
         raise HTTPException(502, "The assistant is unavailable right now.")
-    with engine.connect() as c:
+    with tx() as c:
         state = c.execute(text("SELECT state FROM conversations WHERE id=:i"), {"i": cid}).scalar()
         lead = c.execute(text("SELECT l.name, l.email, l.phone FROM leads l JOIN conversations v ON v.lead_id=l.id WHERE v.id=:i"),
                          {"i": cid}).mappings().one() if state in CLOSED_REPLY else {}

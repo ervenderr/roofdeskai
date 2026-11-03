@@ -8,7 +8,7 @@ from sqlalchemy import text
 from . import outreach
 from .agent import handle_turn
 from .config import settings
-from .db import engine
+from .db import system, tx
 
 MAX_FOLLOWUPS = 3
 
@@ -21,8 +21,9 @@ def require_admin(x_admin_key: str = Header("")):
 router = APIRouter(dependencies=[Depends(require_admin)])
 
 
-def _rows(sql: str, **params) -> list[dict]:
-    with engine.connect() as c:
+def _rows(sql: str, *, _tenant: str | None = None, **params) -> list[dict]:
+    """_tenant=None reads untenanted/cross-tenant (system); pass a tenant id to read inside that tenant."""
+    with (tx(_tenant) if _tenant else system()) as c:
         return [dict(r) for r in c.execute(text(sql), params).mappings()]
 
 
@@ -109,7 +110,7 @@ def list_escalations(resolved: bool = False):
 
 @router.post("/admin/escalations/{eid}/resolve")
 def resolve_escalation(eid: int):
-    with engine.begin() as c:
+    with tx() as c:
         if not c.execute(text("UPDATE escalations SET resolved=true WHERE id=:i RETURNING id"), {"i": eid}).first():
             raise HTTPException(404, "escalation not found")
     return {"id": eid, "resolved": True}
@@ -129,7 +130,7 @@ def _redelivered(external_id: str, message_id: str) -> dict | None:
     rows = _rows("""SELECT c.id AS conversation_id,
                            (SELECT content FROM messages WHERE conversation_id = c.id AND role = 'assistant' ORDER BY id DESC LIMIT 1) AS reply
                     FROM conversations c JOIN events e ON e.conversation_id = c.id
-                    WHERE c.external_id = :x AND e.kind = 'inbound_id' AND e.detail = :m LIMIT 1""", x=external_id, m=message_id)
+                    WHERE c.external_id = :x AND e.kind = 'inbound_id' AND e.detail = :m LIMIT 1""", x=external_id, m=message_id, _tenant=settings.default_tenant_id)
     return rows[0] if rows else None
 
 
@@ -144,15 +145,16 @@ def inbound(body: InboundIn):
     except RuntimeError:
         raise HTTPException(502, "The assistant is unavailable right now.")
     if body.message_id:
-        with engine.begin() as c:
-            c.execute(text("INSERT INTO events (conversation_id, kind, detail) VALUES (:c, 'inbound_id', :m)"), {"c": cid, "m": body.message_id})
+        with tx(settings.default_tenant_id) as c:
+            c.execute(text("INSERT INTO events (tenant_id, conversation_id, kind, detail) VALUES (:t, :c, 'inbound_id', :m)"),
+                      {"t": settings.default_tenant_id, "c": cid, "m": body.message_id})
     # Outcome details let the n8n flow branch (confirm a booking, alert a human, leave nurture to the scheduler).
     info = _rows(
         """SELECT c.state, c.outcome, l.name, l.email,
                   (SELECT s.start_time FROM appointments a JOIN slots s ON s.id = a.slot_id
                    WHERE a.lead_id = c.lead_id LIMIT 1) AS appointment_start,
                   (SELECT reason FROM escalations WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) AS escalation_reason
-           FROM conversations c JOIN leads l ON l.id = c.lead_id WHERE c.id = :i""", i=cid)[0]
+           FROM conversations c JOIN leads l ON l.id = c.lead_id WHERE c.id = :i""", i=cid, _tenant=settings.default_tenant_id)[0]
     return {"conversation_id": cid, "reply": reply, **info, "link": f"{settings.public_url}/conversations/{cid}"}
 
 
@@ -171,7 +173,7 @@ def followups_due(hours: float = 48):
 @router.post("/admin/followups/{cid}/draft")
 def draft_followup(cid: int):
     """Compose a follow-up email. Fixed template on purpose: no model-invented prices or promises."""
-    with engine.begin() as c:
+    with tx() as c:
         row = c.execute(
             text("""UPDATE conversations SET followup_count = followup_count + 1
                     WHERE id = :i AND state = 'NURTURE' AND followup_count < :m RETURNING lead_id, followup_count"""),
@@ -179,8 +181,8 @@ def draft_followup(cid: int):
         if not row:
             raise HTTPException(409, "no follow-up due for this conversation")
         lead = c.execute(text("SELECT name, email FROM leads WHERE id=:i"), {"i": row.lead_id}).one()
-        c.execute(text("INSERT INTO events (conversation_id, kind, detail) VALUES (:c, 'followup', :d)"),
-                  {"c": cid, "d": f"follow-up {row.followup_count} of {MAX_FOLLOWUPS}"})
+        c.execute(text("INSERT INTO events (tenant_id, conversation_id, kind, detail) VALUES (:t, :c, 'followup', :d)"),
+                  {"t": settings.default_tenant_id, "c": cid, "d": f"follow-up {row.followup_count} of {MAX_FOLLOWUPS}"})
     greeting = f"Hi {lead.name}," if lead.name else "Hi,"
     return {
         "to": lead.email,
