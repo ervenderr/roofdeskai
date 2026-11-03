@@ -4,3 +4,9 @@ kind: an escape room and event venue
 offer: books escape rooms, team events and private parties
 timezone: Europe/Zurich
 locale: en-CH
+reviews:
+  tone: "warm, brief, first person plural, no exclamation marks"
+  signature: "The Demo Venue team"
+  forbidden_topics: [pricing, staff names]
+  health_privacy: false
+  max_words: 120

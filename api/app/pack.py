@@ -107,6 +107,14 @@ Percent = Annotated[Decimal, BeforeValidator(_pct)]
 HHMM = Annotated[time, BeforeValidator(_hhmm)]
 
 
+class Reviews(M):
+    tone: str
+    signature: str
+    forbidden_topics: tuple[str, ...] = ()
+    health_privacy: bool = False
+    max_words: int = Field(120, ge=10, le=500)
+
+
 class PackMeta(M):
     slug: str
     business: str
@@ -115,6 +123,7 @@ class PackMeta(M):
     timezone: str
     locale: str = "en-US"
     owner_email: str | None = None
+    reviews: Reviews | None = None
 
     check_tz = field_validator("timezone")(_tz)
 
