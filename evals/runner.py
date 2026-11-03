@@ -1,12 +1,15 @@
 """Run scenarios through the real agent and score them with deterministic checks.
 
     docker compose exec -e GIT_SHA=$(git rev-parse --short HEAD) api python -m evals.runner [--ids a,b] [--category x]
+                                           [--write-baseline | --flake | --gate]
 """
 import argparse
 import json
 import os
 import re
 import statistics
+import subprocess
+import sys
 import time
 from collections import defaultdict
 from datetime import date
@@ -19,9 +22,40 @@ from app import policy
 from app.agent import PROMPT, handle_turn
 from app.config import settings
 from app.db import engine
-from app.llm import load_prompt
+from app.llm import LLM_TEMPERATURE, load_prompt
 
 HERE = Path(__file__).parent
+BASELINE = HERE / "baselines" / "v1-roofing.json"
+FLAKE = HERE / "baselines" / "flake-report.json"
+RERUNS = 2
+FLAKE_RUNS = 3
+
+
+def baseline_path() -> Path:
+    """BASELINE_PATH env overrides the committed baseline (used by the gate and flake marking)."""
+    return Path(os.environ["BASELINE_PATH"]) if os.environ.get("BASELINE_PATH") else BASELINE
+
+
+def baseline_from_results(results: list, meta: dict) -> dict:
+    scen = {sc["id"]: {"passed": not f, "category": sc["category"], "failed_checks": list(f)} for sc, _, f in results}
+    n_pass = sum(v["passed"] for v in scen.values())
+    return {"meta": {**meta, "total": len(scen), "passed": n_pass}, "scenarios": scen}
+
+
+def gate_diff(baseline: dict, current: dict) -> dict:
+    """baseline: full baseline dict; current: {id: {"passed": bool}} for the scenarios actually run."""
+    base = baseline["scenarios"]
+    return {
+        "candidate_regressions": sorted(i for i, c in current.items() if i in base and base[i]["passed"] and not c["passed"]),
+        "improvements": sorted(i for i, c in current.items() if i in base and not base[i]["passed"] and c["passed"]),
+        "new": sorted(i for i in current if i not in base),
+    }
+
+
+def decide(candidates: list[str], reruns: dict[str, list[bool]]) -> dict:
+    """Confirmed regression only if every rerun failed; any rerun pass is flaky-pass. No exemption for flaky ids."""
+    reg = [i for i in candidates if not any(reruns.get(i, [True]))]
+    return {"regressions": reg, "flaky_pass": [i for i in candidates if i not in reg]}
 
 
 def load_scenarios() -> list[dict]:
@@ -91,18 +125,7 @@ def pct(xs: list[float], q: float) -> float:
     return xs[min(len(xs) - 1, int(q * len(xs)))] if xs else 0.0
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--ids")
-    ap.add_argument("--category")
-    args = ap.parse_args()
-    settings.mail_transport = "mailpit"  # eval bookings send emails; never to a real mailbox
-    scenarios = load_scenarios()
-    if args.ids:
-        scenarios = [s for s in scenarios if s["id"] in args.ids.split(",")]
-    if args.category:
-        scenarios = [s for s in scenarios if s["category"] == args.category]
-
+def run_suite(scenarios: list[dict]) -> tuple[list, list]:
     results, cids = [], []
     for sc in scenarios:
         try:
@@ -113,8 +136,114 @@ def main() -> None:
             r, fails = None, [f"error: {type(e).__name__}: {e}"[:300]]
         results.append((sc, r, fails))
         print(f"{'PASS' if not fails else 'FAIL'} {sc['id']:<14} {'; '.join(fails)}", flush=True)
+    return results, cids
 
+
+def assert_local_only(cids: list) -> None:
+    """BASE-02: a hosted fallback answering would pollute a baseline; abort."""
+    with engine.connect() as c:
+        models = [r[0] for r in c.execute(text("SELECT DISTINCT model FROM llm_calls WHERE conversation_id = ANY(:c)"), {"c": cids})]
+    bad = [m for m in models if not (m or "").startswith("local:")]
+    if bad:
+        sys.exit(f"ABORT: non-local model answered {bad}; baseline/flake run is invalid")
+
+
+def _git_sha() -> str:
+    return os.environ.get("GIT_SHA") or subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
+                                                       text=True).stdout.strip() or "unknown"
+
+
+def write_baseline(scenarios: list[dict]) -> None:
+    if len(scenarios) != len(load_scenarios()):
+        sys.exit("--write-baseline needs the full suite (no --ids/--category)")
+    results, cids = run_suite(scenarios)
+    assert_local_only(cids)
+    meta = {"git_sha": _git_sha(), "model": settings.local_llm_model, "temperature": LLM_TEMPERATURE,
+            "date": str(date.today())}
+    data = baseline_from_results(results, meta)
+    BASELINE.parent.mkdir(parents=True, exist_ok=True)
+    BASELINE.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
     write_report(results, cids)
+    print(f"baseline written: {BASELINE} ({data['meta']['passed']}/{data['meta']['total']})")
+
+
+def flake(scenarios: list[dict]) -> None:
+    counts: dict[str, int] = defaultdict(int)
+    all_cids: list = []
+    for n in range(FLAKE_RUNS):
+        print(f"--- flake run {n + 1}/{FLAKE_RUNS}", flush=True)
+        results, cids = run_suite(scenarios)
+        all_cids += cids
+        for sc, _, f in results:
+            counts[sc["id"]] += not f
+    assert_local_only(all_cids)
+    unstable = sorted(i for i, c in counts.items() if 0 < c < FLAKE_RUNS)
+    always_fail = sorted(i for i, c in counts.items() if c == 0)
+    report = {"runs": FLAKE_RUNS, "model": settings.local_llm_model, "temperature": LLM_TEMPERATURE,
+              "date": str(date.today()), "pass_counts": dict(counts), "unstable_ids": unstable}
+    FLAKE.parent.mkdir(parents=True, exist_ok=True)
+    FLAKE.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    FLAKE.with_suffix(".md").write_text("\n".join([
+        f"# Flake report ({date.today()})", "",
+        f"- {FLAKE_RUNS} full runs, model `{settings.local_llm_model}`, temperature {LLM_TEMPERATURE}",
+        f"- Unstable (passed some runs, not all): {len(unstable)}", *[f"  - `{i}` {counts[i]}/{FLAKE_RUNS}" for i in unstable],
+        f"- Failed every run: {len(always_fail)}", *[f"  - `{i}`" for i in always_fail], ""]))
+    bp = baseline_path()
+    if bp.exists():
+        data = json.loads(bp.read_text())
+        scen = {i: ({**v, "flaky": True} if i in unstable else dict(v)) for i, v in data["scenarios"].items()}
+        bp.write_text(json.dumps({**data, "scenarios": scen}, indent=2, sort_keys=True) + "\n")
+    print(f"unstable: {unstable}")
+
+
+def gate(scenarios: list[dict]) -> None:
+    bp = baseline_path()
+    if not bp.exists():
+        sys.exit(f"gate: baseline missing at {bp}")
+    baseline = json.loads(bp.read_text())
+    results, cids = run_suite(scenarios)
+    write_report(results, cids)
+    diff = gate_diff(baseline, {sc["id"]: {"passed": not f} for sc, _, f in results})
+    cand = diff["candidate_regressions"]
+    by_id = {s["id"]: s for s in scenarios}
+    reruns: dict[str, list[bool]] = {i: [] for i in cand}
+    for n in range(RERUNS if cand else 0):
+        print(f"--- gate rerun {n + 1}/{RERUNS} of {cand}", flush=True)
+        rr, _ = run_suite([by_id[i] for i in cand])
+        for sc, _, f in rr:
+            reruns[sc["id"]].append(not f)
+    verdict = decide(cand, reruns)
+    print(f"improvements: {diff['improvements']}\nnew (not in baseline): {diff['new']}\n"
+          f"flaky-pass: {verdict['flaky_pass']}\nregressions: {verdict['regressions']}")
+    if verdict["regressions"]:
+        sys.exit(f"GATE FAILED: {verdict['regressions']}")
+    print("GATE PASSED")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--ids")
+    ap.add_argument("--category")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--write-baseline", action="store_true", help="full run, write evals/baselines/v1-roofing.json")
+    mode.add_argument("--flake", action="store_true", help=f"{FLAKE_RUNS} full runs, write flake report")
+    mode.add_argument("--gate", action="store_true", help="diff against baseline (BASELINE_PATH overrides); exit 1 on regression")
+    args = ap.parse_args()
+    settings.mail_transport = "mailpit"  # eval bookings send emails; never to a real mailbox
+    scenarios = load_scenarios()
+    if args.ids:
+        scenarios = [s for s in scenarios if s["id"] in args.ids.split(",")]
+    if args.category:
+        scenarios = [s for s in scenarios if s["category"] == args.category]
+
+    if args.write_baseline:
+        write_baseline(scenarios)
+    elif args.flake:
+        flake(scenarios)
+    elif args.gate:
+        gate(scenarios)
+    else:
+        write_report(*run_suite(scenarios))
 
 
 def write_report(results, cids) -> None:

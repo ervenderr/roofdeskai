@@ -37,10 +37,13 @@ def load_prompt(name: str) -> tuple[str, str]:
     return head.removeprefix("version:").strip(), body.strip()
 
 
+LLM_TEMPERATURE = 0
+
+
 def _call(p: Provider, messages: list[dict]) -> dict:
     client = OpenAI(base_url=p.base_url, api_key=p.api_key, timeout=settings.llm_timeout_s, max_retries=0)
     start = time.perf_counter()
-    resp = client.chat.completions.create(model=p.model, messages=messages, temperature=0)
+    resp = client.chat.completions.create(model=p.model, messages=messages, temperature=LLM_TEMPERATURE)
     return {
         "content": resp.choices[0].message.content or "",
         "model": f"{p.name}:{p.model}",
