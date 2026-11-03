@@ -18,7 +18,7 @@ from .stt import router as stt_router
 from .tts import router as tts_router
 from .agent import CLOSED_STATES, conversation_token, handle_turn, token_matches
 from .config import settings
-from .db import system, tx
+from .db import assert_rls_enforced, system, tx
 from .logctx import TenantFilter
 from .faq import seed_faq
 from .ratelimit import chat_rate_limit
@@ -33,6 +33,7 @@ log = logging.getLogger("leadpilot")
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     bootstrap_schema()  # a failure here should stop the start: nothing works without a schema
+    assert_rls_enforced()  # app connection must be subject to RLS
     with system() as c:
         tenants = [str(r[0]) for r in c.execute(text("SELECT id FROM tenants"))]
     for tenant in tenants:

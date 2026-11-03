@@ -14,7 +14,7 @@ MIG_LOCK = 724911  # advisory lock key: two API instances starting together must
 
 
 def _run(c, name: str) -> None:
-    c.exec_driver_sql((settings.db_dir / name).read_text())  # multi-statement files, no bind params
+    c.exec_driver_sql((settings.db_dir / name).read_text().replace("%", "%%"))  # multi-statement files; psycopg still parses % even without params
 
 
 def _lock(c) -> None:
@@ -46,6 +46,16 @@ def apply_migrations(eng=engine) -> list[str]:
     return applied
 
 
+def set_app_role_login(eng=engine, password: str | None = None) -> None:
+    """Give app_rw its login password (SQL migrations cannot read env). Literal is built server-side with %L."""
+    pw = password or settings.app_db_password
+    if not pw:
+        return
+    with eng.begin() as c:
+        stmt = c.execute(text("SELECT format('ALTER ROLE app_rw LOGIN PASSWORD %L', CAST(:p AS text))"), {"p": pw}).scalar()
+        c.exec_driver_sql(stmt)
+
+
 def bootstrap_schema(eng=engine) -> bool:
     created = False
     with eng.begin() as c:
@@ -57,6 +67,7 @@ def bootstrap_schema(eng=engine) -> bool:
             created = True
             log.info("empty database: schema created")
     apply_migrations(eng)
+    set_app_role_login(eng)
     return created
 
 

@@ -19,6 +19,8 @@ services:
     build: ./api
     environment:
       DATABASE_URL: postgresql+psycopg://leadpilot:${POSTGRES_PASSWORD:-leadpilot}@db:5432/leadpilot
+      APP_DATABASE_URL: postgresql+psycopg://app_rw:${APP_DB_PASSWORD:-app_rw_dev}@db:5432/leadpilot
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-app_rw_dev}
       # Ollama runs on the host (Docker on Mac has no GPU access); hosted keys are optional fallbacks.
       LOCAL_LLM_URL: ${LOCAL_LLM_URL:-http://host.docker.internal:11434/v1}
       LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-llama3.1:8b}
