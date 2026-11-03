@@ -63,7 +63,14 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
   2. Service synonyms and the non-business word list come from the pack
   3. A differential test over a large lead grid reports zero differences between old `qualification()` and the interpreter
   4. After the old path is deleted, roofing eval still matches the baseline
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — rules schema, loader validation, roofing YAML migration, compat properties
+- [ ] 04-02-PLAN.md — qualify.py interpreter, dual-run differential test, edit-without-code-change tests
+- [ ] 04-03-PLAN.md — switch agent.py and evals/runner.py to qualify.*, subset eval gate
+- [ ] 04-04-PLAN.md — relax ServiceType (own plan, droppable alone), subset eval gate
+- [ ] 04-05-PLAN.md — freeze diff digests, delete old path, full eval gate
 
 ### Phase 5: Per-Pack Eval Runner and Dental Pack
 **Goal**: A second business runs on the same code, scored separately, with no leakage between businesses.
