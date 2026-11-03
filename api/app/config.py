@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     db_dir: Path = Path("/srv/db")
     max_message_chars: int = 2000
     chat_rate_per_min: int = 20  # per client IP, in-process (single instance)
+    module_llm_rate_per_min: int = 30  # per tenant, LLM-backed module routes (quotes, reviews); in-process
     llm_timeout_s: float = 60
     provider_cooldown_s: float = 60
 

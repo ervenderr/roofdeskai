@@ -45,12 +45,12 @@ def remove_test_data():
         c.execute(text("DELETE FROM campaigns WHERE id > :k"), f)
         c.execute(text("DELETE FROM suppressions WHERE email LIKE '%@outreach.test'"))
         test_tenants = "(SELECT id FROM tenants WHERE slug LIKE 'test-%')"
+        fixture_tenants = "(SELECT id FROM tenants WHERE slug LIKE 'test-%' OR slug = 'demo-venue')"
         # agent_events is append-only: lift the trigger only inside this cleanup transaction.
         c.execute(text("ALTER TABLE agent_events DISABLE TRIGGER USER"))
-        c.execute(text(f"DELETE FROM agent_events WHERE tenant_id IN {test_tenants}"))
+        c.execute(text(f"DELETE FROM agent_events WHERE tenant_id IN {fixture_tenants}"))
         c.execute(text("ALTER TABLE agent_events ENABLE TRIGGER USER"))
         # the demo-venue fixture tenant is test-owned too: its rows go, the tenant row goes only if nothing else references it
-        fixture_tenants = "(SELECT id FROM tenants WHERE slug LIKE 'test-%' OR slug = 'demo-venue')"
         for t in ("drafts", "capacity_flags", "brief_runs", "intake_people"):
             c.execute(text(f"DELETE FROM {t} WHERE tenant_id IN {fixture_tenants}"))
         for t in ("appointments", "tool_calls", "escalations", "events", "llm_calls", "messages",
