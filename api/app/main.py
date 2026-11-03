@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from .admin import router as admin_router
+from .tenant_admin import router as tenant_admin_router
 from .bootstrap import bootstrap_schema
 from .outreach_routes import router as outreach_router
 from .intake import router as intake_router
@@ -46,6 +47,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="RoofDesk AI", lifespan=lifespan)
 app.include_router(admin_router)
+app.include_router(tenant_admin_router)
 app.include_router(outreach_router)
 app.include_router(pilot_router)
 app.include_router(intake_router)

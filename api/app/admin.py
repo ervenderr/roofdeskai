@@ -1,22 +1,16 @@
 """Read/admin endpoints for the dashboard and n8n. All require the X-Admin-Key header."""
-import hmac
-
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from . import outreach
+from .auth import require_admin  # re-exported: triage.py and outreach_routes.py import it from here
 from .agent import handle_turn
 from .config import settings
 from .db import system, tx
 from .pack import get_pack
 
 MAX_FOLLOWUPS = 3
-
-
-def require_admin(x_admin_key: str = Header("")):
-    if not settings.admin_api_key or not hmac.compare_digest(x_admin_key, settings.admin_api_key):
-        raise HTTPException(403, "forbidden")
 
 
 router = APIRouter(dependencies=[Depends(require_admin)])
