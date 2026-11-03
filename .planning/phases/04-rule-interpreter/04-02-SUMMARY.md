@@ -18,7 +18,7 @@ Pure `qualify.py` (CHECKS dispatch over four rule types) gives zero differences 
 ## Commits
 - bd3fa21 test: qualify unit tests and differential grid against old policy (red)
 - 9a162b5 feat: data-driven qualify interpreter proven identical to old policy
-- 3rd commit (see git log): test: pack edits change qualification and grounding with no code change
+- 452d9b0 test: pack edits change qualification and grounding with no code change
 
 ## Red run
 Both files failed at collection: `ImportError: cannot import name 'qualify' from 'app'`.
