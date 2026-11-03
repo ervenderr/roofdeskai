@@ -28,8 +28,8 @@ def test_chat_says_when_the_conversation_has_ended(monkeypatch):
 def test_a_closed_chat_returns_what_the_visitor_typed_for_the_pilot_form(monkeypatch):
     monkeypatch.setattr(settings, "chat_rate_per_min", 1000)
     with engine.begin() as c:
-        lead = c.execute(text("INSERT INTO leads (name, email) VALUES ('Dana Cruz', 'dana@closed.test') RETURNING id")).scalar_one()
-        cid, token = c.execute(text("INSERT INTO conversations (lead_id, state) VALUES (:l, 'ESCALATE') RETURNING id, token"), {"l": lead}).one()
+        lead = c.execute(text("INSERT INTO leads (name, email, tenant_id) VALUES ('Dana Cruz', 'dana@closed.test', :d) RETURNING id"), {"d": settings.default_tenant_id}).scalar_one()
+        cid, token = c.execute(text("INSERT INTO conversations (lead_id, state, tenant_id) VALUES (:l, 'ESCALATE', :d) RETURNING id, token"), {"l": lead, "d": settings.default_tenant_id}).one()
     out = TestClient(app).post("/chat", json={"message": "hi", "conversation_id": cid, "conversation_token": token}).json()
     assert out["closed"] and out["lead"] == {"name": "Dana Cruz", "email": "dana@closed.test"}
 

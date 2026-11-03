@@ -46,9 +46,9 @@ def test_inbound_rejects_bad_payload(client):
 
 def _nurture_conversation() -> int:
     with engine.begin() as c:
-        lead = c.execute(text("INSERT INTO leads (name, email) VALUES ('T', 't@example.com') RETURNING id")).scalar_one()
-        return c.execute(text("INSERT INTO conversations (lead_id, state, outcome, channel) "
-                              "VALUES (:l, 'NURTURE', 'nurture', 'eval') RETURNING id"), {"l": lead}).scalar_one()
+        lead = c.execute(text("INSERT INTO leads (name, email, tenant_id) VALUES ('T', 't@example.com', :d) RETURNING id"), {"d": settings.default_tenant_id}).scalar_one()
+        return c.execute(text("INSERT INTO conversations (lead_id, state, outcome, channel, tenant_id) "
+                              "VALUES (:l, 'NURTURE', 'nurture', 'eval', :d) RETURNING id"), {"l": lead, "d": settings.default_tenant_id}).scalar_one()
 
 
 def test_followups_stop_after_three(client):
@@ -62,7 +62,7 @@ def test_followups_stop_after_three(client):
 def test_followup_not_due_right_after_message(client):
     cid = _nurture_conversation()
     with engine.begin() as c:
-        c.execute(text("INSERT INTO messages (conversation_id, role, content) VALUES (:c, 'user', 'later')"), {"c": cid})
+        c.execute(text("INSERT INTO messages (conversation_id, role, content, tenant_id) VALUES (:c, 'user', 'later', :d)"), {"c": cid, "d": settings.default_tenant_id})
     due = [d["conversation_id"] for d in client.get("/admin/followups/due", headers=H).json()]
     assert cid not in due
     due = [d["conversation_id"] for d in client.get("/admin/followups/due?hours=0", headers=H).json()]
@@ -72,8 +72,8 @@ def test_followup_not_due_right_after_message(client):
 def test_resolve_escalation(client):
     cid = _nurture_conversation()
     with engine.begin() as c:
-        eid = c.execute(text("INSERT INTO escalations (conversation_id, reason) VALUES (:c, 'angry') RETURNING id"),
-                        {"c": cid}).scalar_one()
+        eid = c.execute(text("INSERT INTO escalations (conversation_id, reason, tenant_id) VALUES (:c, 'angry', :d) RETURNING id"),
+                        {"c": cid, "d": settings.default_tenant_id}).scalar_one()
     assert client.post(f"/admin/escalations/{eid}/resolve", headers=H).json() == {"id": eid, "resolved": True}
     assert client.post("/admin/escalations/999999/resolve", headers=H).status_code == 404
 

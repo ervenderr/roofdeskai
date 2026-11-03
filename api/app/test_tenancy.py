@@ -116,7 +116,7 @@ def test_tenant_id_columns(two):
             "SELECT table_name, is_nullable, column_default FROM information_schema.columns "
             "WHERE table_schema='public' AND column_name='tenant_id'"))}
     for t in TENANT_TABLES:
-        assert rows[t][0] == "NO" and A in rows[t][1], t
+        assert rows[t][0] == "NO" and rows[t][1] is None, t  # DEFAULT dropped in 005
     assert tuple(rows["llm_calls"]) == ("YES", None)
 
 
@@ -138,7 +138,7 @@ def test_agent_events_append_only(two):
         c.execute(text("INSERT INTO agent_events (tenant_id, conversation_id, kind) VALUES (:t, 999999, 'turn')"), {"t": A})
         assert c.execute(text("SELECT payload FROM agent_events")).scalar() == {}
     for sql in ("UPDATE agent_events SET kind='x'", "DELETE FROM agent_events", "TRUNCATE agent_events"):
-        with pytest.raises(DBAPIError, match="append-only"), two.begin() as c:
+        with pytest.raises(DBAPIError, match="append-only|permission denied"), two.begin() as c:
             c.execute(text(sql))
 
 

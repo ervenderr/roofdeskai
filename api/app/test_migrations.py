@@ -102,3 +102,11 @@ def test_duplicate_slots_abort_003(scratch_db):
     assert "002_tenant_columns" in v and "003_tenant_keys" not in v
     with scratch_db.begin() as c:
         assert c.execute(text("SELECT count(*) FROM slots")).scalar() == 2
+
+
+def test_005_006_applied_idempotent_and_role_exists(scratch_db):
+    bootstrap.bootstrap_schema(scratch_db)
+    assert {"005_rls", "006_tenant_api_keys"} <= set(_versions(scratch_db))
+    assert bootstrap.apply_migrations(scratch_db) == []
+    with scratch_db.begin() as c:
+        assert c.execute(text("SELECT count(*) FROM pg_roles WHERE rolname='app_rw'")).scalar() == 1

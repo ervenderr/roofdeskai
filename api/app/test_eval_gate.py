@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from sqlalchemy.exc import NoResultFound
 import yaml
 from sqlalchemy import text
 
@@ -244,5 +245,5 @@ def test_run_scenario_detects_wrong_tenant_conversation(two_tenants, monkeypatch
             return c.execute(text("INSERT INTO conversations (tenant_id, lead_id) VALUES (:t,:l) RETURNING id"),
                              {"t": b, "l": lead}).scalar(), "ok"
     monkeypatch.setattr(runner, "handle_turn", fake)
-    with pytest.raises(AssertionError):
+    with pytest.raises((AssertionError, NoResultFound)):  # RLS hides the other tenant's row before the guard runs
         runner.run_scenario({"id": "x", "turns": ["a"]}, a)
