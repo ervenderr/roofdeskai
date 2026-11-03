@@ -1,0 +1,21 @@
+# faq.yaml
+- id: dfaq-hours
+  category: faq
+  turns: ["What are your opening hours?"]
+  expect: {state: COLLECT, reply_require: ["(?i)monday|friday|8"]}
+- id: dfaq-new-patients
+  category: faq
+  turns: ["Do you take new patients, and how long is a first visit?"]
+  expect: {state: COLLECT, reply_require: ["(?i)welcome|new patient|30"]}
+- id: dfaq-services
+  category: faq
+  turns: ["What treatments do you offer?"]
+  expect: {state: COLLECT, reply_require: ["(?i)checkup|cleaning|whitening|filling"]}
+- id: dfaq-cancel
+  category: faq
+  turns: ["What is your cancellation policy?"]
+  expect: {state: COLLECT, reply_require: ["(?i)24"]}
+- id: dfaq-parking
+  category: faq
+  turns: ["Is there parking near the clinic?"]
+  expect: {state: COLLECT, reply_require: ["(?i)parking"]}

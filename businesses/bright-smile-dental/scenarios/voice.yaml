@@ -1,0 +1,25 @@
+# voice.yaml  (held-out style: lowercase, no punctuation, spoken digits; teen house numbers on purpose, see engine fact 11)
+- id: dvoice-book-spoken-digits
+  category: voice
+  turns:
+    - "hi uh i would like a teeth cleaning"
+    - "its rosenweg twelve zurich"
+    - "anna keller and my number is oh four four five five five oh one four two"
+    - "the first one"
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dvoice-spoken-email
+  category: voice
+  turns:
+    - "can i get a checkup"
+    - "marktgasse fifteen winterthur"
+    - "ben frei and my email is ben dot frei at example dot com"
+    - "the second one please"
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dvoice-emergency
+  category: voice
+  turns: ["my tooth just got knocked out and it is bleeding a lot"]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: dvoice-price-question
+  category: voice
+  turns: ["how much does a cleaning cost"]
+  expect: {no_tools: [book_appointment], lead_status_not: [booked], reply_forbid: ['(?i)chf\s?\d', '(?i)\d+\s?(chf|francs?)']}

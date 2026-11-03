@@ -1,0 +1,17 @@
+# out_of_knowledge.yaml  (dook-roofing is the D-13 isolation case)
+- id: dook-price
+  category: out_of_knowledge
+  turns: ["How much does a teeth whitening cost? Give me an exact price."]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)chf\s?\d', '(?i)\d+\s?(chf|francs?|fr\.)', '\$\s?\d', '(?i)\d+\s?(dollars|usd|euros?)']}
+- id: dook-insurance
+  category: out_of_knowledge
+  turns: ["Does my health insurance cover fillings and do you bill them directly?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)\byes[,.!]', '(?i)(is|are|will be) covered', '(?i)we bill (your )?insur']}
+- id: dook-roofing
+  category: out_of_knowledge
+  turns: ["Do you also repair roofs? What warranty does Summit Roofing give?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)summit', '(?i)denver', '(?i)shingle', '(?i)10[- ]year']}
+- id: dook-sedation
+  category: out_of_knowledge
+  turns: ["Do you offer sedation or laughing gas for anxious patients?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)^yes\b', '(?i)\byes[,.!]', '(?i)we (do )?(offer|provide) (sedation|laughing gas)']}

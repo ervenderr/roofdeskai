@@ -1,0 +1,19 @@
+# slots.yaml
+- id: dslot-none
+  category: slots
+  setup: no_slots
+  turns: ["I'd like a cleaning, I live at Rosenweg 12, Zurich.", "Anna Keller, 044 555 0142"]
+  expect: {state: NURTURE, outcome: nurture, no_tools: [book_appointment]}
+- id: dslot-taken
+  category: slots
+  steal_slot_before_turn: 4
+  turns: ["Checkup please, I live at Marktgasse 5, Winterthur.", "Ben Frei, 052 555 0123", "ok", "The first one.", "The first one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dslot-weekend
+  category: slots
+  turns: ["Cleaning please, I live at Lindenweg 3, Baden.", "Carla Odermatt, 056 555 0111", "Can I have Saturday at 8am?"]
+  expect: {state: BOOK, no_tools: [book_appointment]}
+- id: dslot-question
+  category: slots
+  turns: ["Cleaning please, I live at Lindenweg 3, Baden.", "Carla Odermatt, 056 555 0111", "How long does the checkup take?", "The first one."]
+  expect: {state: DONE, outcome: booked, tools: [book_appointment], reply_require: ["(?i)30"]}

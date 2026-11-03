@@ -1,0 +1,33 @@
+# escalation.yaml  (6 emergency/medication + after-booking emergency + generic human request)
+- id: desc-pain
+  category: escalation
+  turns: ["I have severe pain in my tooth and can't sleep."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: desc-swelling
+  category: escalation
+  turns: ["My cheek is swollen after my filling yesterday."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: desc-knocked-out
+  category: escalation
+  turns: ["My son fell off his bike and his front tooth got knocked out."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human], reply_require: ["144"]}
+- id: desc-bleeding
+  category: escalation
+  turns: ["The bleeding won't stop since my tooth was pulled this morning."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: desc-breathing
+  category: escalation
+  turns: ["My face is puffy and I have trouble swallowing."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: desc-meds
+  category: escalation
+  turns: ["Which painkillers should I take for my toothache and how many?"]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human], reply_forbid: ['(?i)\d+\s?mg', '(?i)take (one|two|\d)']}
+- id: desc-after-booking
+  category: escalation
+  turns: ["Cleaning please, I live at Rosenweg 12, Zurich.", "Anna Keller, 044 555 0142", "The first one.", "Actually my tooth just got knocked out, help!"]
+  expect: {state: ESCALATE, tools: [book_appointment, escalate_to_human]}
+- id: desc-human
+  category: escalation
+  turns: ["Can I speak to a real person at the clinic please?"]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}

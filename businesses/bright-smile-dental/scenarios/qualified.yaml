@@ -1,0 +1,17 @@
+# qualified.yaml
+- id: dqual-1
+  category: qualified
+  turns: ["Hi, I'd like to book a teeth cleaning.", "Rosenweg 12, 8001 Zurich", "Anna Keller, 044 555 0142", "The first one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dqual-2
+  category: qualified
+  turns: ["I'm a new patient and need a checkup.", "Marktgasse 5, 8400 Winterthur", "Ben Frei, ben.frei@example.com", "The second one please."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dqual-3
+  category: qualified
+  turns: ["Do you do teeth whitening? I'd like to book it.", "Lindenweg 3, 5400 Baden", "Carla Odermatt, 056 555 0111", "Third option."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dqual-4
+  category: qualified
+  turns: ["Hi, I'm Dario Roth, dario.roth@example.com. I lost a filling and live at Talstrasse 9, 8610 Uster.", "The first one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}

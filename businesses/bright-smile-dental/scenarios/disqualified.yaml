@@ -1,0 +1,17 @@
+# disqualified.yaml  (out-of-area addresses have NO 4-digit postcode: see engine fact 4)
+- id: ddisq-area
+  category: disqualified
+  turns: ["I need a checkup.", "Rue du Lac 5, Geneva"]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: ddisq-area-oneshot
+  category: disqualified
+  turns: ["Teeth whitening please, I live at Via Roma 3, Lugano."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: ddisq-implants
+  category: disqualified
+  turns: ["I want dental implants."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: ddisq-braces
+  category: disqualified
+  turns: ["My daughter needs braces.", "Hauptstrasse 7, Dietikon"]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}

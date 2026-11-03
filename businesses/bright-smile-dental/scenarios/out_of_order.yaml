@@ -1,0 +1,13 @@
+# out_of_order.yaml
+- id: dooo-1
+  category: out_of_order
+  turns: ["I live at Rosenweg 12, Zurich.", "I need a cleaning.", "Anna Keller, 044 555 0142", "First one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dooo-2
+  category: out_of_order
+  turns: ["Call me on 052 555 0177, I'm Ben Frei.", "Checkup please, Marktgasse 5, Winterthur.", "The first slot."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: dooo-3
+  category: out_of_order
+  turns: ["Carla Odermatt, carla@example.com", "Whitening, at Lindenweg 3, Baden.", "Option 1"]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
