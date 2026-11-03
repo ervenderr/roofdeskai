@@ -7,6 +7,8 @@ from .config import settings
 from .db import engine
 from .main import app
 
+T = settings.default_tenant_id  # tests only: production code takes the tenant explicitly
+
 
 @pytest.fixture(autouse=True)
 def demo_tenant(monkeypatch):
@@ -65,5 +67,5 @@ def test_faq_lookup_falls_back_to_keywords_when_embeddings_are_down(monkeypatch)
         raise openai.APIConnectionError(request=httpx.Request("POST", "http://ollama"))
 
     monkeypatch.setattr(llm, "embed", down)
-    assert tools.lookup_faq("how long does a roof inspection take")["chunks"]
-    assert tools.lookup_faq("zzzz qqqq")["chunks"] == []
+    assert tools.lookup_faq("how long does a roof inspection take", tenant_id=T)["chunks"]
+    assert tools.lookup_faq("zzzz qqqq", tenant_id=T)["chunks"] == []

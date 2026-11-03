@@ -9,6 +9,8 @@ from . import agent, llm, tools
 from .config import settings
 from .db import engine
 
+T = settings.default_tenant_id  # tests only: production code takes the tenant explicitly
+
 
 SENT: list[tuple] = []  # mail captured instead of sent
 
@@ -46,58 +48,58 @@ FULL = {"reply": "ok", "extracted": {"service_type": "repair", "is_owner": True,
 
 def test_qualified_lead_books(monkeypatch):
     script(monkeypatch, FULL, {"reply": "ok"})
-    cid, reply = agent.handle_turn(MSG)
+    cid, reply = agent.handle_turn(MSG, tenant_id=T)
     assert "next openings" in reply and state(cid).state == "BOOK"
-    _, reply = agent.handle_turn("the first", cid)
+    _, reply = agent.handle_turn("the first", cid, tenant_id=T)
     assert "booked" in reply and tuple(state(cid)) == ("DONE", "booked")
 
 
 def test_renter_is_disqualified_and_cannot_book(monkeypatch):
     script(monkeypatch, {"reply": "ok", "extracted": {"is_owner": False}})
-    cid, _ = agent.handle_turn("I rent")
+    cid, _ = agent.handle_turn("I rent", tenant_id=T)
     assert tuple(state(cid)) == ("DISQUALIFY", "disqualified")
-    ok, res = tools.run(cid, "book_appointment", {"lead_id": 1, "slot_id": 1}, tools.book_appointment)
+    ok, res = tools.run(cid, "book_appointment", {"lead_id": 1, "slot_id": 1}, tools.book_appointment, tenant_id=T)
     assert not ok
 
 
 def test_taken_slot_is_not_double_booked(monkeypatch):
     script(monkeypatch, FULL, {"reply": "ok"})
-    cid, _ = agent.handle_turn(MSG)
+    cid, _ = agent.handle_turn(MSG, tenant_id=T)
     with engine.begin() as c:
         c.execute(text("UPDATE slots SET is_booked=true WHERE id=(SELECT offered_slot_ids[1] FROM conversations WHERE id=:c)"), {"c": cid})  # the slot offered first, whatever its id
-    _, reply = agent.handle_turn("first", cid)
+    _, reply = agent.handle_turn("first", cid, tenant_id=T)
     assert "isn't available" in reply and state(cid).state == "BOOK"
 
 
 def test_invalid_output_twice_escalates(monkeypatch):
     monkeypatch.setattr(llm, "chat", lambda m: {"content": "not json", "model": "fake", "prompt_tokens": 1,
                                                  "completion_tokens": 1, "latency_ms": 1})
-    cid, _ = agent.handle_turn("hello")
+    cid, _ = agent.handle_turn("hello", tenant_id=T)
     assert tuple(state(cid)) == ("ESCALATE", "escalated")
 
 
 def test_regex_escalation_skips_llm(monkeypatch):
     monkeypatch.setattr(llm, "chat", lambda m: pytest.fail("LLM must not be called"))
-    cid, _ = agent.handle_turn("let me speak to a real person")
+    cid, _ = agent.handle_turn("let me speak to a real person", tenant_id=T)
     assert state(cid).state == "ESCALATE"
 
 
 def test_price_in_reply_is_replaced(monkeypatch):
     script(monkeypatch, {"reply": "A new roof costs $12,000.", "is_question": True})
-    _, reply = agent.handle_turn("how much?")
+    _, reply = agent.handle_turn("how much?", tenant_id=T)
     assert "$" not in reply
 
 
 def test_empty_reply_falls_back_to_next_question(monkeypatch):
     script(monkeypatch, {"reply": "", "extracted": {"service_type": "repair"}})
-    _, reply = agent.handle_turn("repair please")
+    _, reply = agent.handle_turn("repair please", tenant_id=T)
     assert "own the property" in reply
 
 
 def test_question_is_answered_even_if_model_forgets_the_flag(monkeypatch):
     script(monkeypatch, {"reply": "The inspection is free and takes about 45 to 60 minutes."})
     monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3, tenant_id=None: {"chunks": ["The roof inspection is free and takes about 45 to 60 minutes."]})
-    _, reply = agent.handle_turn("How long does the inspection take?")
+    _, reply = agent.handle_turn("How long does the inspection take?", tenant_id=T)
     assert "45" in reply
 
 
@@ -106,22 +108,22 @@ def test_empty_model_answer_gets_a_second_focused_call(monkeypatch):
     monkeypatch.setattr(llm, "chat", lambda m: {"content": next(calls), "model": "fake", "prompt_tokens": 1,
                                                  "completion_tokens": 1, "latency_ms": 1})
     monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3, tenant_id=None: {"chunks": ["The roof inspection is free and takes about 45 to 60 minutes."]})
-    _, reply = agent.handle_turn("How long does the inspection take?")
+    _, reply = agent.handle_turn("How long does the inspection take?", tenant_id=T)
     assert "45" in reply
 
 
 def test_invented_credentials_become_fallback(monkeypatch):
     monkeypatch.setattr(tools, "lookup_faq", lambda query, k=3, tenant_id=None: {"chunks": ["The roof inspection is free."]})
     script(monkeypatch, {"reply": "Yes, we are fully licensed and insured.", "is_question": True})
-    _, reply = agent.handle_turn("Are you licensed and insured?")
+    _, reply = agent.handle_turn("Are you licensed and insured?", tenant_id=T)
     assert "licensed" not in reply and "don't have that information" in reply
 
 
 def test_booking_emails_the_owner_and_confirms_to_the_lead(monkeypatch):
     full = {**FULL, "extracted": {**FULL["extracted"], "email": "sam@lead.test"}}
     script(monkeypatch, full, {"reply": "ok"})
-    cid, _ = agent.handle_turn(MSG + ", sam@lead.test")  # the agent only keeps details that appear in the message
-    agent.handle_turn("the first", cid)
+    cid, _ = agent.handle_turn(MSG + ", sam@lead.test", tenant_id=T)  # the agent only keeps details that appear in the message
+    agent.handle_turn("the first", cid, tenant_id=T)
     to = {m[0]: m for m in SENT}
     assert set(to) == {"owner@example.test", "sam@lead.test"}
     assert "Sam" in to["owner@example.test"][1] and "303-555-0142" in to["owner@example.test"][2]
@@ -130,8 +132,8 @@ def test_booking_emails_the_owner_and_confirms_to_the_lead(monkeypatch):
 
 def test_booking_without_a_lead_email_only_alerts_the_owner(monkeypatch):
     script(monkeypatch, FULL, {"reply": "ok"})
-    cid, _ = agent.handle_turn(MSG)
-    agent.handle_turn("the first", cid)
+    cid, _ = agent.handle_turn(MSG, tenant_id=T)
+    agent.handle_turn("the first", cid, tenant_id=T)
     assert [m[0] for m in SENT] == ["owner@example.test"]
 
 
@@ -140,15 +142,15 @@ def test_a_failing_email_never_blocks_the_booking(monkeypatch):
         raise agent.mailer.MailError("down")
     monkeypatch.setattr(agent.mailer, "send", boom)
     script(monkeypatch, FULL, {"reply": "ok"})
-    cid, _ = agent.handle_turn(MSG)
-    _, reply = agent.handle_turn("the first", cid)
+    cid, _ = agent.handle_turn(MSG, tenant_id=T)
+    _, reply = agent.handle_turn("the first", cid, tenant_id=T)
     assert "booked" in reply and tuple(state(cid)) == ("DONE", "booked")
 
 
 def test_slots_are_topped_up_when_the_calendar_runs_short():
     with engine.begin() as c:
         c.execute(text("DELETE FROM slots WHERE NOT is_booked AND start_time > now() + interval '3 days'"))
-    tools.get_available_slots()
+    tools.get_available_slots(tenant_id=T)
     with engine.connect() as c:
         last = c.execute(text("SELECT max(start_time) > now() + interval '10 days' FROM slots")).scalar()
         dupes = c.execute(text("SELECT count(*) FROM (SELECT 1 FROM slots GROUP BY tenant_id, start_time HAVING count(*) > 1) x")).scalar()
@@ -164,9 +166,9 @@ def test_retrying_a_message_after_a_failed_turn_does_not_save_it_twice(monkeypat
 
     monkeypatch.setattr(llm, "chat", down)
     with pytest.raises(RuntimeError):
-        agent.handle_turn("my roof leaks", external_id=ext, channel="sms")
+        agent.handle_turn("my roof leaks", external_id=ext, channel="sms", tenant_id=T)
     script(monkeypatch, {"reply": "ok"})
-    cid, _ = agent.handle_turn("my roof leaks", external_id=ext, channel="sms")
+    cid, _ = agent.handle_turn("my roof leaks", external_id=ext, channel="sms", tenant_id=T)
     with engine.connect() as c:
         n = c.execute(text("SELECT count(*) FROM messages WHERE conversation_id=:c AND role='user'"), {"c": cid}).scalar()
     assert n == 1
@@ -180,9 +182,9 @@ def _force_state(cid, st):
 @pytest.mark.parametrize("st", ["DONE", "DISQUALIFY"])
 def test_closed_conversation_still_escalates_safety(monkeypatch, st):
     monkeypatch.setattr(llm, "chat", lambda m: pytest.fail("LLM must not be called"))
-    cid, _ = agent.handle_turn("let me speak to a real person")
+    cid, _ = agent.handle_turn("let me speak to a real person", tenant_id=T)
     _force_state(cid, st)
-    _, reply = agent.handle_turn("there is a gas leak and my roof is on fire", cid)
+    _, reply = agent.handle_turn("there is a gas leak and my roof is on fire", cid, tenant_id=T)
     assert state(cid).state == "ESCALATE" and "follow up" in reply
     with engine.connect() as c:
         reasons = [r[0] for r in c.execute(text("SELECT reason FROM escalations WHERE conversation_id=:i"), {"i": cid})]
@@ -191,7 +193,7 @@ def test_closed_conversation_still_escalates_safety(monkeypatch, st):
 
 def test_closed_conversation_plain_message_gets_closed_reply(monkeypatch):
     monkeypatch.setattr(llm, "chat", lambda m: pytest.fail("LLM must not be called"))
-    cid, _ = agent.handle_turn("let me speak to a real person")
+    cid, _ = agent.handle_turn("let me speak to a real person", tenant_id=T)
     _force_state(cid, "DONE")
-    _, reply = agent.handle_turn("thanks a lot", cid)
+    _, reply = agent.handle_turn("thanks a lot", cid, tenant_id=T)
     assert "booked" in reply and state(cid).state == "DONE"

@@ -10,6 +10,9 @@ from .db import engine
 from .pack import load_pack
 from .schemas import LeadFields, Turn
 from .test_agent import FULL, MSG, clean, script, state  # noqa: F401  (clean is an autouse fixture)
+from .config import settings
+
+T = settings.default_tenant_id  # tests only: production code takes the tenant explicitly
 
 OLD_ENUM = ["repair", "replacement", "inspection", "other"]  # frozen copy of the old enum
 CTX = {"service_types": OLD_ENUM}
@@ -73,7 +76,7 @@ def _service_stored(cid):
 
 def test_invalid_then_valid_retries_once(monkeypatch):
     seen = _llm_calls(monkeypatch, {"reply": "ok", "extracted": {"service_type": "plumbing"}}, FULL)
-    cid, _ = agent.handle_turn(MSG)
+    cid, _ = agent.handle_turn(MSG, tenant_id=T)
     assert len(seen) == 2 and seen[1][-1]["role"] == "user" and seen[1][-1]["content"].startswith("Invalid output")
     assert state(cid).state == "BOOK"
 
@@ -81,7 +84,7 @@ def test_invalid_then_valid_retries_once(monkeypatch):
 def test_invalid_twice_escalates_and_stores_nothing(monkeypatch):
     bad = {"reply": "ok", "extracted": {"service_type": "plumbing"}}
     seen = _llm_calls(monkeypatch, bad, bad)
-    cid, _ = agent.handle_turn(MSG)
+    cid, _ = agent.handle_turn(MSG, tenant_id=T)
     assert len(seen) == 2 and tuple(state(cid)) == ("ESCALATE", "escalated")
     assert _service_stored(cid) is None
     with engine.connect() as c:
@@ -91,5 +94,5 @@ def test_invalid_twice_escalates_and_stores_nothing(monkeypatch):
 
 def test_valid_other_is_stored_and_disqualifies(monkeypatch):
     script(monkeypatch, {"reply": "ok", "extracted": {"service_type": "other"}})
-    cid, _ = agent.handle_turn("I need my gutters cleaned and some other roofing-unrelated work, other")
+    cid, _ = agent.handle_turn("I need my gutters cleaned and some other roofing-unrelated work, other", tenant_id=T)
     assert _service_stored(cid) == "other" and tuple(state(cid)) == ("DISQUALIFY", "disqualified")

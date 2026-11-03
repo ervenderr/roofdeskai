@@ -8,6 +8,8 @@ from .config import settings
 from .db import engine
 from .main import app
 
+T = settings.default_tenant_id  # tests only: production code takes the tenant explicitly
+
 H = {"X-Admin-Key": "test-key"}
 
 
@@ -88,8 +90,8 @@ def test_escalation_alert_only_fires_for_web_chat(client, monkeypatch):
     sent = []
     monkeypatch.setattr(settings, "escalation_webhook_url", "http://n8n.test/hook")
     monkeypatch.setattr(tools.httpx, "post", lambda url, **kw: sent.append(kw["json"]))
-    web, _ = agent.handle_turn("let me speak to a real person")
-    sms, _ = agent.handle_turn("let me speak to a real person", external_id="sms:alert-test", channel="sms")
+    web, _ = agent.handle_turn("let me speak to a real person", tenant_id=T)
+    sms, _ = agent.handle_turn("let me speak to a real person", external_id="sms:alert-test", channel="sms", tenant_id=T)
     assert [s["conversation_id"] for s in sent] == [web]
 
 

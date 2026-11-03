@@ -10,6 +10,8 @@ from . import db, llm
 from .config import settings
 from .pack import PackError, get_pack, load_pack, render
 
+T = settings.default_tenant_id  # tests only: production code takes the tenant explicitly
+
 SLUG = "demo-biz"
 MIN_PACK = {
     "pack": {"slug": SLUG, "business": "Demo Biz", "kind": "a demo company", "offer": "books demos",
@@ -248,7 +250,7 @@ def test_templates_exact(roofing_pack):
 
 
 def test_get_pack_default():
-    assert get_pack().slug == "summit-roofing"
+    assert get_pack(T).slug == "summit-roofing"
 
 
 def test_cli_ok():
@@ -554,8 +556,8 @@ def test_cache_interleaved_tenants_and_reload(tmp_path, monkeypatch):
     with db.system() as c:
         c.execute(text("INSERT INTO tenants (id, slug, name, timezone, pack_slug) VALUES (:t, 'test-cache', 'C', 'UTC', :p) "
                        "ON CONFLICT (id) DO UPDATE SET pack_slug = :p"), {"t": other, "p": SLUG})
-    a1, b1 = get_pack(), get_pack(other)
-    a2, b2 = get_pack(), get_pack(other)
+    a1, b1 = get_pack(T), get_pack(other)
+    a2, b2 = get_pack(T), get_pack(other)
     assert (a1.slug, b1.slug) == ("summit-roofing", SLUG) and a1 is a2 and b1 is b2
     path = biz / SLUG / "messages.yaml"
     data = yaml.safe_load(path.read_text())
@@ -564,7 +566,7 @@ def test_cache_interleaved_tenants_and_reload(tmp_path, monkeypatch):
     b3 = get_pack(other)
     assert b3.hash != b1.hash and b3.messages.safe_fallback == "changed fallback"
     assert len([k for k in _CACHE if k[0] == other]) == 1
-    assert get_pack().slug == "summit-roofing"
+    assert get_pack(T).slug == "summit-roofing"
 
 
 # ---- no business globals in core modules (PACK-07) ----

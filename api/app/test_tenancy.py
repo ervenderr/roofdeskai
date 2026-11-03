@@ -16,9 +16,48 @@ def test_tx_sets_tenant():
         assert c.execute(SETTING).scalar() == t
 
 
-def test_tx_default_tenant():
-    with tx() as c:
-        assert c.execute(SETTING).scalar() == settings.default_tenant_id
+T = settings.default_tenant_id  # tests only; production code never defaults a tenant
+
+
+@pytest.mark.parametrize("args", [(), (None,)])
+def test_tx_requires_tenant(args):
+    with pytest.raises((TypeError, ValueError)):
+        with tx(*args):
+            pytest.fail("body must not run")
+
+
+def test_record_event_requires_tenant():
+    from .db import record_event
+    with pytest.raises((TypeError, ValueError)):
+        with tx(T) as c:
+            record_event(c, None, 1, "x", {})
+
+
+@pytest.mark.parametrize("fn", ["get_pack", "seed_faq"])
+def test_pack_and_faq_require_tenant(fn):
+    from . import faq, pack
+    with pytest.raises((TypeError, ValueError)):
+        getattr(pack if fn == "get_pack" else faq, fn)()
+    with pytest.raises((TypeError, ValueError)):
+        getattr(pack if fn == "get_pack" else faq, fn)(None)
+
+
+def test_agent_and_tools_require_tenant():
+    from . import tools
+    from .agent import handle_turn
+    for call in (lambda: handle_turn("hi"), lambda: handle_turn("hi", tenant_id=None),
+                 lambda: tools.get_available_slots(), lambda: tools.lookup_faq("roof"),
+                 lambda: tools.book_appointment(1, 1), lambda: tools.ensure_slots()):
+        with pytest.raises((TypeError, ValueError)):
+            call()
+
+
+def test_no_default_tenant_in_tenant_code():
+    here = Path(__file__).parent
+    for name in ("agent.py", "tools.py", "faq.py", "pack.py", "db.py", "main.py"):
+        assert "default_tenant_id" not in (here / name).read_text(), name
+    for name in ("agent.py", "tools.py", "faq.py", "main.py"):
+        assert "engine" not in (here / name).read_text().replace("app_engine", ""), name
 
 
 def test_tx_rejects_bad_uuid():
@@ -166,7 +205,7 @@ def _count(table, t, where=""):
 
 
 def test_ensure_slots_second_tenant(tb):
-    tools.ensure_slots()  # A already has slots
+    tools.ensure_slots(A)  # A already has slots
     a = _count("slots", A)
     assert _count("slots", tb) == 0 and a > 0
     tools.ensure_slots(tenant_id=tb)
@@ -181,7 +220,7 @@ def test_get_available_slots_scoped(tb):
         sid = _slot(c, tb, "2031-01-01 09:00+00")
     ids = {s["id"] for s in tools.get_available_slots(limit=1000, tenant_id=tb)["slots"]}
     assert sid in ids
-    assert sid not in {s["id"] for s in tools.get_available_slots(limit=1000)["slots"]}
+    assert sid not in {s["id"] for s in tools.get_available_slots(limit=1000, tenant_id=A)["slots"]}
 
 
 def test_seed_faq_per_tenant(tb, monkeypatch):
@@ -207,9 +246,9 @@ def test_lookup_faq_scoped(tb, monkeypatch):
         c.execute(text("INSERT INTO faq_chunks (tenant_id, source, text, embedding) VALUES (:t,'x','zebra only here',CAST(:e AS vector))"),
                   {"t": tb, "e": faq.vector_literal(VEC)})
     assert tools.lookup_faq("q", tenant_id=tb)["chunks"] == ["zebra only here"]
-    assert "zebra only here" not in tools.lookup_faq("q", k=50)["chunks"]
+    assert "zebra only here" not in tools.lookup_faq("q", k=50, tenant_id=A)["chunks"]
     assert tools._faq_keywords("zebra", 5, tenant_id=tb) == ["zebra only here"]
-    assert tools._faq_keywords("zebra", 5) == []
+    assert tools._faq_keywords("zebra", 5, A) == []
 
 
 def _convo(tenant, **kw):
