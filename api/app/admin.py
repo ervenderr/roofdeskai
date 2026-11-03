@@ -20,11 +20,10 @@ router = APIRouter()  # per-route auth: require_scope below, so tenant keys work
 
 
 def _write_tenant(scope: Scope, route: str) -> str:
-    """Tenant for write paths. Admin callers without X-Tenant-Id get the default tenant until n8n moves to tenant keys (Phase 8)."""
+    """Tenant for write paths: a tenant key, or the admin key with an explicit X-Tenant-Id. No default."""
     if scope.tenant_id:
         return scope.tenant_id
-    log.warning("%s called with the admin key and no X-Tenant-Id; using default tenant", route)
-    return settings.default_tenant_id
+    raise HTTPException(400, "tenant required: send X-API-Key, or X-Admin-Key with X-Tenant-Id")
 
 
 def _rows(sql: str, *, _tenant: str | None = None, **params) -> list[dict]:

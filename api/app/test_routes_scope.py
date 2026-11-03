@@ -1,5 +1,4 @@
 """SEC-02/SEC-05 at route level: tenant comes from the credential; tenant keys see only their rows."""
-import logging
 import uuid
 
 import pytest
@@ -178,11 +177,13 @@ def test_inbound_with_tenant_key_ignores_header(client, two):
     assert r.status_code == 200 and _tenant_of("conversations", r.json()["conversation_id"]) == two["a"]
 
 
-def test_inbound_admin_without_header_falls_back_with_warning(client, caplog):
-    with caplog.at_level(logging.WARNING):
-        r = client.post("/webhooks/inbound", json={"contact_id": "sc-3", "message": ESCALATE["message"]}, headers=ADMIN)
-    assert r.status_code == 200 and _tenant_of("conversations", r.json()["conversation_id"]) == settings.default_tenant_id
-    assert any("X-Tenant-Id" in r.getMessage() for r in caplog.records)
+def test_inbound_admin_without_header_is_400(client):
+    with db.system() as c:
+        before = c.execute(text("SELECT count(*) FROM conversations")).scalar_one()
+    r = client.post("/webhooks/inbound", json={"contact_id": "sc-3", "message": ESCALATE["message"]}, headers=ADMIN)
+    assert r.status_code == 400 and r.json()["detail"] == "tenant required: send X-API-Key, or X-Admin-Key with X-Tenant-Id"
+    with db.system() as c:
+        assert c.execute(text("SELECT count(*) FROM conversations")).scalar_one() == before
 
 
 def test_followup_draft_by_header_tenant(client, two):

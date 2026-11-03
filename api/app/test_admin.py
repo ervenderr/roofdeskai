@@ -11,7 +11,9 @@ from .main import app
 
 T = settings.default_tenant_id  # tests only: production code takes the tenant explicitly
 
-H = {"X-Admin-Key": "test-key"}
+H = {"X-Admin-Key": "test-key", "X-Tenant-Id": settings.default_tenant_id}
+NO_TENANT = {"X-Admin-Key": "test-key"}
+NEEDS_TENANT = "tenant required: send X-API-Key, or X-Admin-Key with X-Tenant-Id"
 
 
 @pytest.fixture
@@ -121,3 +123,19 @@ def test_the_same_text_with_a_new_message_id_is_a_new_message(client):
     a = client.post("/webhooks/inbound", json={**body, "message_id": "m-1"}, headers=H).json()
     b = client.post("/webhooks/inbound", json={**body, "message_id": "m-2"}, headers=H).json()
     assert "duplicate" not in a and "duplicate" not in b
+
+
+def _count(table: str) -> int:
+    with engine.begin() as c:
+        return c.execute(text(f"SELECT count(*) FROM {table}")).scalar_one()
+
+
+def test_admin_without_tenant_is_400_and_writes_nothing(client):
+    cid = _nurture_conversation()
+    before = {t: _count(t) for t in ("leads", "conversations", "messages", "escalations")}
+    calls = [client.post("/webhooks/inbound", json={"contact_id": "no-tenant", "message": "hi"}, headers=NO_TENANT),
+             client.post(f"/admin/followups/{cid}/draft", headers=NO_TENANT),
+             client.post("/admin/escalations/1/resolve", headers=NO_TENANT)]
+    assert [r.status_code for r in calls] == [400, 400, 400]
+    assert all(r.json()["detail"] == NEEDS_TENANT for r in calls)
+    assert {t: _count(t) for t in before} == before
