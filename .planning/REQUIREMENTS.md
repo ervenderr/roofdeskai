@@ -105,12 +105,63 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 
 ## Traceability
 
-Filled by the roadmapper.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| BASE-01 | Phase 1 | Pending |
+| BASE-02 | Phase 1 | Pending |
+| BASE-03 | Phase 1 | Pending |
+| BASE-04 | Phase 1 | Pending |
+| TEN-01 | Phase 2 | Pending |
+| TEN-02 | Phase 2 | Pending |
+| TEN-03 | Phase 2 | Pending |
+| TEN-04 | Phase 2 | Pending |
+| TEN-05 | Phase 2 | Pending |
+| TEN-06 | Phase 2 | Pending |
+| PACK-01 | Phase 3 | Pending |
+| PACK-02 | Phase 3 | Pending |
+| PACK-03 | Phase 3 | Pending |
+| PACK-04 | Phase 3 | Pending |
+| PACK-05 | Phase 3 | Pending |
+| PACK-06 | Phase 3 | Pending |
+| PACK-07 | Phase 3 | Pending |
+| QUAL-01 | Phase 4 | Pending |
+| QUAL-02 | Phase 4 | Pending |
+| QUAL-03 | Phase 4 | Pending |
+| EVAL-01 | Phase 5 | Pending |
+| EVAL-02 | Phase 5 | Pending |
+| EVAL-03 | Phase 5 | Pending |
+| EVAL-04 | Phase 5 | Pending |
+| SEC-01 | Phase 6 | Pending |
+| SEC-02 | Phase 6 | Pending |
+| SEC-03 | Phase 6 | Pending |
+| SEC-04 | Phase 6 | Pending |
+| SEC-05 | Phase 6 | Pending |
+| MOD-01 | Phase 7 | Pending |
+| MOD-02 | Phase 7 | Pending |
+| MOD-03 | Phase 7 | Pending |
+| MOD-04 | Phase 7 | Pending |
+| MOD-05 | Phase 7 | Pending |
+| MOD-06 | Phase 7 | Pending |
+| MOD-07 | Phase 7 | Pending |
+| EVAL-05 | Phase 7 | Pending |
+| WF-01 | Phase 8 | Pending |
+| WF-02 | Phase 8 | Pending |
+| WF-03 | Phase 8 | Pending |
+| WF-04 | Phase 8 | Pending |
+| WF-05 | Phase 8 | Pending |
+| OPS-01 | Phase 9 | Pending |
+| OPS-02 | Phase 9 | Pending |
+| OPS-03 | Phase 9 | Pending |
+| OPS-04 | Phase 9 | Pending |
+| OPS-05 | Phase 9 | Pending |
+| OPS-06 | Phase 9 | Pending |
+| OPS-07 | Phase 9 | Pending |
+| EVAL-06 | Phase 10 | Pending |
+| EXT-01 | Phase 10 | Pending |
+| EXT-02 | Phase 10 | Pending |
+| EXT-03 | Phase 10 | Pending |
 
-**Coverage:** v1 requirements: 51 total, 0 mapped (pending roadmap)
+**Coverage:** v1 requirements: 53 total, 53 mapped, 0 unmapped
 
 ---
 *Requirements defined: 2026-11-03*
