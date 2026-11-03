@@ -22,13 +22,13 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **TEN-06**: Operator outreach, replies and pilot flows remain outside the tenant model
 
 ### Business Pack (PACK)
-- [ ] **PACK-01**: Operator can define a business as a folder of YAML files under `businesses/<slug>/` validated at load by Pydantic (`extra="forbid"`), failing with a clear error on bad packs
-- [ ] **PACK-02**: Summit Roofing pack holds the values previously hardcoded in `policy.py`, `faq.py`, `agent.py`, `tools.py` and the prompts, verified by a golden test that pack values equal the old constants
-- [ ] **PACK-03**: Agent prompts are templated from the pack and the roofing render is byte-identical to today's
-- [ ] **PACK-04**: Reply strings, booking confirmation email and demo disclaimer come from pack `messages:` templates
-- [ ] **PACK-05**: Calendar settings (hours, slot length, days ahead, buffer, timezone) come from the pack
-- [ ] **PACK-06**: Roofing-specific escalation safety patterns live in the pack; generic defaults stay in code
-- [ ] **PACK-07**: Pack-keyed caches include tenant and pack hash; no module-level business globals remain
+- [x] **PACK-01**: Operator can define a business as a folder of YAML files under `businesses/<slug>/` validated at load by Pydantic (`extra="forbid"`), failing with a clear error on bad packs
+- [x] **PACK-02**: Summit Roofing pack holds the values previously hardcoded in `policy.py`, `faq.py`, `agent.py`, `tools.py` and the prompts, verified by a golden test that pack values equal the old constants
+- [x] **PACK-03**: Agent prompts are templated from the pack and the roofing render is byte-identical to today's
+- [x] **PACK-04**: Reply strings, booking confirmation email and demo disclaimer come from pack `messages:` templates
+- [x] **PACK-05**: Calendar settings (hours, slot length, days ahead, buffer, timezone) come from the pack
+- [x] **PACK-06**: Roofing-specific escalation safety patterns live in the pack; generic defaults stay in code
+- [x] **PACK-07**: Pack-keyed caches include tenant and pack hash; no module-level business globals remain
 
 ### Qualification (QUAL)
 - [ ] **QUAL-01**: A lead is qualified by a rule interpreter reading `qualification.yaml` (in_list, yes_no, max_number, in_area) with pack-defined questions and disqualify text
@@ -117,13 +117,13 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | TEN-04 | Phase 2 | Complete |
 | TEN-05 | Phase 2 | Complete |
 | TEN-06 | Phase 2 | Complete |
-| PACK-01 | Phase 3 | Pending |
-| PACK-02 | Phase 3 | Pending |
-| PACK-03 | Phase 3 | Pending |
-| PACK-04 | Phase 3 | Pending |
-| PACK-05 | Phase 3 | Pending |
-| PACK-06 | Phase 3 | Pending |
-| PACK-07 | Phase 3 | Pending |
+| PACK-01 | Phase 3 | Complete |
+| PACK-02 | Phase 3 | Complete |
+| PACK-03 | Phase 3 | Complete |
+| PACK-04 | Phase 3 | Complete |
+| PACK-05 | Phase 3 | Complete |
+| PACK-06 | Phase 3 | Complete |
+| PACK-07 | Phase 3 | Complete |
 | QUAL-01 | Phase 4 | Pending |
 | QUAL-02 | Phase 4 | Pending |
 | QUAL-03 | Phase 4 | Pending |

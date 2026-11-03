@@ -8,7 +8,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 
 - [x] **Phase 1: Baseline Freeze and Environment Isolation** - Frozen per-scenario baseline, flake tolerance, isolated branch environment, and the regression gate (completed 2026-11-03)
 - [x] **Phase 2: Tenants, Migrations and DB Plumbing** - Numbered migrations, tenant_id everywhere, `db.tx()`, tenant-stamped logs and events (completed 2026-11-03)
-- [ ] **Phase 3: Pack Loader and Roofing Extraction** - Validated pack format; roofing constants, prompts and messages moved into pack #1 with zero behaviour change
+- [x] **Phase 3: Pack Loader and Roofing Extraction** - Validated pack format; roofing constants, prompts and messages moved into pack #1 with zero behaviour change (completed 2026-11-03)
 - [ ] **Phase 4: Rule Interpreter** - Data-driven qualification proven identical to the old code, then old path deleted
 - [ ] **Phase 5: Per-Pack Eval Runner and Dental Pack** - Per-pack reports, dental pack at 90%+ per category, no cross-tenant leakage
 - [ ] **Phase 6: Per-Tenant Keys and RLS Enforcement** - Hashed tenant keys, credential-derived tenant, enforced row-level security
@@ -143,7 +143,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 |-------|----------------|--------|-----------|
 | 1. Baseline Freeze and Environment Isolation | 3/3 | Complete    | 2026-11-03 |
 | 2. Tenants, Migrations and DB Plumbing | 5/5 | Complete    | 2026-11-03 |
-| 3. Pack Loader and Roofing Extraction | 0/TBD | Not started | - |
+| 3. Pack Loader and Roofing Extraction | 5/5 | Complete    | 2026-11-03 |
 | 4. Rule Interpreter | 0/TBD | Not started | - |
 | 5. Per-Pack Eval Runner and Dental Pack | 0/TBD | Not started | - |
 | 6. Per-Tenant Keys and RLS Enforcement | 0/TBD | Not started | - |
