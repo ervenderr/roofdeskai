@@ -1,5 +1,5 @@
-"""POST /capacity/check, GET /capacity/flags. Bookings come from the request body only.
-shortcut: the appointments table is not a source (no party size) and the bookings connector arrives in plan 05."""
+"""POST /capacity/check, GET /capacity/flags. Bookings come from the request body, else the bookings connector.
+shortcut: the appointments table is not a source (no party size)."""
 import json
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -11,6 +11,7 @@ from sqlalchemy import text
 from .auth import require_tenant
 from .db import record_event, tx
 from .drafts import require_module
+from .engine.connectors import TenantRef, fetch_source
 from .engine.capacity import Booking, Flag, Override, check_capacity, classify
 from .pack import get_pack
 
@@ -34,8 +35,6 @@ def _flag_out(f: Flag, status: str) -> dict:
 def check(body: CheckBody, tenant: str = Depends(require_tenant)):
     pack = get_pack(tenant)
     cap = require_module(pack.capacity, "capacity")
-    if not body.bookings:  # missing data must never look like "all clear" and resolve open flags
-        raise HTTPException(422, "no booking source: send bookings in the request body")
     tz = ZoneInfo(pack.meta.timezone)
     first = body.first or datetime.now(tz).date()
     last = body.last or first + timedelta(days=cap.horizon_days - 1)
@@ -45,8 +44,16 @@ def check(body: CheckBody, tenant: str = Depends(require_tenant)):
     bad = sorted({o.shift_id for o in body.staff_overrides} - shift_ids)
     if bad:
         raise HTTPException(422, f"unknown shift_id in staff_overrides: {bad}")
+    bookings = body.bookings
+    if not bookings:
+        src = next((s for s in pack.connectors.sources if s.name == "bookings"), None) if pack.connectors else None
+        if src is None:  # missing data must never look like "all clear" and resolve open flags
+            raise HTTPException(422, "no booking source: send bookings in the request body")
+        bookings = _connector_bookings(src, TenantRef(pack.slug, tenant, pack.meta.timezone), first, last)
+        if bookings is None:  # flags are left untouched
+            return {"source_unavailable": "bookings", "source": "mock", "checked_shifts": 0, "flags": [], "resolved": []}
 
-    flags = check_capacity(cap, tz, body.bookings, first, last, body.staff_overrides)
+    flags = check_capacity(cap, tz, bookings, first, last, body.staff_overrides)
     by_key = {f.flag_key: f for f in flags}
     checked = sum(1 for d in range((last - first).days + 1) for s in cap.shifts
                   if ("mon", "tue", "wed", "thu", "fri", "sat", "sun")[(first + timedelta(days=d)).weekday()] in s.days)
@@ -72,6 +79,17 @@ def check(body: CheckBody, tenant: str = Depends(require_tenant)):
                      {"first": first.isoformat(), "last": last.isoformat(), "new": cls["new"], "reflagged": cls["reflagged"], "resolved": cls["resolved"]})
     status = {k: s for s, keys in cls.items() if s != "resolved" for k in keys}
     return {"checked_shifts": checked, "flags": [_flag_out(f, status[f.flag_key]) for f in flags], "resolved": cls["resolved"]}
+
+
+def _connector_bookings(src, ref, first: date, last: date) -> list[Booking] | None:
+    """Bookings for each local day from the connector; None if any day's fetch fails. An empty list is a real, checkable answer."""
+    out = []
+    for d in range((last - first).days + 1):
+        r = fetch_source(src, ref, first + timedelta(days=d))
+        if not r.ok:
+            return None
+        out += [Booking(start=s, covers=c) for s, c in r.bookings]
+    return out
 
 
 def _details(f: Flag) -> dict:

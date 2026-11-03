@@ -391,6 +391,43 @@ class Capacity(M):
         return v
 
 
+Metric = Annotated[Decimal, BeforeValidator(lambda v: v if isinstance(v, Decimal) else _decimal(v, "number"))]
+
+
+class MockCfg(M):
+    offsets: dict[str, Metric] = {}
+    unavailable: bool = False
+
+
+class SourceCfg(M):
+    name: Literal["bookings", "sheet", "accounting", "ads"]
+    kind: Literal["mock"] = "mock"  # real adapters are a v2 extension
+    mock: MockCfg = MockCfg()
+
+
+class Tolerance(M):
+    abs: Metric = Decimal(0)
+    pct: Metric = Decimal(0)
+
+
+class BriefCfg(M):
+    send_hour: int = Field(ge=0, le=23)
+    tolerance: dict[str, Tolerance] = {}
+
+
+class Connectors(M):
+    sources: tuple[SourceCfg, ...] = Field(min_length=1)
+    brief: BriefCfg
+
+    @field_validator("sources")
+    @classmethod
+    def _unique(cls, v):
+        names = [s.name for s in v]
+        if len(set(names)) != len(names):
+            raise ValueError(f"duplicate source in {names}")
+        return v
+
+
 class Pack(M):
     slug: str
     hash: str
@@ -402,6 +439,7 @@ class Pack(M):
     faq: tuple[FaqEntry, ...]
     services: Services | None = None
     capacity: Capacity | None = None
+    connectors: Connectors | None = None
 
 
 FILES = {"pack": PackMeta, "calendar": Calendar, "qualification": Qualification,
@@ -436,7 +474,7 @@ def _parse(path: Path, model: type[M]):
 
 # Optional module files (services, capacity, connectors): name -> model. Later plans register them and add
 # the matching Pack fields; absent file = module disabled, present-but-bad = PackError.
-OPTIONAL_FILES: dict[str, type[M]] = {"services": Services, "capacity": Capacity}
+OPTIONAL_FILES: dict[str, type[M]] = {"services": Services, "capacity": Capacity, "connectors": Connectors}
 
 
 def _parse_optional(path: Path, model: type[M]):
@@ -459,7 +497,8 @@ def load_pack(slug: str, base: Path | None = None) -> Pack:
         raise PackError(f"{root / 'messages.yaml'}: ask: missing {sorted(expected - got)}, unexpected {sorted(got - expected)}")
     return Pack(slug=slug, hash=pack_hash(root), meta=parts["pack"], calendar=parts["calendar"],
                 qualification=q, escalation=parts["escalation"], messages=parts["messages"],
-                faq=parts["faq"].entries, services=optional.get("services"), capacity=optional.get("capacity"))
+                faq=parts["faq"].entries, services=optional.get("services"), capacity=optional.get("capacity"),
+                connectors=optional.get("connectors"))
 
 
 def render(template: str, pack: Pack) -> str:

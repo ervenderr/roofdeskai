@@ -95,7 +95,8 @@ def test_run_for_a_later_week_does_not_resolve_earlier_flags(client, h, venue_te
     assert row.resolved_at is None
 
 
-def test_no_bookings_is_422_and_leaves_flags(client, h, venue_tenant):
+def test_no_bookings_is_422_and_leaves_flags(client, h, venue_tenant, packs_dir):
+    (packs_dir / "demo-venue" / "connectors.yaml").unlink()  # no connector -> no source
     check(client, h, 31)
     before = rows(venue_tenant)
     for body in ({"first": DAY, "last": DAY}, {"bookings": [], "first": DAY, "last": DAY}):

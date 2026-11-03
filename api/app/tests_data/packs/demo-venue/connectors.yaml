@@ -1,0 +1,6 @@
+sources:
+  - {name: bookings}
+  - {name: sheet, mock: {offsets: {bookings_count: 3}}}
+  - {name: accounting}
+  - {name: ads, mock: {unavailable: true}}
+brief: {send_hour: 7, tolerance: {bookings_count: {abs: 1, pct: 0}}}

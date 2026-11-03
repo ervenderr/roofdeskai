@@ -36,7 +36,7 @@ def test_base_dir_loads_and_default_unchanged(tmp_path, monkeypatch):
 @pytest.mark.parametrize("slug", PINNED)
 def test_shipped_packs_have_no_modules(slug):
     p = load_pack(slug)
-    assert p.services is None and p.capacity is None
+    assert p.services is None and p.capacity is None and p.connectors is None
 
 
 def test_demo_venue_fixture_loads():
