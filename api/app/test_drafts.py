@@ -126,3 +126,19 @@ def test_admin_key_alone_is_401(ab, monkeypatch):
     monkeypatch.setattr(settings, "admin_api_key", "adm")
     assert client.get("/drafts", headers={"X-Admin-Key": "adm"}).status_code == 401
     assert client.get("/drafts").status_code == 401
+
+
+# ---- 08-01: /sent transition ----
+def test_sent_only_from_approved(ab):
+    a, b, client = ab
+    did, _ = _mk(a)
+    assert client.post(f"/drafts/{did}/sent", headers=a["h"]).status_code == 409  # pending
+    assert client.post(f"/drafts/{did}/approve", headers=a["h"]).status_code == 200
+    assert client.post(f"/drafts/{did}/sent", headers=b["h"]).status_code == 404  # cross-tenant
+    r = client.post(f"/drafts/{did}/sent", headers=a["h"])
+    assert r.status_code == 200 and r.json()["status"] == "sent"
+    assert client.post(f"/drafts/{did}/sent", headers=a["h"]).status_code == 409  # already sent
+    assert [d["id"] for d in client.get("/drafts?status=sent", headers=a["h"]).json()] == [did]
+    rej, _ = _mk(a)
+    client.post(f"/drafts/{rej}/reject", headers=a["h"])
+    assert client.post(f"/drafts/{rej}/sent", headers=a["h"]).status_code == 409

@@ -136,3 +136,22 @@ def test_capacity_connector_unavailable_leaves_flags(client, h, venue_tenant, mo
     assert r.json() == {"source_unavailable": "bookings", "source": "mock", "checked_shifts": 0, "flags": [], "resolved": []}
     with db.tx(venue_tenant) as c:
         assert c.execute(text("SELECT count(*) FROM capacity_flags WHERE resolved_at IS NOT NULL")).scalar() == 0
+
+
+def test_due_unknown_tenant_404(client):
+    import uuid
+    r = client.post("/daily-brief/due", headers={**ADMIN, "X-Tenant-Id": str(uuid.uuid4())})
+    print("PRE-FIX due status", r.status_code, r.text)
+    assert r.status_code == 404 and r.json() == {"detail": "tenant not found"}
+
+
+def test_due_skips_broken_pack(client, h, venue_tenant, roofing_tenant, monkeypatch):
+    real = brief_routes.get_pack
+
+    def flaky(t):
+        if t == roofing_tenant:
+            raise RuntimeError("boom")
+        return real(t)
+    monkeypatch.setattr(brief_routes, "get_pack", flaky)
+    r = client.post("/daily-brief/due", headers=ADMIN)
+    assert r.status_code == 200 and venue_tenant in [d["tenant_id"] for d in r.json()["due"]]

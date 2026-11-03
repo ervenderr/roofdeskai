@@ -7,7 +7,7 @@ import re
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from . import llm, ratelimit
 from .auth import require_tenant
@@ -34,6 +34,15 @@ class QuoteBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     request: QuoteIn | None = None
     email_text: str | None = Field(None, min_length=1, max_length=4000)  # ignored when request is given
+
+    contact_email: str | None = Field(None, max_length=254)  # where an approved draft is sent; not part of the quote
+
+    @field_validator("contact_email")
+    @classmethod
+    def _addr(cls, v):
+        if v is not None and not re.fullmatch(r"[^@\s]+@[^@\s]+", v):
+            raise ValueError("invalid email address")
+        return v
 
     @model_validator(mode="after")
     def _one(self):
@@ -103,7 +112,7 @@ def _email(tenant: str, pack: Pack, quote, percents) -> tuple[str | None, list[s
 def create_quote(body: QuoteBody, tenant: str = Depends(require_tenant)):
     pack = get_pack(tenant)
     require_module(pack.services, "services")
-    payload: dict = {}
+    payload: dict = {"contact_email": body.contact_email} if body.contact_email else {}
     if body.request is not None:
         req_in, basis = body.request, {"request": body.request.model_dump()}
     else:

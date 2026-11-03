@@ -82,3 +82,8 @@ def approve(draft_id: int, tenant: str = Depends(require_tenant)):
 @router.post("/{draft_id}/reject")
 def reject(draft_id: int, tenant: str = Depends(require_tenant)):
     return _decide(tenant, draft_id, "rejected", ("pending", "needs_human"))
+
+
+@router.post("/{draft_id}/sent")
+def sent(draft_id: int, tenant: str = Depends(require_tenant)):
+    return _decide(tenant, draft_id, "sent", ("approved",))

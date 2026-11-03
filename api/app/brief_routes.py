@@ -1,9 +1,10 @@
 """POST /daily-brief (tenant key, idempotent per tenant-local date) and POST /daily-brief/due (scope: tenant or admin)."""
 import json
+import logging
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 
@@ -14,6 +15,7 @@ from .engine.brief import build_brief, is_due
 from .engine.connectors import TenantRef, fetch_all
 from .pack import Pack, PackError, get_pack
 
+log = logging.getLogger("leadpilot.brief")
 router = APIRouter(prefix="/daily-brief", tags=["daily-brief"])
 
 
@@ -80,8 +82,21 @@ def _due_for(tenant: str, now: datetime) -> dict | None:
 def due(scope: Scope = Depends(require_scope)):
     now = utcnow()
     if scope.tenant_id:
+        if scope.is_admin:
+            with system() as c:
+                if c.execute(text("SELECT 1 FROM tenants WHERE id=:t"), {"t": scope.tenant_id}).first() is None:
+                    raise HTTPException(404, "tenant not found")
         tids = [scope.tenant_id]
     else:
         with system() as c:
             tids = [str(r[0]) for r in c.execute(text("SELECT id FROM tenants ORDER BY slug"))]
-    return {"due": [d for d in (_due_for(t, now) for t in tids) if d]}
+    out = []
+    for t in tids:
+        try:
+            d = _due_for(t, now)
+        except Exception:  # one broken tenant must not 500 the whole listing
+            log.exception("due check failed for tenant %s", t)
+            continue
+        if d:
+            out.append(d)
+    return {"due": out}

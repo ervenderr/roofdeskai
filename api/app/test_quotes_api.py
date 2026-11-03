@@ -163,3 +163,18 @@ def test_rate_limit_429(client, h, monkeypatch):
 def test_bad_body_is_422(client, h, monkeypatch, body):
     no_llm(monkeypatch)
     assert client.post("/quotes", json=body, headers=h).status_code == 422
+
+
+# ---- 08-01: contact_email ----
+def test_contact_email_stored_and_not_in_dedupe(client, h, monkeypatch):
+    script(monkeypatch, GOOD, GOOD, GOOD)  # the email is generated before the dedupe lookup
+    a = client.post("/quotes", json={**REQ, "contact_email": "a@example.test"}, headers=h).json()
+    assert a["payload"]["contact_email"] == "a@example.test"
+    b = client.post("/quotes", json={**REQ, "contact_email": "b@example.test"}, headers=h).json()
+    assert b["deduped"] is True and b["id"] == a["id"]
+    assert client.post("/quotes", json=REQ, headers=h).json()["deduped"] is True  # optional
+
+
+@pytest.mark.parametrize("bad", ["nope", "a" * 250 + "@x.ch", "a@@b", ""])
+def test_contact_email_invalid_422(client, h, bad):
+    assert client.post("/quotes", json={**REQ, "contact_email": bad}, headers=h).status_code == 422
