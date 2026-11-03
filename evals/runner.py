@@ -1,7 +1,7 @@
 """Run scenarios through the real agent and score them with deterministic checks.
 
-    docker compose exec -e GIT_SHA=$(git rev-parse --short HEAD) api python -m evals.runner [--ids a,b] [--category x]
-                                           [--write-baseline | --flake | --gate]
+    docker compose exec -e GIT_SHA=$(git rev-parse --short HEAD) api python -m evals.runner [--pack slug] [--ids a,b]
+                                           [--category x] [--write-baseline [--force-baseline] | --flake | --gate]
 """
 import argparse
 import json
@@ -21,21 +21,40 @@ from sqlalchemy import text
 from app import qualify
 from app.agent import PROMPT, handle_turn
 from app.config import settings
-from app.config import settings
 from app.db import system, tx
 from app.llm import LLM_TEMPERATURE, load_prompt
-from app.pack import get_pack
+from app.pack import get_pack, load_pack
+from app.tenants import ensure_tenant, sync_faq
+from app.tools import ensure_slots
 
 HERE = Path(__file__).parent
-BASELINE = HERE / "baselines" / "v1-roofing.json"
-FLAKE = HERE / "baselines" / "flake-report.json"
+ROOFING = "summit-roofing"
+CATEGORIES = {"voice", "qualified", "faq", "disqualified", "vague", "out_of_knowledge", "injection", "out_of_order",
+              "escalation", "slots"}
+SC_KEYS = {"id", "category", "turns", "expect", "setup", "steal_slot_before_turn"}
+EXPECT_KEYS = {"state", "state_in", "outcome", "lead_status", "lead_status_not", "tools", "no_tools", "reply_forbid",
+               "reply_require", "forbid_reply_regex", "require_reply_regex"}
 RERUNS = 2
 FLAKE_RUNS = 3
 
 
-def baseline_path() -> Path:
+def default_baseline_path(slug: str = ROOFING) -> Path:
+    """Where --write-baseline writes: never the env override."""
+    return HERE / "baselines" / ("v1-roofing.json" if slug == ROOFING else f"{slug}.json")
+
+
+def baseline_path(slug: str = ROOFING) -> Path:
     """BASELINE_PATH env overrides the committed baseline (used by the gate and flake marking)."""
-    return Path(os.environ["BASELINE_PATH"]) if os.environ.get("BASELINE_PATH") else BASELINE
+    return Path(os.environ["BASELINE_PATH"]) if os.environ.get("BASELINE_PATH") else default_baseline_path(slug)
+
+
+def flake_path(slug: str = ROOFING) -> Path:
+    return HERE / "baselines" / ("flake-report.json" if slug == ROOFING else f"{slug}-flake.json")
+
+
+def report_path(slug: str, full: bool) -> Path:
+    """Roofing keeps latest.md; a partial run must not overwrite the full report."""
+    return HERE / "reports" / f"{'latest' if slug == ROOFING else slug}{'' if full else '-partial'}.md"
 
 
 def baseline_from_results(results: list, meta: dict) -> dict:
@@ -60,42 +79,66 @@ def decide(candidates: list[str], reruns: dict[str, list[bool]]) -> dict:
     return {"regressions": reg, "flaky_pass": [i for i in candidates if i not in reg]}
 
 
-def load_scenarios() -> list[dict]:
-    return [s for f in sorted((HERE / "scenarios").glob("*.yaml")) for s in yaml.safe_load(f.read_text())]
+def _bad(f: Path, sc: dict, why: str) -> None:
+    sys.exit(f"scenario error in {f.name} ({sc.get('id', '?')}): {why}")
 
 
-def reset_db(setup: str | None) -> None:
-    with tx() as c:
-        t = settings.default_tenant_id
+def load_scenarios(slug: str = ROOFING) -> list[dict]:
+    """Read and validate businesses/<slug>/scenarios/*.yaml: typos in expect keys must fail, not pass silently."""
+    out, seen = [], set()
+    for f in sorted((settings.businesses_dir / slug / "scenarios").glob("*.yaml")):
+        for sc in yaml.safe_load(f.read_text()) or []:
+            if sc.get("id") in seen:
+                _bad(f, sc, "duplicate id")
+            seen.add(sc.get("id"))
+            if sc.get("category") not in CATEGORIES:
+                _bad(f, sc, f"unknown category {sc.get('category')!r}")
+            if extra := set(sc) - SC_KEYS:
+                _bad(f, sc, f"unknown keys {sorted(extra)}")
+            if extra := set(sc.get("expect") or {}) - EXPECT_KEYS:
+                _bad(f, sc, f"unknown expect keys {sorted(extra)}")
+            turns = sc.get("turns")
+            if not turns or not all(isinstance(x, str) and x for x in turns):
+                _bad(f, sc, "turns must be a non-empty list of strings")
+            if sc.get("steal_slot_before_turn", 0) > len(turns):
+                _bad(f, sc, "steal_slot_before_turn beyond the turns")
+            out.append(sc)
+    return out
+
+
+def reset_db(setup: str | None, t: str) -> None:
+    with tx(t) as c:
         c.execute(text("DELETE FROM appointments WHERE tenant_id=:t"), {"t": t})
         c.execute(text("UPDATE slots SET is_booked=:b WHERE tenant_id=:t"), {"b": setup == "no_slots", "t": t})
 
 
-def steal_first_slot() -> None:
-    with tx() as c:
-        c.execute(text("UPDATE slots SET is_booked=true WHERE id=(SELECT id FROM slots WHERE tenant_id=:t AND NOT is_booked "
-                       "AND start_time > now() ORDER BY start_time LIMIT 1)"), {"t": settings.default_tenant_id})
+def steal_first_slot(t: str) -> None:
+    with tx(t) as c:
+        c.execute(text("UPDATE slots SET is_booked=true WHERE tenant_id=:t AND id=(SELECT id FROM slots WHERE tenant_id=:t "
+                       "AND NOT is_booked AND start_time > now() ORDER BY start_time LIMIT 1)"), {"t": t})
 
 
-def run_scenario(sc: dict) -> dict:
-    reset_db(sc.get("setup"))
+def run_scenario(sc: dict, t: str) -> dict:
+    reset_db(sc.get("setup"), t)
     cid, replies, times = None, [], []
     for i, turn in enumerate(sc["turns"], 1):
         if sc.get("steal_slot_before_turn") == i:
-            steal_first_slot()
+            steal_first_slot(t)
         start = time.perf_counter()
-        cid, reply = handle_turn(turn, cid, channel="eval")
+        cid, reply = handle_turn(turn, cid, channel="eval", tenant_id=t)
         times.append(time.perf_counter() - start)
         replies.append(reply)
-    with tx() as c:
-        convo = c.execute(text("SELECT c.state, c.outcome, l.status AS lead_status, l.id AS lead_id FROM conversations c "
+    with tx(t) as c:
+        convo = c.execute(text("SELECT c.state, c.outcome, c.tenant_id, l.status AS lead_status, l.id AS lead_id FROM conversations c "
                                "JOIN leads l ON l.id=c.lead_id WHERE c.id=:i"), {"i": cid}).mappings().one()
         called = {r[0] for r in c.execute(text("SELECT tool_name FROM tool_calls WHERE conversation_id=:i AND ok"),
                                           {"i": cid})}
         lead = dict(c.execute(text("SELECT * FROM leads WHERE id=:i"), {"i": convo["lead_id"]}).mappings().one())
         booked = c.execute(text("SELECT count(*) FROM appointments WHERE lead_id=:i"), {"i": convo["lead_id"]}).scalar()
-    invalid_booking = bool(booked) and qualify.qualify(get_pack(settings.default_tenant_id), lead) != "qualified"
-    return {"cid": cid, "replies": replies, "times": times, "called": called, "invalid_booking": invalid_booking, **convo}
+    assert str(convo["tenant_id"]) == str(t), f"conversation {cid} belongs to tenant {convo['tenant_id']}, not {t}"
+    invalid_booking = bool(booked) and qualify.qualify(get_pack(t), lead) != "qualified"
+    return {"cid": cid, "replies": replies, "times": times, "called": called, "invalid_booking": invalid_booking,
+            **{k: v for k, v in convo.items() if k != "tenant_id"}}
 
 
 def check(sc: dict, r: dict) -> list[str]:
@@ -112,10 +155,10 @@ def check(sc: dict, r: dict) -> list[str]:
         fails.append(f"lead_status is {r['lead_status']}")
     fails += [f"missing tool call {t}" for t in exp.get("tools", []) if t not in r["called"]]
     fails += [f"forbidden tool call {t}" for t in exp.get("no_tools", []) if t in r["called"]]
-    for pat in exp.get("reply_forbid", []):
+    for pat in exp.get("reply_forbid", []) + exp.get("forbid_reply_regex", []):
         if any(re.search(pat, x) for x in r["replies"]):
             fails.append(f"reply matched forbidden /{pat}/")
-    for pat in exp.get("reply_require", []):
+    for pat in exp.get("reply_require", []) + exp.get("require_reply_regex", []):
         if not any(re.search(pat, x) for x in r["replies"]):
             fails.append(f"no reply matched required /{pat}/")
     if r["invalid_booking"]:
@@ -128,11 +171,11 @@ def pct(xs: list[float], q: float) -> float:
     return xs[min(len(xs) - 1, int(q * len(xs)))] if xs else 0.0
 
 
-def run_suite(scenarios: list[dict]) -> tuple[list, list]:
+def run_suite(scenarios: list[dict], t: str) -> tuple[list, list]:
     results, cids = [], []
     for sc in scenarios:
         try:
-            r = run_scenario(sc)
+            r = run_scenario(sc, t)
             fails = check(sc, r)
             cids.append(r["cid"])
         except Exception as e:  # a crash is a failed scenario, not a crashed run
@@ -142,9 +185,9 @@ def run_suite(scenarios: list[dict]) -> tuple[list, list]:
     return results, cids
 
 
-def assert_local_only(cids: list) -> None:
-    """BASE-02: a hosted fallback answering would pollute a baseline; abort."""
-    with tx() as c:
+def assert_local_only(cids: list, t: str) -> None:
+    """BASE-02: a hosted fallback answering would pollute a baseline; abort. Runs in every mode."""
+    with tx(t) as c:
         models = [r[0] for r in c.execute(text("SELECT DISTINCT model FROM llm_calls WHERE conversation_id = ANY(:c)"), {"c": cids})]
     bad = [m for m in models if not (m or "").startswith("local:")]
     if bad:
@@ -156,42 +199,44 @@ def _git_sha() -> str:
                                                        text=True).stdout.strip() or "unknown"
 
 
-def write_baseline(scenarios: list[dict]) -> None:
-    if len(scenarios) != len(load_scenarios()):
+def write_baseline(scenarios: list[dict], slug: str, t: str) -> None:
+    if len(scenarios) != len(load_scenarios(slug)):
         sys.exit("--write-baseline needs the full suite (no --ids/--category)")
-    results, cids = run_suite(scenarios)
-    assert_local_only(cids)
+    results, cids = run_suite(scenarios, t)
+    assert_local_only(cids, t)
     meta = {"git_sha": _git_sha(), "model": settings.local_llm_model, "temperature": LLM_TEMPERATURE,
             "date": str(date.today())}
     data = baseline_from_results(results, meta)
-    BASELINE.parent.mkdir(parents=True, exist_ok=True)
-    BASELINE.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
-    write_report(results, cids)
-    print(f"baseline written: {BASELINE} ({data['meta']['passed']}/{data['meta']['total']})")
+    out = default_baseline_path(slug)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+    write_report(results, cids, slug, t)
+    print(f"baseline written: {out} ({data['meta']['passed']}/{data['meta']['total']})")
 
 
-def flake(scenarios: list[dict]) -> None:
+def flake(scenarios: list[dict], slug: str, t: str) -> None:
     counts: dict[str, int] = defaultdict(int)
     all_cids: list = []
     for n in range(FLAKE_RUNS):
         print(f"--- flake run {n + 1}/{FLAKE_RUNS}", flush=True)
-        results, cids = run_suite(scenarios)
+        results, cids = run_suite(scenarios, t)
         all_cids += cids
         for sc, _, f in results:
             counts[sc["id"]] += not f
-    assert_local_only(all_cids)
+    assert_local_only(all_cids, t)
     unstable = sorted(i for i, c in counts.items() if 0 < c < FLAKE_RUNS)
     always_fail = sorted(i for i, c in counts.items() if c == 0)
     report = {"runs": FLAKE_RUNS, "model": settings.local_llm_model, "temperature": LLM_TEMPERATURE,
               "date": str(date.today()), "pass_counts": dict(counts), "unstable_ids": unstable}
-    FLAKE.parent.mkdir(parents=True, exist_ok=True)
-    FLAKE.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
-    FLAKE.with_suffix(".md").write_text("\n".join([
+    fp = flake_path(slug)
+    fp.parent.mkdir(parents=True, exist_ok=True)
+    fp.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    fp.with_suffix(".md").write_text("\n".join([
         f"# Flake report ({date.today()})", "",
         f"- {FLAKE_RUNS} full runs, model `{settings.local_llm_model}`, temperature {LLM_TEMPERATURE}",
         f"- Unstable (passed some runs, not all): {len(unstable)}", *[f"  - `{i}` {counts[i]}/{FLAKE_RUNS}" for i in unstable],
         f"- Failed every run: {len(always_fail)}", *[f"  - `{i}`" for i in always_fail], ""]))
-    bp = baseline_path()
+    bp = baseline_path(slug)
     if bp.exists():
         data = json.loads(bp.read_text())
         scen = {i: ({**v, "flaky": True} if i in unstable else dict(v)) for i, v in data["scenarios"].items()}
@@ -199,13 +244,13 @@ def flake(scenarios: list[dict]) -> None:
     print(f"unstable: {unstable}")
 
 
-def gate(scenarios: list[dict]) -> None:
-    bp = baseline_path()
+def gate(scenarios: list[dict], slug: str, t: str) -> None:
+    bp = baseline_path(slug)
     if not bp.exists():
         sys.exit(f"gate: baseline missing at {bp}")
     baseline = json.loads(bp.read_text())
-    results, cids = run_suite(scenarios)
-    write_report(results, cids)
+    results, cids = run_suite(scenarios, t)
+    write_report(results, cids, slug, t)
     all_cids = list(cids)
     diff = gate_diff(baseline, {sc["id"]: {"passed": not f} for sc, _, f in results})
     cand = diff["candidate_regressions"]
@@ -213,11 +258,11 @@ def gate(scenarios: list[dict]) -> None:
     reruns: dict[str, list[bool]] = {i: [] for i in cand}
     for n in range(RERUNS if cand else 0):
         print(f"--- gate rerun {n + 1}/{RERUNS} of {cand}", flush=True)
-        rr, rcids = run_suite([by_id[i] for i in cand])
+        rr, rcids = run_suite([by_id[i] for i in cand], t)
         all_cids += rcids
         for sc, _, f in rr:
             reruns[sc["id"]].append(not f)
-    assert_local_only(all_cids)  # a hosted fallback answering makes the diff meaningless
+    assert_local_only(all_cids, t)  # a hosted fallback answering makes the diff meaningless
     verdict = decide(cand, reruns)
     print(f"improvements: {diff['improvements']}\nnew (not in baseline): {diff['new']}\n"
           f"flaky-pass: {verdict['flaky_pass']}\nregressions: {verdict['regressions']}")
@@ -228,31 +273,42 @@ def gate(scenarios: list[dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--pack", default=ROOFING, help="business pack slug (businesses/<slug>)")
     ap.add_argument("--ids")
     ap.add_argument("--category")
     mode = ap.add_mutually_exclusive_group()
-    mode.add_argument("--write-baseline", action="store_true", help="full run, write evals/baselines/v1-roofing.json")
+    mode.add_argument("--write-baseline", action="store_true", help="full run, write evals/baselines/<slug>.json (roofing: v1-roofing.json)")
+    ap.add_argument("--force-baseline", action="store_true", help="allow overwriting the committed roofing baseline")
     mode.add_argument("--flake", action="store_true", help=f"{FLAKE_RUNS} full runs, write flake report")
     mode.add_argument("--gate", action="store_true", help="diff against baseline (BASELINE_PATH overrides); exit 1 on regression")
     args = ap.parse_args()
     settings.mail_transport = "mailpit"  # eval bookings send emails; never to a real mailbox
-    scenarios = load_scenarios()
+    if args.write_baseline and args.pack == ROOFING and default_baseline_path(ROOFING).exists() and not args.force_baseline:
+        sys.exit(f"refusing to overwrite {default_baseline_path(ROOFING)}; pass --force-baseline to do it on purpose")
+    slug = args.pack
+    load_pack(slug)  # PackError (and a bad slug) before any path or DB use
+    t = ensure_tenant(slug)
+    ensure_slots(t)  # before the first scenario: reset_db("no_slots") needs existing slots to mark
+    sync_faq(t)
+    scenarios = load_scenarios(slug)
     if args.ids:
         scenarios = [s for s in scenarios if s["id"] in args.ids.split(",")]
     if args.category:
         scenarios = [s for s in scenarios if s["category"] == args.category]
 
     if args.write_baseline:
-        write_baseline(scenarios)
+        write_baseline(scenarios, slug, t)
     elif args.flake:
-        flake(scenarios)
+        flake(scenarios, slug, t)
     elif args.gate:
-        gate(scenarios)
+        gate(scenarios, slug, t)
     else:
-        write_report(*run_suite(scenarios))
+        results, cids = run_suite(scenarios, t)
+        assert_local_only(cids, t)
+        write_report(results, cids, slug, t)
 
 
-def write_report(results, cids) -> None:
+def write_report(results, cids, slug: str, t: str) -> None:
     passed = sum(1 for *_, f in results if not f)
     by_cat = defaultdict(lambda: [0, 0])
     for sc, _, f in results:
@@ -266,7 +322,7 @@ def write_report(results, cids) -> None:
     actual = sum(1 for sc, _ in ran if sc.get("expect", {}).get("state") == "ESCALATE")
     invalid = sum(1 for _, r in ran if r["invalid_booking"])
     turn_times = [t for _, r in ran for t in r["times"]]
-    with tx() as c:
+    with tx(t) as c:
         llm = c.execute(text("SELECT count(*) n, avg((schema_valid)::int) valid, sum(prompt_tokens) pt, "
                              "sum(completion_tokens) ct, array_agg(DISTINCT model) models FROM llm_calls "
                              "WHERE conversation_id = ANY(:c)"), {"c": cids}).one()
@@ -281,7 +337,7 @@ def write_report(results, cids) -> None:
             "schema_validity": float(llm.valid or 0), "llm_calls": llm.n,
             "latency_p50_s": statistics.median(turn_times) if turn_times else 0, "latency_p95_s": pct(turn_times, .95),
             "prompt_tokens": int(llm.pt or 0), "completion_tokens": int(llm.ct or 0),
-            "categories": {k: {"passed": v[0], "total": v[1]} for k, v in by_cat.items()},
+            "pack": slug, "categories": {k: {"passed": v[0], "total": v[1]} for k, v in by_cat.items()},
         }
         run_id = c.execute(text("INSERT INTO eval_runs (git_sha, model, prompt_version, metrics_json) "
                                 "VALUES (:g, :m, :p, CAST(:j AS jsonb)) RETURNING id"),
@@ -303,11 +359,12 @@ def write_report(results, cids) -> None:
         f"| Turn latency p50 / p95 | {statistics.median(turn_times) if turn_times else 0:.1f}s / {pct(turn_times, .95):.1f}s |",
         f"| Tokens (prompt / completion) | {llm.pt or 0} / {llm.ct or 0} (local = $0) |", "",
         "| Category | Passed |", "|---|---|",
-        *[f"| {k} | {v[0]}/{v[1]} |" for k, v in sorted(by_cat.items())], "",
+        *[f"| {k} | {v[0]}/{v[1]} ({100 * v[0] / v[1]:.0f}%) |" for k, v in sorted(by_cat.items())], "",
+        f"Gates: min category {min((100 * v[0] / v[1] for v in by_cat.values()), default=100):.0f}%, escalation recall {tp}/{actual}", "",
         "## Failures", "",
         *[f"- `{sc['id']}`: {'; '.join(f)}" for sc, _, f in results if f],
     ]
-    out = HERE / "reports" / ("latest.md" if len(results) == len(load_scenarios()) else "latest-partial.md")  # a partial run must not overwrite the full report
+    out = report_path(slug, len(results) == len(load_scenarios(slug)))
     out.write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 
