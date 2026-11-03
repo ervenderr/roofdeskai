@@ -40,7 +40,7 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **EVAL-02**: Roofing pack scores 94/96 with the same two failures after every step through Phase 5
 - [x] **EVAL-03**: Dental pack has ~40 scenarios across the ten categories; no category under 90% and emergency escalation recall 100%
 - [x] **EVAL-04**: Cross-tenant retrieval and two-tenant interleaved scenarios prove no leakage between packs
-- [ ] **EVAL-05**: Each new engine module has its own deterministic eval set
+- [x] **EVAL-05**: Each new engine module has its own deterministic eval set
 - [ ] **EVAL-06**: 20 held-out scenarios are written before tuning, run once, and the score is published even if low
 
 ### Access Control (SEC)
@@ -51,13 +51,13 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **SEC-05**: Admin endpoints use a separate super-admin scope and no longer return cross-tenant data to tenant keys
 
 ### Engine Modules (MOD)
-- [ ] **MOD-01**: Quote builder turns a request plus `services.yaml` into line items and a Decimal total; a missing price asks or escalates, never guesses
-- [ ] **MOD-02**: Quote drafts go to the existing approval queue and are validated against the computed quote, not the price-claim regex
-- [ ] **MOD-03**: Capacity checker compares bookings to `capacity.yaml` and flags over/under-staffed shifts, deduplicated and re-flagged when inputs change, DST-safe
-- [ ] **MOD-04**: Connector layer has one interface with mock adapters (sheet, accounting, bookings, ads), labelled as mock in output
-- [ ] **MOD-05**: Daily brief merges connector data into a one-page owner summary in tenant-local time, flags numbers that disagree and shows "source unavailable" explicitly
-- [ ] **MOD-06**: Review responder drafts replies in the pack tone; a deterministic post-check blocks refund, fault, compensation, unknown-fact and PII language, then one regeneration, then `needs_human`; drafts are never auto-posted
-- [ ] **MOD-07**: `intake_event` webhook stores one idempotent record per person from waiver, check-in and result events using pack payload mapping
+- [x] **MOD-01**: Quote builder turns a request plus `services.yaml` into line items and a Decimal total; a missing price asks or escalates, never guesses
+- [x] **MOD-02**: Quote drafts go to the existing approval queue and are validated against the computed quote, not the price-claim regex
+- [x] **MOD-03**: Capacity checker compares bookings to `capacity.yaml` and flags over/under-staffed shifts, deduplicated and re-flagged when inputs change, DST-safe
+- [x] **MOD-04**: Connector layer has one interface with mock adapters (sheet, accounting, bookings, ads), labelled as mock in output
+- [x] **MOD-05**: Daily brief merges connector data into a one-page owner summary in tenant-local time, flags numbers that disagree and shows "source unavailable" explicitly
+- [x] **MOD-06**: Review responder drafts replies in the pack tone; a deterministic post-check blocks refund, fault, compensation, unknown-fact and PII language, then one regeneration, then `needs_human`; drafts are never auto-posted
+- [x] **MOD-07**: `intake_event` webhook stores one idempotent record per person from waiver, check-in and result events using pack payload mapping
 
 ### Workflows (WF)
 - [ ] **WF-01**: The 6 existing n8n workflows are tenant-aware (tenant key header, owner address returned by the API)
@@ -136,14 +136,14 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | SEC-03 | Phase 6 | Complete |
 | SEC-04 | Phase 6 | Complete |
 | SEC-05 | Phase 6 | Complete |
-| MOD-01 | Phase 7 | Pending |
-| MOD-02 | Phase 7 | Pending |
-| MOD-03 | Phase 7 | Pending |
-| MOD-04 | Phase 7 | Pending |
-| MOD-05 | Phase 7 | Pending |
-| MOD-06 | Phase 7 | Pending |
-| MOD-07 | Phase 7 | Pending |
-| EVAL-05 | Phase 7 | Pending |
+| MOD-01 | Phase 7 | Complete |
+| MOD-02 | Phase 7 | Complete |
+| MOD-03 | Phase 7 | Complete |
+| MOD-04 | Phase 7 | Complete |
+| MOD-05 | Phase 7 | Complete |
+| MOD-06 | Phase 7 | Complete |
+| MOD-07 | Phase 7 | Complete |
+| EVAL-05 | Phase 7 | Complete |
 | WF-01 | Phase 8 | Pending |
 | WF-02 | Phase 8 | Pending |
 | WF-03 | Phase 8 | Pending |
