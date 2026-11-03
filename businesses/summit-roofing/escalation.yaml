@@ -1,0 +1,2 @@
+safety: '\b(gas (leak|smell)|collaps\w*|electrocut\w*|exposed wires?|structural damage|injur\w*)\b'
+always_human: [complaint]

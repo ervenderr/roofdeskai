@@ -1,0 +1,8 @@
+# Legacy: v1 slot hours were UTC wall-clock (DB TimeZone=Etc/UTC). Switching to America/Denver would shift
+# every slot by 6-7h; that is a deliberate later behaviour change, not part of the extraction.
+timezone: Etc/UTC
+slot_hours: [9, 11, 14, 16]
+slot_minutes: 60
+days_ahead: 14
+weekdays_only: true
+buffer_minutes: 0

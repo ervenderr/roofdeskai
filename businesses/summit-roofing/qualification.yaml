@@ -1,0 +1,11 @@
+service_area: [denver, aurora, lakewood, arvada, centennial, littleton]
+qualifying_services: [repair, replacement, inspection]
+max_timeline_months: 6
+service_synonyms:
+  repair: 'repair|fix|patch|leak|damage|missing shingle'
+  replacement: 'replac|new roof|re-?roof|tear.?off'
+  inspection: 'inspect|check|estimate|assess|look at'
+non_business_pattern: 'gutter|window|paint|solar|siding|chimney|plumb|clean|wash|fence|deck|hvac|lawn'
+owner_yes_pattern: '\b(own|owns|owned|owner|homeowner|my (house|home|place|roof|property)|yes|yeah|yep|yup|sure|correct)\b'
+owner_no_pattern: '\b(rent|renting|renter|rented|tenant|lease|leasing|landlord|not (the )?owner|(don''t|do not|dont) own)\b'
+extra_stopwords: [roof, roofing, summit]

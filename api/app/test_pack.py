@@ -146,3 +146,78 @@ def test_get_pack_missing(biz):
 def test_cli_fail():
     r = subprocess.run([sys.executable, "-m", "app.pack", "nope"], capture_output=True, text=True)
     assert r.returncode == 1 and "nope" in r.stderr + r.stdout
+
+
+# ---- roofing pack golden tests ----
+from . import agent, faq, policy, tools  # noqa: E402
+from .tests_data import frozen_old as F  # noqa: E402
+
+
+def _check(p, o):
+    q = p.qualification
+    assert set(q.service_area) == set(o["area"]) and len(q.service_area) == len(o["area"])
+    assert set(q.qualifying_services) == set(o["qual"])
+    assert q.max_timeline_months == o["months"]
+    assert q.owner_yes_pattern == o["yes"] and q.owner_no_pattern == o["no"] and q.non_business_pattern == o["nonbiz"]
+    assert {k.value: v for k, v in q.service_synonyms.items()} == o["service"]
+    assert list(q.service_synonyms) and [k.value for k in q.service_synonyms] == list(o["service"])
+    assert p.escalation.safety == o["escalation"]["safety"]
+    m = p.messages
+    assert m.ask == o["ask"] and m.safe_fallback == o["fallback"]
+    assert m.closed == o["closed"] and m.disqualify == o["disq"] and m.nurture == o["nurture"] and m.no_slots == o["noslots"]
+    assert tuple((e.source, e.text) for e in p.faq) == tuple(o["faq"])
+    assert tuple(p.calendar.slot_hours) == tuple(o["hours"]) and p.calendar.days_ahead == o["days"]
+    assert q.extra_stopwords | (set(o["generic"]) - {"roof", "roofing", "summit"}) == set(o["generic"])
+    assert set(q.extra_stopwords) == {"roof", "roofing", "summit"}
+
+
+def _live():
+    return dict(area=policy.SERVICE_AREA, qual=policy.QUALIFYING_SERVICES, months=policy.MAX_TIMELINE_MONTHS,
+                yes=policy._OWN_YES, no=policy._OWN_NO, nonbiz=policy._NON_ROOF, service=policy._SERVICE,
+                escalation=policy._ESCALATION_PATTERNS, ask=policy.ASK, fallback=policy.SAFE_FALLBACK,
+                closed=agent.CLOSED_REPLY, disq=agent.DISQUALIFY_REPLY, nurture=agent.NURTURE_REPLY,
+                noslots=agent.NO_SLOTS_REPLY, faq=faq.FAQ, hours=tools.SLOT_HOURS, days=tools.SLOT_DAYS_AHEAD,
+                generic=policy._GENERIC)
+
+
+def _frozen():
+    return dict(area=F.FROZEN_SERVICE_AREA, qual=F.FROZEN_QUALIFYING_SERVICES, months=F.FROZEN_MAX_TIMELINE_MONTHS,
+                yes=F.FROZEN_OWN_YES, no=F.FROZEN_OWN_NO, nonbiz=F.FROZEN_NON_ROOF, service=F.FROZEN_SERVICE,
+                escalation=F.FROZEN_ESCALATION, ask=F.FROZEN_ASK, fallback=F.FROZEN_SAFE_FALLBACK,
+                closed=F.FROZEN_CLOSED_REPLY, disq=F.FROZEN_DISQUALIFY_REPLY, nurture=F.FROZEN_NURTURE_REPLY,
+                noslots=F.FROZEN_NO_SLOTS_REPLY, faq=F.FROZEN_FAQ, hours=F.FROZEN_SLOT_HOURS,
+                days=F.FROZEN_SLOT_DAYS_AHEAD, generic=F.FROZEN_GENERIC)
+
+
+def test_golden_live(roofing_pack):
+    _check(roofing_pack, _live())  # removed in plan 03-03 when the old constants go
+
+
+def test_golden_frozen(roofing_pack):
+    _check(roofing_pack, _frozen())
+
+
+def test_golden_always_human_matches_client_profile(roofing_pack):
+    prof = yaml.safe_load((settings.clients_dir / "summit-roofing.yaml").read_text())
+    assert list(roofing_pack.escalation.always_human) == prof["always_human"]
+
+
+def test_templates_exact(roofing_pack):
+    m = roofing_pack.messages
+    assert m.qualified_prefix == "Good news, you qualify for a free roof inspection! "
+    assert m.slot_unavailable_prefix == "Sorry, that time isn't available. "
+    assert m.customer_intro == "Hi {name},\n\nYour free roof inspection is booked for {when}.\n\n"
+    assert m.owner_alert_body == ("{name} booked a free roof inspection for {when}.\nPhone: {phone}\n"
+                                  "Email: {email}\nAddress: {address}\nNeed: {need}")
+    assert m.pick_prompt == "Which of those openings works for you? Just say first, second, and so on."
+    assert m.offer_slots.format(prefix="P ", options="O") == "P Here are the next openings: O. Which one works for you?"
+    assert m.booked.format(when="W") == "You're booked for W. We'll see you then!"
+
+
+def test_get_pack_default():
+    assert get_pack().slug == "summit-roofing"
+
+
+def test_cli_ok():
+    r = subprocess.run([sys.executable, "-m", "app.pack", "summit-roofing"], capture_output=True, text=True)
+    assert r.returncode == 0 and "summit-roofing" in r.stdout
