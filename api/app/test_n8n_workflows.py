@@ -8,7 +8,8 @@ import pytest
 
 ROOT = next(p for p in Path(__file__).resolve().parents if (p / "n8n" / "workflows").is_dir())
 WF_DIR = ROOT / "n8n" / "workflows"
-EXPECTED = {"inbound-message", "followup-scheduler", "escalation-alert", "outreach-flow", "error-handler"}  # plans 4/5 extend
+EXPECTED = {"inbound-message", "followup-scheduler", "escalation-alert", "outreach-flow", "error-handler",
+            "quote-request", "review-reply"}  # plan 5 extends
 UNTENANTED = {"outreach-flow", "error-handler"}
 HTTP, CODE, SCHED = "n8n-nodes-base.httpRequest", "n8n-nodes-base.code", "n8n-nodes-base.scheduleTrigger"
 API_MARKERS = ("$env.API_URL", "api:8000", "localhost:8000")
