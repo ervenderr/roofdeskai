@@ -169,7 +169,7 @@ def _ask_llm(cid: int, state: str, lead: dict, faq: list[str], t: str, pack: Pac
     for _ in range(2):
         out = llm.chat(messages)
         try:
-            turn = _parse(out["content"])
+            turn = _parse(out["content"], pack)
             error = None
         except ValueError as e:
             turn, error = None, str(e)[:300]
@@ -188,11 +188,12 @@ _KNOWN_KEYS = {"name", "phone", "email", "address", "service_type", "property_ty
                "timeline_months", "budget_range"}
 
 
-def _parse(raw: str) -> Turn:
+def _parse(raw: str, pack: Pack) -> Turn:
     start, end = raw.find("{"), raw.rfind("}")
     if start < 0 or end < start:
         raise ValueError("no JSON object found")
-    return Turn.model_validate(json.loads(raw[start:end + 1]))  # pydantic ValidationError is a ValueError
+    return Turn.model_validate(json.loads(raw[start:end + 1]),
+                               context={"service_types": pack.qualification.service_types})  # pydantic ValidationError is a ValueError
 
 
 def _escalate(cid: int, reason: str, t: str, pack: Pack) -> str:

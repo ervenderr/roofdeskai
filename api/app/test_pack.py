@@ -191,8 +191,8 @@ def _check(p, o):
     assert set(_rule_by_id(q, "service_type").values) == set(o["qual"])
     assert _rule_by_id(q, "timeline_months").max == o["months"]
     assert q.owner_yes_pattern == o["yes"] and q.owner_no_pattern == o["no"] and q.non_business_pattern == o["nonbiz"]
-    assert {k.value: v for k, v in q.service_synonyms.items()} == o["service"]
-    assert list(q.service_synonyms) and [k.value for k in q.service_synonyms] == list(o["service"])
+    assert dict(q.service_synonyms) == o["service"]
+    assert list(q.service_synonyms) and list(q.service_synonyms) == list(o["service"])
     assert p.escalation.safety == o["escalation"]["safety"]
     m = p.messages
     assert m.ask == o["ask"] and m.safe_fallback == o["fallback"]

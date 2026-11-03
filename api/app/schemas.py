@@ -1,18 +1,10 @@
 import re
-from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 EMPTY_VALUES = {"", "null", "none", "unknown", "n/a"}
-
-
-class ServiceType(str, Enum):
-    repair = "repair"
-    replacement = "replacement"
-    inspection = "inspection"
-    other = "other"
 
 
 class LeadFields(BaseModel):
@@ -24,7 +16,7 @@ class LeadFields(BaseModel):
     phone: str | None = Field(None, max_length=30)
     email: str | None = Field(None, max_length=120)
     address: str | None = Field(None, max_length=200)
-    service_type: ServiceType | None = None
+    service_type: str | None = Field(None, max_length=50)
     property_type: str | None = Field(None, max_length=50)
     is_owner: bool | None = None
     timeline_months: int | None = Field(None, ge=0, le=120)
@@ -34,6 +26,15 @@ class LeadFields(BaseModel):
     @classmethod
     def blank_to_none(cls, v):
         return None if isinstance(v, str) and v.strip().lower() in EMPTY_VALUES else v
+
+    @field_validator("service_type")
+    @classmethod
+    def pack_service(cls, v, info):
+        allowed = (info.context or {}).get("service_types")  # supplied by agent._parse; None = unchecked
+        if v is not None and allowed is not None and v not in allowed:
+            names = [f"'{a}'" for a in allowed]
+            raise ValueError(f"Input should be {', '.join(names[:-1])} or {names[-1]}")
+        return v
 
     @field_validator("email")
     @classmethod

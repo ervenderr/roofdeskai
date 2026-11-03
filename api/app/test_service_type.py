@@ -11,7 +11,7 @@ from .pack import load_pack
 from .schemas import LeadFields, Turn
 from .test_agent import FULL, MSG, clean, script, state  # noqa: F401  (clean is an autouse fixture)
 
-OLD_ENUM = ["repair", "replacement", "inspection", "other"]  # frozen copy of the deleted ServiceType
+OLD_ENUM = ["repair", "replacement", "inspection", "other"]  # frozen copy of the old enum
 CTX = {"service_types": OLD_ENUM}
 
 

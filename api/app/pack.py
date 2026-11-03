@@ -14,7 +14,6 @@ from sqlalchemy import text
 
 from .config import settings
 from .db import system
-from .schemas import ServiceType
 
 SLUG_RE = re.compile(r"[a-z0-9-]+")
 CORE_ASK = {"name", "phone or email"}
@@ -139,7 +138,7 @@ RULE_FIELDS = {"in_list": {"service_type", "property_type", "budget_range"}, "ye
 
 class Qualification(M):
     rules: tuple[Rule, ...] = Field(min_length=1)
-    service_synonyms: dict[ServiceType, str]
+    service_synonyms: dict[str, str]
     non_business_pattern: str
     owner_yes_pattern: str
     owner_no_pattern: str
@@ -167,7 +166,7 @@ class Qualification(M):
             raise ValueError(f"rules: duplicate field in {fields}")
         if "name" in ids:
             raise ValueError("rules: id 'name' is reserved for the core contact question")
-        syn = {s.value for s in self.service_synonyms}
+        syn = set(self.service_synonyms)
         for r in self.rules:
             if r.field not in RULE_FIELDS[r.rule]:
                 raise ValueError(f"rules: rule {r.id!r}: field {r.field!r} is not allowed for {r.rule}")
@@ -182,8 +181,12 @@ class Qualification(M):
 
     @property
     def qualifying_services(self) -> frozenset:
-        return frozenset(ServiceType(v) for r in self.rules if isinstance(r, InList) and r.field == "service_type"
+        return frozenset(v for r in self.rules if isinstance(r, InList) and r.field == "service_type"
                          for v in r.values)
+
+    @property
+    def service_types(self) -> tuple[str, ...]:
+        return (*self.service_synonyms, "other")
 
     @property
     def max_timeline_months(self) -> int:
@@ -309,7 +312,7 @@ def load_pack(slug: str) -> Pack:
 
 def render(template: str, pack: Pack) -> str:
     """Fill the {{...}} pack tokens by plain replace; a leftover {{ is a template typo."""
-    enum = " | ".join(f'"{s.value}"' for s in pack.qualification.service_synonyms) + ' | "other"'
+    enum = " | ".join(f'"{s}"' for s in pack.qualification.service_synonyms) + ' | "other"'
     for k, v in {"business": pack.meta.business, "kind": pack.meta.kind, "offer": pack.meta.offer,
                  "service_enum": enum}.items():
         template = template.replace("{{" + k + "}}", v)
@@ -351,7 +354,7 @@ def main(argv: list[str]) -> int:
         print(f"PackError: {e}", file=sys.stderr)
         return 1
     c = p.calendar
-    print(f"slug: {p.slug}\nhash: {p.hash[:12]}\nservices: {', '.join(s.value for s in p.qualification.service_synonyms)}\n"
+    print(f"slug: {p.slug}\nhash: {p.hash[:12]}\nservices: {', '.join(s for s in p.qualification.service_synonyms)}\n"
           f"faq: {len(p.faq)}\ncalendar: {c.timezone} hours={list(c.slot_hours)} {c.slot_minutes}min "
           f"{c.days_ahead}d buffer={c.buffer_minutes}")
     return 0

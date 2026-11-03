@@ -119,7 +119,8 @@ def is_grounded(pack, field: str, value, message: str, asked: str = "") -> bool:
         answering_when = "when" in asked.lower() and re.search(_TIMING, msg)
         return bool(re.search(_TIME_UNITS, msg) or answering_when)
     if field == "service_type":
-        return bool(re.search(pack.qualification.non_business_pattern if value == "other" else pack.qualification.service_synonyms[value], msg))
+        pattern = pack.qualification.non_business_pattern if value == "other" else pack.qualification.service_synonyms.get(value)
+        return pattern is not None and bool(re.search(pattern, msg))
     if field == "address":
         toks = [t for t in _tokens(value) if len(t) > 2 or t.isdigit()]
         return bool(toks) and sum(t in _tokens(msg) for t in toks) / len(toks) >= 0.8
