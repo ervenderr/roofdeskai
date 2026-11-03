@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
@@ -5,6 +6,12 @@ from . import ratelimit
 from .config import settings
 from .db import engine
 from .main import app
+
+
+@pytest.fixture(autouse=True)
+def demo_tenant(monkeypatch):
+    """/chat is keyless only through PUBLIC_DEMO_TENANT_ID (D-05); these tests exercise that public path."""
+    monkeypatch.setattr(settings, "public_demo_tenant_id", settings.default_tenant_id)
 
 
 def test_continuing_a_conversation_needs_its_token(monkeypatch):

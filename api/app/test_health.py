@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from .config import settings
 from .main import app
 
 
@@ -7,7 +8,8 @@ def test_health():
     assert TestClient(app).get("/health").json() == {"ok": True}
 
 
-def test_chat_rejects_empty():
+def test_chat_rejects_empty(monkeypatch):
+    monkeypatch.setattr(settings, "public_demo_tenant_id", settings.default_tenant_id)  # keyless /chat needs the demo tenant
     assert TestClient(app).post("/chat", json={"message": ""}).status_code == 422
 
 

@@ -40,6 +40,7 @@ def _seed(tid: str, n: int, state: str = "NURTURE") -> dict:
                              {"n": f"L{tid[:4]}{i}", "t": tid}).scalar_one()
             cid = c.execute(text("INSERT INTO conversations (lead_id, state, outcome, channel, tenant_id) "
                                  "VALUES (:l, :s, 'nurture', 'web', :t) RETURNING id"), {"l": lead, "s": state, "t": tid}).scalar_one()
+            c.execute(text("INSERT INTO messages (conversation_id, role, content, tenant_id) VALUES (:c, 'user', 'hi', :t)"), {"c": cid, "t": tid})
             eid = c.execute(text("INSERT INTO escalations (conversation_id, reason, tenant_id) VALUES (:c, 'angry', :t) RETURNING id"),
                             {"c": cid, "t": tid}).scalar_one()
             out["leads"].append(lead), out["convos"].append(cid), out["escs"].append(eid)

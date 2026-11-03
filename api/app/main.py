@@ -17,6 +17,7 @@ from .pilot import router as pilot_router
 from .triage import router as triage_router
 from .stt import router as stt_router
 from .tts import router as tts_router
+from .auth import chat_tenant
 from .agent import CLOSED_STATES, conversation_token, handle_turn, token_matches
 from .config import settings
 from .db import assert_rls_enforced, system, tx
@@ -85,21 +86,21 @@ def health():
 
 
 @app.post("/chat", response_model=ChatOut, dependencies=[Depends(chat_rate_limit)])
-def chat(body: ChatIn):
-    if body.conversation_id is not None and not token_matches(body.conversation_id, body.conversation_token):
+def chat(body: ChatIn, tenant: str = Depends(chat_tenant)):
+    if body.conversation_id is not None and not token_matches(body.conversation_id, body.conversation_token, tenant):
         raise HTTPException(404, "conversation not found")
     try:
-        cid, reply = handle_turn(body.message, body.conversation_id)
+        cid, reply = handle_turn(body.message, body.conversation_id, tenant_id=tenant)
     except LookupError:
         raise HTTPException(404, "conversation not found")
     except RuntimeError:
         log.exception("all LLM providers failed (conversation %s)", body.conversation_id)
         raise HTTPException(502, "The assistant is unavailable right now.")
-    with tx() as c:
+    with tx(tenant) as c:
         state = c.execute(text("SELECT state FROM conversations WHERE id=:i"), {"i": cid}).scalar()
         lead = c.execute(text("SELECT l.name, l.email, l.phone FROM leads l JOIN conversations v ON v.lead_id=l.id WHERE v.id=:i"),
                          {"i": cid}).mappings().one() if state in CLOSED_STATES else {}
-    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid), reply=reply, closed=state in CLOSED_STATES,
+    return ChatOut(conversation_id=cid, conversation_token=conversation_token(cid, tenant), reply=reply, closed=state in CLOSED_STATES,
                    lead={k: v for k, v in lead.items() if v} or None)
 
 
