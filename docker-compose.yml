@@ -57,13 +57,14 @@ services:
     ports: ["8025:8025", "1025:1025"]
 
   n8n:
-    image: n8nio/n8n
+    image: n8nio/n8n:2.18.5
     # Optional orchestration layer: all core logic lives in the API, so the API runs fine without this.
     environment:
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_PERSONALIZATION_ENABLED: "false"
       API_URL: http://api:8000
       ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
+      TENANT_API_KEYS: ${TENANT_API_KEYS:-}
       GENERIC_TIMEZONE: Asia/Manila
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
     # Import and publish the exported workflows on every start so `docker compose up` is all it takes.

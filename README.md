@@ -60,13 +60,19 @@ Conversation states: `GREETING → COLLECT → (BOOK → DONE | NURTURE | DISQUA
 
 ### n8n flow
 
-`n8n/workflows/` holds five exported workflows, all imported and activated automatically by `docker compose up`.
+`n8n/workflows/` is imported and activated automatically by `docker compose up` (image pinned to `n8nio/n8n:2.18.5`). Catalog: 3 tenant-aware workflows (this phase), 2 untenanted tools that stay on the admin key (`outreach-flow`, `error-handler`), and 5 new tenant-aware module workflows arriving in later plans. This supersedes the "6 existing / 11" wording in the ROADMAP.
 
-- **Lead flow:** webhook, normalize the SMS/GHL payload, call the agent, send the reply immediately, then branch on the outcome: booked sends a confirmation email, escalated runs the Escalation alert workflow, nurture is left to the nightly scheduler.
-- **Follow-up scheduler** (nightly): nurture leads with no activity for 48 hours get a follow-up email, at most 3 per lead.
-- **Escalation alert:** emails a human with a link to the transcript.
-- **Daily report:** emails a summary of `/metrics`.
+- **Lead flow** (tenant-aware): webhook, normalize the SMS/GHL payload (it must carry `tenant_id`), call the agent with that tenant's key, send the reply immediately, then branch on the outcome: booked sends a confirmation email (business name from `GET /tenant/me`), escalated runs the Escalation alert workflow, nurture is left to the nightly scheduler.
+- **Follow-up scheduler** (nightly, tenant-aware): lists tenants with `GET /admin/tenants` (the only admin-key call), loops one tenant at a time with that tenant's key; nurture leads with no activity for 48 hours get a follow-up email, at most 3 per lead. Has a Manual Trigger twin for `n8n execute`.
+- **Escalation alert** (tenant-aware): emails the tenant's owner address from `GET /tenant/me` with a link to the transcript.
 - **Outreach flow:** one canvas with six lanes for outbound prospecting (below): scrape, import, draft, send and follow up, replies, and a daily call sheet.
+- **Daily report: retired.** The daily brief workflow replaces it; `/metrics` stays. Import-on-start never deletes, so on an existing `n8ndata` volume run `n8n unpublish:workflow --id=daily-report` (stop n8n first), or `make g-reset` on the branch stack, or delete it in the n8n UI.
+
+**Tenant keys.** Issue a key per tenant with `POST /admin/tenants/{id}/keys` and give n8n the map `TENANT_API_KEYS={"<tenant_id>":"<key>"}` (see `.env.example`). Headers are computed inline from that map; rotating a key means updating the env and recreating n8n.
+
+**Before deploying this phase, `TENANT_API_KEYS` and `OWNER_EMAIL` MUST be set in the deploy environment**, otherwise the lead flow and escalation alert break (no key for the tenant, no owner address).
+
+**Webhook trust.** The caller names the tenant, and n8n then uses that tenant's key. Anyone who can reach the n8n port can act as any tenant, so keep the port internal. A shared secret is deferred.
 
 All logic lives in the FastAPI service; n8n only triggers and sends. The project runs without it.
 
