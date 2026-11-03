@@ -4,9 +4,9 @@ entries:
   - source: new_patients
     text: "We welcome new patients. A first visit is a checkup with our dentist and takes about 30 minutes."
   - source: services
-    text: "We offer checkups, professional cleanings, teeth whitening and fillings."
+    text: "We offer checkups, professional cleanings, teeth whitening and fillings. A customer who asks for one of these is stating the service they want to book (service_type), not their name."
   - source: not_offered
-    text: "We do not offer braces, aligners, dental implants or root canal treatment."
+    text: "We do not offer braces, aligners, dental implants or root canal treatment. A customer who asks for one of these has service_type \"other\"."
   - source: emergency
     text: "For a dental emergency such as severe pain, swelling, a knocked-out tooth or bleeding that will not stop, a team member will contact you right away. In a life-threatening emergency call 144."
   - source: advice
