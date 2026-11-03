@@ -26,45 +26,8 @@ def escalation_reason(message: str, only: tuple[str, ...] | None = None, pack=No
     return None
 
 
-def address_status(pack, address: str | None) -> str:
-    """'in'/'out' of the service area, or 'incomplete' when no city can be identified."""
-    if not address or not re.search(r"\d", address):  # a street address needs a number
-        return "incomplete"
-    parts = [p.strip().lower() for p in address.split(",")]
-    # a service-area city as a word in any comma part after the street ("Austin", "Austin TX", "Plano TX 75024")
-    if any(set(re.findall(r"[a-z]+", p)) & set(pack.qualification.service_area) for p in parts[1:]) or (len(parts) == 1 and _tokens(address) & set(pack.qualification.service_area)):
-        return "in"
-    # a later comma part that is plain letters (not "Apt 4", "CO 80202", a bare state code) reads as a city
-    cities = [re.sub(r"(\s+[a-z]{2})?(\s+\d{5}(-\d{4})?)?$", "", p) for p in parts[1:]]  # drop a trailing state and ZIP
-    if any(re.fullmatch(r"[a-z .'-]{3,}", p) and not re.match(r"(apt|unit|suite|ste|floor)\b", p) for p in cities):
-        return "out"
-    return "incomplete"
-
-
-def qualification(pack, lead: dict) -> str:
-    """'disqualified' as soon as one known criterion fails; 'qualified' once all four pass; else 'incomplete'."""
-    checks = [
-        None if lead.get("service_type") is None else lead["service_type"] in pack.qualification.qualifying_services,
-        lead.get("is_owner"),
-        {"in": True, "out": False}.get(address_status(pack, lead.get("address"))),
-        None if lead.get("timeline_months") is None else lead["timeline_months"] <= pack.qualification.max_timeline_months,
-    ]
-    if any(c is False for c in checks):
-        return "disqualified"
-    return "qualified" if all(c is True for c in checks) else "incomplete"
-
-
 def has_contact(lead: dict) -> bool:
     return bool(lead.get("name") and (lead.get("phone") or lead.get("email")))
-
-
-def missing_fields(pack, lead: dict) -> list[str]:
-    wanted = ["service_type", "is_owner", "address", "timeline_months", "name"]
-    missing = [f for f in wanted if lead.get(f) is None or lead.get(f) == ""
-               or (f == "address" and address_status(pack, lead[f]) == "incomplete")]
-    if not (lead.get("phone") or lead.get("email")):
-        missing.append("phone or email")
-    return missing
 
 
 def unsupported_claim(reply: str, faq_texts: list[str]) -> bool:
@@ -74,11 +37,6 @@ def unsupported_claim(reply: str, faq_texts: list[str]) -> bool:
         if not all(re.search(rf"(?<![\d,]){re.escape(n)}(?![\d,])", kb) for n in re.findall(r"\d[\d,]*", m.group(0))):
             return True
     return False
-
-
-def next_question(pack, lead: dict) -> str:
-    missing = missing_fields(pack, lead)
-    return pack.messages.ask[missing[0]] if missing else pack.messages.anything_else
 
 
 _ORDINALS = {"first": 0, "1st": 0, "1": 0, "one": 0, "second": 1, "2nd": 1, "2": 1, "two": 1,

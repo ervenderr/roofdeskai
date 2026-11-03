@@ -174,23 +174,9 @@ class Qualification(M):
                 raise ValueError(f"rules: rule {r.id!r}: values must be a subset of service_synonyms")
         return self
 
-    # Read-only compat for the old policy.py path during the dual run; deleted in plan 05.
-    @property
-    def service_area(self) -> tuple[str, ...]:
-        return next((r.cities for r in self.rules if isinstance(r, InArea)), ())
-
-    @property
-    def qualifying_services(self) -> frozenset:
-        return frozenset(v for r in self.rules if isinstance(r, InList) and r.field == "service_type"
-                         for v in r.values)
-
     @property
     def service_types(self) -> tuple[str, ...]:
         return (*self.service_synonyms, "other")
-
-    @property
-    def max_timeline_months(self) -> int:
-        return next((r.max for r in self.rules if isinstance(r, MaxNumber)), 0)
 
 
 class Escalation(M):
