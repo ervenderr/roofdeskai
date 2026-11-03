@@ -60,11 +60,11 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **MOD-07**: `intake_event` webhook stores one idempotent record per person from waiver, check-in and result events using pack payload mapping
 
 ### Workflows (WF)
-- [ ] **WF-01**: The 6 existing n8n workflows are tenant-aware (tenant key header, owner address returned by the API)
-- [ ] **WF-02**: New workflows exist and run: quote-request, review-reply, capacity-check, daily-brief, intake-event
-- [ ] **WF-03**: Scheduled workflows loop over tenants via `GET /admin/tenants`; the API decides which tenants are due in their local time
-- [ ] **WF-04**: The platform runs end to end through the API with n8n switched off
-- [ ] **WF-05**: A CI check fails if any n8n HTTP node calling the API lacks the tenant key header
+- [x] **WF-01**: The existing tenant-facing n8n workflows (inbound-message, followup-scheduler, escalation-alert) are tenant-aware; outreach-flow and error-handler stay untenanted (tenant key header, owner address returned by the API)
+- [x] **WF-02**: New workflows exist and run: quote-request, review-reply, capacity-check, daily-brief, intake-event
+- [x] **WF-03**: Scheduled workflows loop over tenants via `GET /admin/tenants`; the API decides which tenants are due in their local time
+- [x] **WF-04**: The platform runs end to end through the API with n8n switched off
+- [x] **WF-05**: A CI check fails if any n8n HTTP node calling the API lacks the tenant key header
 
 ### Onboarding, Docs, Privacy (OPS)
 - [ ] **OPS-01**: `make new-business` validates a pack, loads it and runs a smoke subset of evals with cross-tenant and escalation baselines
@@ -144,11 +144,11 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | MOD-06 | Phase 7 | Complete |
 | MOD-07 | Phase 7 | Complete |
 | EVAL-05 | Phase 7 | Complete |
-| WF-01 | Phase 8 | Pending |
-| WF-02 | Phase 8 | Pending |
-| WF-03 | Phase 8 | Pending |
-| WF-04 | Phase 8 | Pending |
-| WF-05 | Phase 8 | Pending |
+| WF-01 | Phase 8 | Complete |
+| WF-02 | Phase 8 | Complete |
+| WF-03 | Phase 8 | Complete |
+| WF-04 | Phase 8 | Complete |
+| WF-05 | Phase 8 | Complete |
 | OPS-01 | Phase 9 | Pending |
 | OPS-02 | Phase 9 | Pending |
 | OPS-03 | Phase 9 | Pending |

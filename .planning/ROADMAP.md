@@ -13,7 +13,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 - [x] **Phase 5: Per-Pack Eval Runner and Dental Pack** - Per-pack reports, dental pack at 90%+ per category, no cross-tenant leakage (completed 2026-11-03)
 - [x] **Phase 6: Per-Tenant Keys and RLS Enforcement** - Hashed tenant keys, credential-derived tenant, enforced row-level security (completed 2026-11-03)
 - [x] **Phase 7: Engine Modules and Connectors** - Quote builder, capacity checker, connectors, daily brief, review responder, intake_event, each with deterministic evals (completed 2026-11-03)
-- [ ] **Phase 8: Tenant-Aware n8n** - 11 tenant-aware workflows, API-only operation, CI header check
+- [x] **Phase 8: Tenant-Aware n8n** - 10 tenant-aware workflow files (3 migrated + 2 untenanted + 5 new), API-only operation, CI header check (completed 2026-11-03)
 - [ ] **Phase 9: Docs, PII/Retention and make new-business** - Masking, retention, data map, generated SOPs, onboarding command, grep gate, README
 - [ ] **Phase 10: Held-Out Eval and Optional Extras** - 20 held-out scenarios run once, then Anthropic provider, MCP connectors, venue pack
 
@@ -120,7 +120,7 @@ Plans:
 **Depends on**: Phase 7
 **Requirements**: WF-01, WF-02, WF-03, WF-04, WF-05
 **Success Criteria** (what must be TRUE):
-  1. The 6 existing workflows send the tenant key header and take the owner address from the API
+  1. The 3 tenant-keyed existing workflows send the tenant key header (outreach-flow and error-handler are untenanted, allowlisted) and take the owner address from the API
   2. quote-request, review-reply, capacity-check, daily-brief and intake-event workflows run end to end
   3. A scheduled workflow loops over `GET /admin/tenants` and acts only on tenants the API says are due in their local time
   4. With n8n stopped, the same flows complete through the API
@@ -162,6 +162,6 @@ Plans:
 | 5. Per-Pack Eval Runner and Dental Pack | 6/6 | Complete    | 2026-11-03 |
 | 6. Per-Tenant Keys and RLS Enforcement | 6/6 | Complete    | 2026-11-03 |
 | 7. Engine Modules and Connectors | 8/8 | Complete    | 2026-11-03 |
-| 8. Tenant-Aware n8n | 0/TBD | Not started | - |
+| 8. Tenant-Aware n8n | 6/6 | Complete    | 2026-11-03 |
 | 9. Docs, PII/Retention and make new-business | 0/TBD | Not started | - |
 | 10. Held-Out Eval and Optional Extras | 0/TBD | Not started | - |
