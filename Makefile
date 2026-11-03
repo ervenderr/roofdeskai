@@ -26,6 +26,8 @@ g-logs:
 	$(GCOMPOSE) logs -f api
 g-test:
 	$(GCOMPOSE) exec api python -m pytest -q $(ARGS)
+check-n8n:
+	$(GCOMPOSE) exec -T api python -m pytest -q app/test_n8n_workflows.py
 g-eval-modules:
 	$(GCOMPOSE) exec -T api python -m evals.modules $(ARGS)
 g-eval:

@@ -48,6 +48,9 @@ services:
       - ./db:/srv/db:ro
       - ./evals:/srv/evals
       - ./scripts:/srv/scripts
+      - ./n8n:/srv/n8n:ro
+      - ./docker-compose.yml:/srv/docker-compose.yml:ro
+      - ./.env.example:/srv/.env.example:ro
     ports: ["8000:8000"]
     depends_on:
       db: {condition: service_healthy}
