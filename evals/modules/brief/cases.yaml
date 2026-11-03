@@ -1,0 +1,110 @@
+# Daily brief (demo-venue, Europe/Zurich, send_hour 7, bookings_count tolerance abs 1). Report day = local_date - 1.
+- id: agreeing-sources-no-disagreement
+  local_date: "2026-07-07"
+  results:
+    - {name: bookings, metrics: {bookings_count: 14, covers: 52}}
+    - {name: sheet, metrics: {bookings_count: 14, walk_ins: 3}}
+  expect:
+    disagreements: []
+    text_contains: ["Report day 2026-07-06 (Europe/Zurich)", "bookings: bookings_count=14, covers=52 (mock data)", "Disagreements:\nnone"]
+- id: within-tolerance-no-disagreement
+  local_date: "2026-07-07"
+  results:
+    - {name: bookings, metrics: {bookings_count: 14}}
+    - {name: sheet, metrics: {bookings_count: 15}}
+  expect: {disagreements: []}
+- id: disagreement-beyond-tolerance
+  local_date: "2026-07-07"
+  results:
+    - {name: bookings, metrics: {bookings_count: 14}}
+    - {name: sheet, metrics: {bookings_count: 17}}
+  expect:
+    disagreements: ["bookings_count: bookings=14 vs sheet=17 (diff 3, tolerance 1)"]
+    text_contains: ["bookings_count: bookings=14 vs sheet=17"]
+- id: unavailable-source-is-explicit-and-never-a-disagreement
+  local_date: "2026-07-07"
+  results:
+    - {name: bookings, metrics: {bookings_count: 14}}
+    - {name: ads, ok: false, error: Unavailable}
+  expect:
+    disagreements: []
+    text_contains: ["ads: source unavailable"]
+    text_excludes: ["ads: ad_spend"]
+- id: error-text-never-leaks
+  local_date: "2026-07-07"
+  results:
+    - {name: ads, ok: false, error: "ConnectionError: password=hunter2 host=10.0.0.5"}
+  expect: {text_contains: ["ads: source unavailable"], text_excludes: [hunter2, "10.0.0.5"]}
+- id: money-metrics-use-pack-currency
+  local_date: "2026-07-07"
+  results:
+    - {name: accounting, metrics: {revenue: "1234.5", outstanding_invoices: 80}}
+  expect: {text_contains: ["revenue=CHF 1234.50", "outstanding_invoices=CHF 80.00", "(mock data)"]}
+- id: real-source-is-not-labelled-mock
+  local_date: "2026-07-07"
+  results:
+    - {name: bookings, source: live, metrics: {bookings_count: 14}}
+  expect: {text_contains: ["bookings: bookings_count=14"], text_excludes: ["(mock data)"]}
+- id: mock-connectors-end-to-end
+  kind: mock
+  local_date: "2026-07-07"
+  expect:
+    text_contains: ["(mock data)", "ads: source unavailable", "Daily brief for Demo Venue"]
+    disagreements_contain: ["bookings_count: bookings=", "sheet="]
+
+- id: due-before-send-hour
+  kind: due
+  now_utc: "2026-07-07T04:59:00Z"   # 06:59 Zurich (CEST)
+  tz: Europe/Zurich
+  send_hour: 7
+  already_ran: false
+  expect: {due: false}
+- id: due-at-send-hour
+  kind: due
+  now_utc: "2026-07-07T05:00:00Z"   # 07:00 Zurich
+  tz: Europe/Zurich
+  send_hour: 7
+  already_ran: false
+  expect: {due: true}
+- id: due-last-minute-of-grace
+  kind: due
+  now_utc: "2026-07-07T07:59:00Z"   # 09:59 Zurich
+  tz: Europe/Zurich
+  send_hour: 7
+  already_ran: false
+  expect: {due: true}
+- id: not-due-after-grace
+  kind: due
+  now_utc: "2026-07-07T08:00:00Z"   # 10:00 Zurich
+  tz: Europe/Zurich
+  send_hour: 7
+  already_ran: false
+  expect: {due: false}
+- id: not-due-when-already-ran
+  kind: due
+  now_utc: "2026-07-07T05:00:00Z"
+  tz: Europe/Zurich
+  send_hour: 7
+  already_ran: true
+  expect: {due: false}
+- id: due-winter-offset
+  kind: due
+  now_utc: "2026-01-12T06:00:00Z"   # 07:00 Zurich (CET)
+  tz: Europe/Zurich
+  send_hour: 7
+  already_ran: false
+  expect: {due: true}
+- id: due-spring-forward-hour-2-skipped
+  kind: due
+  now_utc: "2026-03-29T00:59:00Z"   # 01:59 CET, hour 2 does not exist
+  tz: Europe/Zurich
+  send_hour: 2
+  already_ran: false
+  expect: {due: false}
+- id: due-spring-forward-first-valid-hour
+  kind: due
+  now_utc: "2026-03-29T01:00:00Z"   # 03:00 CEST
+  tz: Europe/Zurich
+  send_hour: 2
+  already_ran: false
+  expect: {due: true}

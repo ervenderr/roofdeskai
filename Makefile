@@ -26,6 +26,8 @@ g-logs:
 	$(GCOMPOSE) logs -f api
 g-test:
 	$(GCOMPOSE) exec api python -m pytest -q $(ARGS)
+g-eval-modules:
+	$(GCOMPOSE) exec -T api python -m evals.modules $(ARGS)
 g-eval:
 	$(GCOMPOSE) exec -e GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) $(if $(BASELINE_PATH),-e BASELINE_PATH=$(BASELINE_PATH)) api python -m evals.runner $(ARGS)
 eval-gate:

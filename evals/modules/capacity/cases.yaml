@@ -1,0 +1,76 @@
+# demo-venue capacity.yaml. 2026-07-06 is a Monday (weekday_evening 17:00-23:00 local, staff 3 x 10, min_staff 2);
+# 2026-07-11 is a Saturday (weekend_day 10:00-18:00, staff 4 x 8, hard max_covers 30). Zurich in July is UTC+2.
+- id: over-capacity
+  range: ["2026-07-06", "2026-07-06"]
+  bookings: [{start: "2026-07-06T16:00:00Z", covers: 31}]
+  expect: {flags: [{kind: over_capacity, shift_id: weekday_evening, date: "2026-07-06"}]}
+- id: exactly-at-capacity-no-flag
+  range: ["2026-07-06", "2026-07-06"]
+  bookings: [{start: "2026-07-06T16:00:00Z", covers: 30}]
+  expect: {flags: []}
+- id: several-bookings-sum-into-window
+  range: ["2026-07-06", "2026-07-06"]
+  bookings: [{start: "2026-07-06T15:00:00Z", covers: 16}, {start: "2026-07-06T20:59:00Z", covers: 15}]
+  expect: {flags: [{kind: over_capacity, shift_id: weekday_evening, date: "2026-07-06"}]}
+- id: booking-at-window-end-excluded
+  range: ["2026-07-06", "2026-07-06"]
+  bookings: [{start: "2026-07-06T21:00:00Z", covers: 31}]
+  expect: {flags: [{kind: under_utilised, shift_id: weekday_evening, date: "2026-07-06"}]}
+- id: understaffed-by-override
+  range: ["2026-07-06", "2026-07-06"]
+  overrides: [{shift_id: weekday_evening, date: "2026-07-06", staff: 1}]
+  bookings: [{start: "2026-07-06T16:00:00Z", covers: 5}]
+  expect: {flags: [{kind: understaffed, shift_id: weekday_evening, date: "2026-07-06"}]}
+- id: under-utilised-empty-evening
+  range: ["2026-07-06", "2026-07-06"]
+  bookings: []
+  expect: {flags: [{kind: under_utilised, shift_id: weekday_evening, date: "2026-07-06"}]}
+- id: hard-max-covers-beats-staff-capacity
+  range: ["2026-07-11", "2026-07-11"]
+  bookings: [{start: "2026-07-11T09:00:00Z", covers: 31}]
+  expect: {flags: [{kind: over_capacity, shift_id: weekend_day, date: "2026-07-11"}]}
+- id: over-capacity-and-understaffed-together
+  range: ["2026-07-06", "2026-07-06"]
+  overrides: [{shift_id: weekday_evening, date: "2026-07-06", staff: 1}]
+  bookings: [{start: "2026-07-06T16:00:00Z", covers: 12}]
+  expect: {flags: [{kind: over_capacity, shift_id: weekday_evening, date: "2026-07-06"}, {kind: understaffed, shift_id: weekday_evening, date: "2026-07-06"}]}
+
+# Sunday_night shift 00:00-06:00 local, capacity 10. A naive 6h window would be wrong on all four dates.
+# weekend_day on the same Sunday is empty, so it always adds an under_utilised flag.
+- id: dst-denver-spring-forward-window-5h
+  tz: America/Denver
+  range: ["2026-03-08", "2026-03-08"]
+  bookings: [{start: "2026-03-08T12:30:00Z", covers: 11}]
+  expect: {flags: [{kind: under_utilised, shift_id: weekend_day, date: "2026-03-08"}]}
+- id: dst-denver-fall-back-window-7h
+  tz: America/Denver
+  range: ["2026-11-01", "2026-11-01"]
+  bookings: [{start: "2026-11-01T12:30:00Z", covers: 11}]
+  expect: {flags: [{kind: over_capacity, shift_id: sunday_night, date: "2026-11-01"}, {kind: under_utilised, shift_id: weekend_day, date: "2026-11-01"}]}
+- id: dst-zurich-spring-forward-window-5h
+  tz: Europe/Zurich
+  range: ["2026-03-29", "2026-03-29"]
+  bookings: [{start: "2026-03-29T04:30:00Z", covers: 11}]
+  expect: {flags: [{kind: under_utilised, shift_id: weekend_day, date: "2026-03-29"}]}
+- id: dst-zurich-fall-back-window-7h
+  tz: Europe/Zurich
+  range: ["2026-10-25", "2026-10-25"]
+  bookings: [{start: "2026-10-25T04:30:00Z", covers: 11}]
+  expect: {flags: [{kind: over_capacity, shift_id: sunday_night, date: "2026-10-25"}, {kind: under_utilised, shift_id: weekend_day, date: "2026-10-25"}]}
+
+- id: sequence-new-unchanged-reflagged-resolved-recurs
+  kind: sequence
+  range: ["2026-07-06", "2026-07-06"]
+  runs:
+    - bookings: [{start: "2026-07-06T16:00:00Z", covers: 31}]
+    - bookings: [{start: "2026-07-06T16:00:00Z", covers: 31}]
+    - bookings: [{start: "2026-07-06T16:00:00Z", covers: 32}]
+    - bookings: [{start: "2026-07-06T16:00:00Z", covers: 5}]
+    - bookings: [{start: "2026-07-06T16:00:00Z", covers: 31}]
+  expect:
+    runs:
+      - {new: ["over_capacity:weekday_evening:2026-07-06"]}
+      - {unchanged: ["over_capacity:weekday_evening:2026-07-06"]}
+      - {reflagged: ["over_capacity:weekday_evening:2026-07-06"]}
+      - {resolved: ["over_capacity:weekday_evening:2026-07-06"], new: ["under_utilised:weekday_evening:2026-07-06"]}
+      - {reflagged: ["over_capacity:weekday_evening:2026-07-06"], resolved: ["under_utilised:weekday_evening:2026-07-06"]}

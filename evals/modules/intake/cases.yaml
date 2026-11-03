@@ -1,0 +1,92 @@
+# demo-venue intake mapping: waiver/checkin key on guest.email then guest.phone; result keys on guest.email only.
+# Timestamps are compared as UTC ISO strings. "now" is fixed at 2026-07-01 for events with no usable timestamp.
+- id: waiver-creates-person
+  events:
+    - {event: waiver, payload: {guest: {email: "Ann@Example.com", name: "Ann"}, signed_at: "2026-07-01T10:00:00+00:00"}}
+  expect: {people: [{person_key: ann@example.com, name: Ann, waiver_at: "2026-07-01T10:00:00+00:00", checkin_at: null}]}
+- id: duplicate-event-is-one-person
+  events:
+    - {event: waiver, payload: {guest: {email: a@x.com, name: Ann}, signed_at: "2026-07-01T10:00:00+00:00"}}
+    - {event: waiver, payload: {guest: {email: a@x.com, name: Ann}, signed_at: "2026-07-01T10:00:00+00:00"}}
+  expect: {people: [{person_key: a@x.com, waiver_at: "2026-07-01T10:00:00+00:00"}]}
+- id: replayed-waiver-keeps-earliest
+  events:
+    - {event: waiver, payload: {guest: {email: a@x.com}, signed_at: "2026-07-01T12:00:00+00:00"}}
+    - {event: waiver, payload: {guest: {email: a@x.com}, signed_at: "2026-07-01T09:00:00+00:00"}}
+    - {event: waiver, payload: {guest: {email: a@x.com}, signed_at: "2026-07-01T15:00:00+00:00"}}
+  expect: {people: [{person_key: a@x.com, waiver_at: "2026-07-01T09:00:00+00:00"}]}
+- id: case-different-email-same-person
+  events:
+    - {event: waiver, payload: {guest: {email: "Ann@Example.COM"}, signed_at: "2026-07-01T10:00:00+00:00"}}
+    - {event: checkin, payload: {guest: {email: " ann@example.com "}, arrived_at: "2026-07-02T10:00:00+00:00"}}
+  expect: {people: [{person_key: ann@example.com, waiver_at: "2026-07-01T10:00:00+00:00", checkin_at: "2026-07-02T10:00:00+00:00"}]}
+- id: phone-key-normalised
+  events:
+    - {event: waiver, payload: {guest: {phone: "+41 (79) 123-45-67"}, signed_at: "2026-07-01T10:00:00+00:00"}}
+    - {event: checkin, payload: {guest: {phone: "+41791234567"}, arrived_at: "2026-07-02T10:00:00+00:00"}}
+  expect: {people: [{person_key: "+41791234567", waiver_at: "2026-07-01T10:00:00+00:00", checkin_at: "2026-07-02T10:00:00+00:00"}]}
+- id: person-key-falls-back-to-second-path
+  events:
+    - {event: waiver, payload: {guest: {email: "", phone: "+41791234567"}, signed_at: "2026-07-01T10:00:00+00:00"}}
+  expect: {people: [{person_key: "+41791234567"}]}
+- id: first-name-wins
+  events:
+    - {event: waiver, payload: {guest: {email: a@x.com, name: Ann}, signed_at: "2026-07-01T10:00:00+00:00"}}
+    - {event: checkin, payload: {guest: {email: a@x.com, name: Anna}, arrived_at: "2026-07-02T10:00:00+00:00"}}
+  expect: {people: [{person_key: a@x.com, name: Ann}]}
+- id: out-of-order-result-newest-wins
+  events:
+    - {event: result, payload: {guest: {email: a@x.com}, finished_at: "2026-07-03T10:00:00+00:00", game: {score: 90}}}
+    - {event: result, payload: {guest: {email: a@x.com}, finished_at: "2026-07-02T10:00:00+00:00", game: {score: 40}}}
+  expect: {people: [{person_key: a@x.com, result: {score: 90}}]}
+- id: result-in-order-replaces
+  events:
+    - {event: result, payload: {guest: {email: a@x.com}, finished_at: "2026-07-02T10:00:00+00:00", game: {score: 40}}}
+    - {event: result, payload: {guest: {email: a@x.com}, finished_at: "2026-07-03T10:00:00+00:00", game: {score: 90}, team: {name: Red}}}
+  expect: {people: [{person_key: a@x.com, result: {score: 90, team: Red}}]}
+- id: identical-result-replay-is-noop
+  events:
+    - {event: result, payload: {guest: {email: a@x.com}, finished_at: "2026-07-02T10:00:00+00:00", game: {score: 40}}}
+    - {event: result, payload: {guest: {email: a@x.com}, finished_at: "2026-07-02T10:00:00+00:00", game: {score: 40}}}
+  expect: {people: [{person_key: a@x.com, result: {score: 40}}]}
+- id: naive-timestamp-falls-back-to-now
+  events:
+    - {event: waiver, payload: {guest: {email: a@x.com}, signed_at: "2026-07-01T10:00:00"}}
+  expect: {people: [{person_key: a@x.com, waiver_at: "2026-07-01T00:00:00+00:00"}]}
+- id: missing-person-key
+  events:
+    - {event: waiver, payload: {guest: {name: Ann}, signed_at: "2026-07-01T10:00:00+00:00"}}
+  expect:
+    people: []
+    errors: [{event: waiver, field: person_key, msg: missing}]
+- id: result-requires-email-not-phone
+  events:
+    - {event: result, payload: {guest: {phone: "+41791234567"}, finished_at: "2026-07-02T10:00:00+00:00"}}
+  expect:
+    people: []
+    errors: [{event: result, field: person_key, msg: missing}]
+- id: wrong-type-person-key
+  events:
+    - {event: waiver, payload: {guest: {email: ["a@x.com"]}, signed_at: "2026-07-01T10:00:00+00:00"}}
+  expect:
+    people: []
+    errors: [{event: waiver, field: person_key, msg: invalid}]
+- id: wrong-type-name
+  events:
+    - {event: waiver, payload: {guest: {email: a@x.com, name: 42}, signed_at: "2026-07-01T10:00:00+00:00"}}
+  expect:
+    people: []
+    errors: [{event: waiver, field: name, msg: invalid}]
+- id: wrong-type-result-field
+  events:
+    - {event: result, payload: {guest: {email: a@x.com}, finished_at: "2026-07-02T10:00:00+00:00", game: {score: [1, 2]}}}
+  expect:
+    people: []
+    errors: [{event: result, field: fields.score, msg: invalid}]
+- id: bad-event-does-not-touch-existing-person
+  events:
+    - {event: waiver, payload: {guest: {email: a@x.com, name: Ann}, signed_at: "2026-07-01T10:00:00+00:00"}}
+    - {event: waiver, payload: {guest: {email: a@x.com, name: 42}, signed_at: "2026-06-01T10:00:00+00:00"}}
+  expect:
+    people: [{person_key: a@x.com, name: Ann, waiver_at: "2026-07-01T10:00:00+00:00"}]
+    errors: [{event: waiver, field: name, msg: invalid}]
