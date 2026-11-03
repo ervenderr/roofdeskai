@@ -14,12 +14,12 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **BASE-04**: Every migration step reruns the eval and fails on any per-scenario-id difference from the baseline (flipped scenarios rerun twice before counting)
 
 ### Tenancy (TEN)
-- [ ] **TEN-01**: Operator can apply numbered SQL migrations to a live database without recreating the volume
-- [ ] **TEN-02**: Every tenant table (leads, slots, conversations, appointments, FAQ rows) carries `tenant_id`, with composite uniques so two tenants can share a slot time or external id
-- [ ] **TEN-03**: All tenant data access goes through one `db.tx(tenant_id)` helper that sets a transaction-local tenant context
-- [ ] **TEN-04**: Slot generation and FAQ seeding work per tenant (no tenant skipped by another tenant's rows)
-- [ ] **TEN-05**: Logs and an append-only `agent_events` table are stamped with tenant id
-- [ ] **TEN-06**: Operator outreach, replies and pilot flows remain outside the tenant model
+- [x] **TEN-01**: Operator can apply numbered SQL migrations to a live database without recreating the volume
+- [x] **TEN-02**: Every tenant table (leads, slots, conversations, appointments, FAQ rows) carries `tenant_id`, with composite uniques so two tenants can share a slot time or external id
+- [x] **TEN-03**: All tenant data access goes through one `db.tx(tenant_id)` helper that sets a transaction-local tenant context
+- [x] **TEN-04**: Slot generation and FAQ seeding work per tenant (no tenant skipped by another tenant's rows)
+- [x] **TEN-05**: Logs and an append-only `agent_events` table are stamped with tenant id
+- [x] **TEN-06**: Operator outreach, replies and pilot flows remain outside the tenant model
 
 ### Business Pack (PACK)
 - [ ] **PACK-01**: Operator can define a business as a folder of YAML files under `businesses/<slug>/` validated at load by Pydantic (`extra="forbid"`), failing with a clear error on bad packs
@@ -111,12 +111,12 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | BASE-02 | Phase 1 | Complete |
 | BASE-03 | Phase 1 | Complete |
 | BASE-04 | Phase 1 | Complete |
-| TEN-01 | Phase 2 | Pending |
-| TEN-02 | Phase 2 | Pending |
-| TEN-03 | Phase 2 | Pending |
-| TEN-04 | Phase 2 | Pending |
-| TEN-05 | Phase 2 | Pending |
-| TEN-06 | Phase 2 | Pending |
+| TEN-01 | Phase 2 | Complete |
+| TEN-02 | Phase 2 | Complete |
+| TEN-03 | Phase 2 | Complete |
+| TEN-04 | Phase 2 | Complete |
+| TEN-05 | Phase 2 | Complete |
+| TEN-06 | Phase 2 | Complete |
 | PACK-01 | Phase 3 | Pending |
 | PACK-02 | Phase 3 | Pending |
 | PACK-03 | Phase 3 | Pending |
