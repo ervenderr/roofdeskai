@@ -10,7 +10,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 - [x] **Phase 2: Tenants, Migrations and DB Plumbing** - Numbered migrations, tenant_id everywhere, `db.tx()`, tenant-stamped logs and events (completed 2026-11-03)
 - [x] **Phase 3: Pack Loader and Roofing Extraction** - Validated pack format; roofing constants, prompts and messages moved into pack #1 with zero behaviour change (completed 2026-11-03)
 - [x] **Phase 4: Rule Interpreter** - Data-driven qualification proven identical to the old code, then old path deleted (completed 2026-11-03)
-- [ ] **Phase 5: Per-Pack Eval Runner and Dental Pack** - Per-pack reports, dental pack at 90%+ per category, no cross-tenant leakage
+- [x] **Phase 5: Per-Pack Eval Runner and Dental Pack** - Per-pack reports, dental pack at 90%+ per category, no cross-tenant leakage (completed 2026-11-03)
 - [ ] **Phase 6: Per-Tenant Keys and RLS Enforcement** - Hashed tenant keys, credential-derived tenant, enforced row-level security
 - [ ] **Phase 7: Engine Modules and Connectors** - Quote builder, capacity checker, connectors, daily brief, review responder, intake_event, each with deterministic evals
 - [ ] **Phase 8: Tenant-Aware n8n** - 11 tenant-aware workflows, API-only operation, CI header check
@@ -83,12 +83,12 @@ Plans:
   4. Interleaved two-tenant conversations and cross-tenant retrieval scenarios show zero leakage
 **Plans**: 6 plans
 Plans:
-- [ ] 05-01-PLAN.md — per-pack runner, ensure_tenant, scenario move, roofing gate subset
-- [ ] 05-02-PLAN.md — dental pack YAML, loader and deterministic emergency-recall tests, CHF claim guard
-- [ ] 05-03-PLAN.md — 43 dental scenarios with validation tests
-- [ ] 05-04-PLAN.md — two-tenant isolation tests
-- [ ] 05-05-PLAN.md — dental full run, bounded tuning, baseline if gates met
-- [ ] 05-06-PLAN.md — roofing full gate 94/96, dental gate/flake, phase summary
+- [x] 05-01-PLAN.md — per-pack runner, ensure_tenant, scenario move, roofing gate subset
+- [x] 05-02-PLAN.md — dental pack YAML, loader and deterministic emergency-recall tests, CHF claim guard
+- [x] 05-03-PLAN.md — 43 dental scenarios with validation tests
+- [x] 05-04-PLAN.md — two-tenant isolation tests
+- [x] 05-05-PLAN.md — dental full run, bounded tuning, baseline if gates met
+- [x] 05-06-PLAN.md — roofing full gate 94/96, dental gate/flake, phase summary
 
 ### Phase 6: Per-Tenant Keys and RLS Enforcement
 **Goal**: Tenants are isolated by credential and by the database, so multi-tenant exposure is safe.
@@ -159,7 +159,7 @@ Plans:
 | 2. Tenants, Migrations and DB Plumbing | 5/5 | Complete    | 2026-11-03 |
 | 3. Pack Loader and Roofing Extraction | 5/5 | Complete    | 2026-11-03 |
 | 4. Rule Interpreter | 5/5 | Complete    | 2026-11-03 |
-| 5. Per-Pack Eval Runner and Dental Pack | 0/TBD | Not started | - |
+| 5. Per-Pack Eval Runner and Dental Pack | 6/6 | Complete    | 2026-11-03 |
 | 6. Per-Tenant Keys and RLS Enforcement | 0/TBD | Not started | - |
 | 7. Engine Modules and Connectors | 0/TBD | Not started | - |
 | 8. Tenant-Aware n8n | 0/TBD | Not started | - |

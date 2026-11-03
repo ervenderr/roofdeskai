@@ -36,10 +36,10 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **QUAL-03**: A differential test over a large lead grid shows zero differences between the old `qualification()` and the interpreter before the old path is deleted
 
 ### Evals (EVAL)
-- [ ] **EVAL-01**: Operator can run evals per pack (`--pack`) with per-pack reports that never overwrite another pack's baseline
-- [ ] **EVAL-02**: Roofing pack scores 94/96 with the same two failures after every step through Phase 5
-- [ ] **EVAL-03**: Dental pack has ~40 scenarios across the ten categories; no category under 90% and emergency escalation recall 100%
-- [ ] **EVAL-04**: Cross-tenant retrieval and two-tenant interleaved scenarios prove no leakage between packs
+- [x] **EVAL-01**: Operator can run evals per pack (`--pack`) with per-pack reports that never overwrite another pack's baseline
+- [x] **EVAL-02**: Roofing pack scores 94/96 with the same two failures after every step through Phase 5
+- [x] **EVAL-03**: Dental pack has ~40 scenarios across the ten categories; no category under 90% and emergency escalation recall 100%
+- [x] **EVAL-04**: Cross-tenant retrieval and two-tenant interleaved scenarios prove no leakage between packs
 - [ ] **EVAL-05**: Each new engine module has its own deterministic eval set
 - [ ] **EVAL-06**: 20 held-out scenarios are written before tuning, run once, and the score is published even if low
 
@@ -127,10 +127,10 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | QUAL-01 | Phase 4 | Complete |
 | QUAL-02 | Phase 4 | Complete |
 | QUAL-03 | Phase 4 | Complete |
-| EVAL-01 | Phase 5 | Pending |
-| EVAL-02 | Phase 5 | Pending |
-| EVAL-03 | Phase 5 | Pending |
-| EVAL-04 | Phase 5 | Pending |
+| EVAL-01 | Phase 5 | Complete |
+| EVAL-02 | Phase 5 | Complete |
+| EVAL-03 | Phase 5 | Complete |
+| EVAL-04 | Phase 5 | Complete |
 | SEC-01 | Phase 6 | Pending |
 | SEC-02 | Phase 6 | Pending |
 | SEC-03 | Phase 6 | Pending |
