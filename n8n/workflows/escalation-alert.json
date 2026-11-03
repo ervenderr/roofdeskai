@@ -43,7 +43,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "parameters": {
-        "jsCode": "const j = $input.first().json;\nconst b = j.body ?? j;\nreturn [{ json: { reason: b.reason ?? b.escalation_reason, conversation_id: b.conversation_id, link: b.link } }];"
+        "jsCode": "const j = $input.first().json;\nconst b = j.body ?? j;\nif (!b.tenant_id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(b.tenant_id))) throw new Error('alert needs a valid tenant_id');\nreturn [{ json: { tenant_id: String(b.tenant_id), reason: b.reason ?? b.escalation_reason, conversation_id: b.conversation_id, link: b.link } }];"
       },
       "position": [
         260,
@@ -60,10 +60,46 @@
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: 'human@summitroofing.test'}], Subject: 'Escalation (' + $json.reason + '): conversation ' + $json.conversation_id, Text: 'A conversation needs a human. Reason: ' + $json.reason + '\\nTranscript: ' + $json.link}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@roofdesk.test', Name: $json.name}, To: [{Email: $json.owner_email}], Subject: 'Escalation (' + $('Normalize alert').first().json.reason + '): conversation ' + $('Normalize alert').first().json.conversation_id, Text: 'A conversation needs a human. Reason: ' + $('Normalize alert').first().json.reason + '\\nTranscript: ' + $('Normalize alert').first().json.link}) }}"
       },
       "position": [
-        520,
+        980,
+        100
+      ]
+    },
+    {
+      "id": "tenant-me",
+      "name": "Tenant me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/tenant/me",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Normalize alert').first().json.tenant_id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        500,
+        100
+      ]
+    },
+    {
+      "id": "require-owner",
+      "name": "Require owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const me = $input.first().json;\nif (!me.owner_email) throw new Error('no owner email for tenant ' + me.slug + ' (set pack meta owner_email or OWNER_EMAIL)');\nreturn [{ json: me }];"
+      },
+      "position": [
+        740,
         100
       ]
     }
@@ -92,6 +128,28 @@
       ]
     },
     "Normalize alert": {
+      "main": [
+        [
+          {
+            "node": "Tenant me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tenant me": {
+      "main": [
+        [
+          {
+            "node": "Require owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require owner": {
       "main": [
         [
           {

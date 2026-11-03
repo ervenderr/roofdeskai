@@ -24,13 +24,24 @@
       ]
     },
     {
-      "id": "find-due",
-      "name": "Find due",
+      "id": "manual",
+      "name": "Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "id": "list-tenants",
+      "name": "List tenants",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.API_URL }}/admin/followups/due?hours=48",
+        "url": "={{ $env.API_URL }}/admin/tenants",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -43,7 +54,116 @@
       },
       "position": [
         220,
-        0
+        100
+      ]
+    },
+    {
+      "id": "each-tenant",
+      "name": "Each tenant",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        440,
+        100
+      ]
+    },
+    {
+      "id": "check-key",
+      "name": "Check key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const id = $input.first().json.id;\nconst keys = JSON.parse($env.TENANT_API_KEYS || '{}');\nif (!keys[id]) throw new Error('no key for tenant ' + id);  // never log the map\nreturn [{ json: $input.first().json }];"
+      },
+      "position": [
+        660,
+        100
+      ]
+    },
+    {
+      "id": "tenant-me",
+      "name": "Tenant me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/tenant/me",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Each tenant').first().json.id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        880,
+        100
+      ]
+    },
+    {
+      "id": "find-due",
+      "name": "Find due",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/admin/followups/due?hours=48",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Each tenant').first().json.id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1100,
+        100
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "has-work",
+      "name": "Has work",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "alwaysOutputData": true,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cid",
+              "leftValue": "={{ $json.conversation_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1320,
+        100
       ]
     },
     {
@@ -58,37 +178,99 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "X-Admin-Key",
-              "value": "={{ $env.ADMIN_API_KEY }}"
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Each tenant').first().json.id] }}"
             }
           ]
         }
       },
       "position": [
-        440,
-        0
-      ]
+        1540,
+        100
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "id": "send-email",
       "name": "Send email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
       "parameters": {
         "method": "POST",
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: $json.to}], Subject: $json.subject, Text: $json.body}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@roofdesk.test', Name: $('Tenant me').first().json.name}, To: [{Email: $json.to}], Subject: $json.subject, Text: $json.body}) }}"
       },
       "position": [
-        660,
-        0
+        1760,
+        100
+      ]
+    },
+    {
+      "id": "loop-end",
+      "name": "Loop end",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: {} }];"
+      },
+      "position": [
+        1980,
+        100
       ]
     }
   ],
   "connections": {
     "Nightly": {
+      "main": [
+        [
+          {
+            "node": "List tenants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual": {
+      "main": [
+        [
+          {
+            "node": "List tenants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List tenants": {
+      "main": [
+        [
+          {
+            "node": "Each tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check key": {
+      "main": [
+        [
+          {
+            "node": "Tenant me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tenant me": {
       "main": [
         [
           {
@@ -100,6 +282,17 @@
       ]
     },
     "Find due": {
+      "main": [
+        [
+          {
+            "node": "Has work",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has work": {
       "main": [
         [
           {
@@ -120,10 +313,45 @@
           }
         ]
       ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Loop end",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop end": {
+      "main": [
+        [
+          {
+            "node": "Each tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Each tenant": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "error-handler"
+    "errorWorkflow": "error-handler",
+    "saveDataSuccessExecution": "none"
   }
 }

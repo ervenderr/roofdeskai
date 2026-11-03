@@ -45,7 +45,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "parameters": {
-        "jsCode": "const b = $input.first().json.body ?? $input.first().json;\nconst message = b.body ?? b.message ?? b.text;\nconst contact = b.contactId ?? b.contact_id ?? b.phone ?? b.from;\nif (!message || !contact) throw new Error('payload needs a message and a contact id');\nconst mid = b.messageId ?? b.message_id;  // the provider's id for this message: lets the API ignore a redelivery\nreturn [{ json: { contact_id: String(contact), message: String(message), channel: b.type === 'Email' ? 'email' : 'sms', ...(mid ? { message_id: String(mid) } : {}) } }];"
+        "jsCode": "const b = $input.first().json.body ?? $input.first().json;\nconst q = $input.first().json.query ?? {};\nconst message = b.body ?? b.message ?? b.text;\nconst contact = b.contactId ?? b.contact_id ?? b.phone ?? b.from;\nconst tid = b.tenant_id ?? q.tenant_id;\nif (!message || !contact) throw new Error('payload needs a message and a contact id');\nif (!tid || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(tid))) throw new Error('payload needs a valid tenant_id');\nconst mid = b.messageId ?? b.message_id;  // the provider's id for this message: lets the API ignore a redelivery\nreturn [{ json: { tenant_id: String(tid), contact_id: String(contact), message: String(message), channel: b.type === 'Email' ? 'email' : 'sms', ...(mid ? { message_id: String(mid) } : {}) } }];"
       },
       "position": [
         240,
@@ -65,14 +65,14 @@
         "headerParameters": {
           "parameters": [
             {
-              "name": "X-Admin-Key",
-              "value": "={{ $env.ADMIN_API_KEY }}"
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Normalize payload').first().json.tenant_id] }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}"
+        "jsonBody": "={{ JSON.stringify({contact_id: $json.contact_id, message: $json.message, channel: $json.channel, message_id: $json.message_id}) }}"
       },
       "position": [
         480,
@@ -212,10 +212,10 @@
         "url": "http://mailpit:8025/api/v1/send",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@summitroofing.test', Name: 'Summit Roofing'}, To: [{Email: $json.email}], Subject: 'Your roof inspection is booked', Text: 'Hi ' + ($json.name || 'there') + ',\\n\\nYour free roof inspection is booked for ' + new Date($json.appointment_start).toUTCString() + '.\\n\\nSummit Roofing'}) }}"
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@roofdesk.test', Name: $('Tenant me').first().json.name}, To: [{Email: $('Has email?').first().json.email}], Subject: 'Your appointment is booked', Text: 'Hi ' + ($('Has email?').first().json.name || 'there') + ',\\n\\nYour appointment is booked for ' + new Date($('Has email?').first().json.appointment_start).toUTCString() + '.\\n\\n' + $('Tenant me').first().json.name}) }}"
       },
       "position": [
-        1240,
+        1360,
         -20
       ]
     },
@@ -236,7 +236,7 @@
         }
       },
       "position": [
-        1000,
+        1120,
         120
       ]
     },
@@ -273,7 +273,7 @@
       ],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({error: 'payload needs a message and a contact id'}) }}",
+        "responseBody": "={{ JSON.stringify({error: 'payload needs a message, a contact id and a valid tenant_id'}) }}",
         "options": {
           "responseCode": 400
         }
@@ -308,6 +308,42 @@
       "parameters": {
         "errorMessage": "The agent API still failed after 3 tries"
       }
+    },
+    {
+      "id": "tenant-me",
+      "name": "Tenant me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/tenant/me",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Normalize payload').first().json.tenant_id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1120,
+        -20
+      ]
+    },
+    {
+      "id": "build-alert",
+      "name": "Build alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: { tenant_id: $('Normalize payload').first().json.tenant_id, escalation_reason: j.escalation_reason, conversation_id: j.conversation_id, link: j.link } }];"
+      },
+      "position": [
+        880,
+        120
+      ]
     }
   ],
   "connections": {
@@ -374,7 +410,7 @@
         ],
         [
           {
-            "node": "Alert a human",
+            "node": "Build alert",
             "type": "main",
             "index": 0
           }
@@ -399,7 +435,7 @@
       "main": [
         [
           {
-            "node": "Email booking confirmation",
+            "node": "Tenant me",
             "type": "main",
             "index": 0
           }
@@ -411,6 +447,28 @@
         [
           {
             "node": "Raise failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tenant me": {
+      "main": [
+        [
+          {
+            "node": "Email booking confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build alert": {
+      "main": [
+        [
+          {
+            "node": "Alert a human",
             "type": "main",
             "index": 0
           }
