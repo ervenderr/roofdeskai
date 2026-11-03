@@ -11,6 +11,7 @@ from sqlalchemy import text
 from .admin import router as admin_router
 from .tenant_admin import router as tenant_admin_router
 from .bootstrap import bootstrap_schema
+from .drafts import router as drafts_router
 from .outreach_routes import router as outreach_router
 from .intake import router as intake_router
 from .pilot import router as pilot_router
@@ -52,6 +53,7 @@ app.include_router(tenant_admin_router)
 app.include_router(outreach_router)
 app.include_router(pilot_router)
 app.include_router(intake_router)
+app.include_router(drafts_router)
 app.include_router(triage_router)
 app.include_router(tts_router)
 app.include_router(stt_router)

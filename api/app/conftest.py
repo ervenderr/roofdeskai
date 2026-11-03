@@ -17,6 +17,13 @@ def _max(c, table: str) -> int:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def apply_pending_migrations():
+    """Idempotent: the dev DB may predate new migration files."""
+    from .bootstrap import apply_migrations
+    apply_migrations()
+
+
+@pytest.fixture(scope="session", autouse=True)
 def remove_test_data():
     """Tests run against the dev database; delete what they created so dashboards and snapshots stay clean."""
     with engine.connect() as c:
@@ -42,12 +49,32 @@ def remove_test_data():
         c.execute(text("ALTER TABLE agent_events DISABLE TRIGGER USER"))
         c.execute(text(f"DELETE FROM agent_events WHERE tenant_id IN {test_tenants}"))
         c.execute(text("ALTER TABLE agent_events ENABLE TRIGGER USER"))
+        # the demo-venue fixture tenant is test-owned too: its rows go, the tenant row goes only if nothing else references it
+        fixture_tenants = "(SELECT id FROM tenants WHERE slug LIKE 'test-%' OR slug = 'demo-venue')"
+        for t in ("drafts", "capacity_flags", "brief_runs", "intake_people"):
+            c.execute(text(f"DELETE FROM {t} WHERE tenant_id IN {fixture_tenants}"))
         for t in ("appointments", "tool_calls", "escalations", "events", "llm_calls", "messages",
                   "conversations", "slots", "leads", "faq_chunks"):
             c.execute(text(f"DELETE FROM {t} WHERE tenant_id IN {test_tenants}"))
         c.execute(text("DO $$ BEGIN IF to_regclass('tenant_api_keys') IS NOT NULL THEN "
                        f"DELETE FROM tenant_api_keys WHERE tenant_id IN {test_tenants}; END IF; END $$"))
         c.execute(text("DELETE FROM tenants WHERE slug LIKE 'test-%'"))
+        _drop_unreferenced_venue(c)
+
+
+def _drop_unreferenced_venue(c) -> None:
+    """Remove the demo-venue tenant row (and its keys) if no data table still references it; real tenants are never touched."""
+    tid = c.execute(text("SELECT id FROM tenants WHERE slug = 'demo-venue'")).scalar()
+    if tid is None:
+        return
+    refs = c.execute(text(
+        "SELECT c.relname FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid "
+        "WHERE k.contype = 'f' AND k.confrelid = 'tenants'::regclass")).scalars().all()
+    for t in refs:
+        if t != "tenant_api_keys" and c.execute(text(f"SELECT 1 FROM {t} WHERE tenant_id = :t LIMIT 1"), {"t": tid}).first():
+            return
+    c.execute(text("DELETE FROM tenant_api_keys WHERE tenant_id = :t"), {"t": tid})
+    c.execute(text("DELETE FROM tenants WHERE id = :t"), {"t": tid})
 
 
 @pytest.fixture(autouse=True)

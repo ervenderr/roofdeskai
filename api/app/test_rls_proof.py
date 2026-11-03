@@ -10,7 +10,8 @@ from .config import settings
 from .db import engine, system, tx
 
 TABLES = ("leads", "conversations", "messages", "slots", "appointments", "faq_chunks",
-          "tool_calls", "escalations", "events", "llm_calls", "agent_events")
+          "tool_calls", "escalations", "events", "llm_calls", "agent_events",
+          "drafts", "capacity_flags", "brief_runs", "intake_people")
 HAD_DEFAULT = TABLES[:9]
 B = "00000000-0000-0000-0000-0000000000b2"
 A = settings.default_tenant_id
@@ -33,6 +34,11 @@ INSERTS = {
               "SELECT :t, id, 'x' FROM conversations WHERE tenant_id=:t LIMIT 1",
     "llm_calls": "INSERT INTO llm_calls (tenant_id, model) VALUES (:t, 'm')",
     "agent_events": "INSERT INTO agent_events (tenant_id, conversation_id, kind) VALUES (:t, 1, 'turn')",
+    "drafts": "INSERT INTO drafts (tenant_id, kind, status, input_hash) VALUES (:t, 'quote', 'pending', 'h')",
+    "capacity_flags": "INSERT INTO capacity_flags (tenant_id, flag_key, kind, shift_id, shift_date, input_hash) "
+                      "VALUES (:t, 'over_capacity:s:2030-01-01', 'over_capacity', 's', '2030-01-01', 'h')",
+    "brief_runs": "INSERT INTO brief_runs (tenant_id, run_date) VALUES (:t, '2030-01-01')",
+    "intake_people": "INSERT INTO intake_people (tenant_id, person_key) VALUES (:t, 'p')",
 }
 
 
@@ -77,7 +83,8 @@ def test_no_tenant_set_fails_closed(rls, t):
         assert _n(c, t) == 0
 
 
-SELF_CONTAINED = ("leads", "conversations", "slots", "faq_chunks", "llm_calls", "agent_events")
+SELF_CONTAINED = ("leads", "conversations", "slots", "faq_chunks", "llm_calls", "agent_events",
+                  "drafts", "capacity_flags", "brief_runs", "intake_people")
 
 
 @pytest.mark.parametrize("t", SELF_CONTAINED)

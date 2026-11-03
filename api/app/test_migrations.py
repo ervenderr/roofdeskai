@@ -110,3 +110,12 @@ def test_005_006_applied_idempotent_and_role_exists(scratch_db):
     assert bootstrap.apply_migrations(scratch_db) == []
     with scratch_db.begin() as c:
         assert c.execute(text("SELECT count(*) FROM pg_roles WHERE rolname='app_rw'")).scalar() == 1
+
+
+def test_007_applied_idempotent(scratch_db):
+    bootstrap.bootstrap_schema(scratch_db)
+    assert "007_engine_modules" in _versions(scratch_db)
+    assert bootstrap.apply_migrations(scratch_db) == []
+    with scratch_db.begin() as c:
+        for t in ("drafts", "capacity_flags", "brief_runs", "intake_people"):
+            assert c.execute(text("SELECT relforcerowsecurity FROM pg_class WHERE relname=:t"), {"t": t}).scalar() is True, t

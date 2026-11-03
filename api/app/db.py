@@ -35,11 +35,19 @@ def record_event(c, tenant_id, conversation_id, kind: str, payload: dict) -> Non
               {"t": str(uuid.UUID(str(tenant_id))), "c": conversation_id, "k": kind, "p": json.dumps(payload)})
 
 
-def assert_rls_enforced() -> None:
-    """Fail startup if the tenant connection would bypass RLS (superuser, BYPASSRLS, or owner of leads)."""
-    with app_engine.connect() as c:
+def assert_rls_enforced(eng=None) -> None:
+    """Fail startup if the tenant connection would bypass RLS (superuser, BYPASSRLS, owner of leads),
+    or if any tenant_id table it can read lacks FORCE RLS."""
+    with (eng or app_engine).connect() as c:
         bad = c.execute(text(
             "SELECT r.rolsuper OR r.rolbypassrls OR pg_get_userbyid(cl.relowner) = current_user "
             "FROM pg_roles r, pg_class cl WHERE r.rolname = current_user AND cl.oid = 'public.leads'::regclass")).scalar()
-    if bad is not False:
-        raise RuntimeError("RLS not enforced: APP_DATABASE_URL must be a non-superuser, non-BYPASSRLS role that does not own the tables")
+        if bad is not False:
+            raise RuntimeError("RLS not enforced: APP_DATABASE_URL must be a non-superuser, non-BYPASSRLS role that does not own the tables")
+        missing = c.execute(text(
+            "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'tenant_id' AND NOT a.attisdropped "
+            "WHERE n.nspname = 'public' AND c.relkind = 'r' AND has_table_privilege(current_user, c.oid, 'SELECT') "
+            "AND NOT (c.relrowsecurity AND c.relforcerowsecurity)")).scalars().all()
+    if missing:
+        raise RuntimeError(f"RLS missing on tables granted to app role: {sorted(missing)}")

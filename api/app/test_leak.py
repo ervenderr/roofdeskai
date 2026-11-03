@@ -139,7 +139,21 @@ def test_slots_and_booking_never_cross(ab):
         tools.book_appointment(a["lead"], slot_b, tenant_id=a["id"])
 
 
-@pytest.mark.parametrize("table", TABLES)
+def _granted_tenant_tables() -> list[str]:
+    """Catalog-derived so a new tenant table cannot be forgotten: tenant_id tables app_rw can SELECT."""
+    with db.system() as c:
+        return sorted(c.execute(text(
+            "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
+            "JOIN pg_attribute a ON a.attrelid=c.oid AND a.attname='tenant_id' AND NOT a.attisdropped "
+            "WHERE n.nspname='public' AND c.relkind='r' AND has_table_privilege('app_rw', c.oid, 'SELECT')")).scalars().all())
+
+
+def test_catalog_list_covers_known_and_new_tables():
+    got = _granted_tenant_tables()
+    assert set(TABLES) <= set(got) and {"drafts", "capacity_flags", "brief_runs", "intake_people"} <= set(got)
+
+
+@pytest.mark.parametrize("table", _granted_tenant_tables())
 def test_app_role_without_context_sees_zero_rows(ab, table):
     with db.app_engine.begin() as c:  # no set_config: RLS must fail closed
         assert c.execute(text(f"SELECT count(*) FROM {table}")).scalar() == 0
