@@ -609,16 +609,21 @@ def test_pack_equals_old_constants(roofing_pack):
 | A5 | Buffer semantics (min gap after slot end; drop violating starts) | Section 4 | Spec does not define it; purely my design; only affects non-roofing packs |
 | A6 | Existing admin follow-up tests exist and may assert subject/body text | Section 1E | Mechanical; byte-identical text keeps them green |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Roofing `calendar.timezone`: `Etc/UTC` or `America/Denver`?**
    - Known: D-11 lists `timezone: America/Denver` AND requires UTC-equivalent instants for roofing; these are contradictory because today's hours are UTC wall-clock.
    - Recommendation: `timezone: Etc/UTC` in `calendar.yaml` (slot-interpretation zone) while `pack.yaml: timezone: America/Denver` carries business identity. Document the legacy quirk in the YAML comment; correcting roofing to local hours is a separate, deliberately behaviour-changing step after the gate (Phase 5+). Planner should confirm with the user.
+   - **RESOLVED:** `calendar.yaml` timezone = `Etc/UTC` (slot interpretation zone); `pack.yaml` keeps `America/Denver` as business identity. This deviates from D-11's listed Denver value and is surfaced in the 03-01 and 03-03 SUMMARY requirement deviations (plans 03-01, 03-03).
 2. **Demo disclaimer: core (D-10) or pack (ROADMAP success criterion 3 and PACK-04 say "from pack templates")?**
    - Recommendation: follow locked D-10 (core constant, `{business}` from pack); mention the discrepancy in the verification doc.
+   - **RESOLVED:** Disclaimer stays core (`agent.DEMO_NOTICE`) with the business name from the pack, per D-10. Deviation from ROADMAP criterion 3 wording surfaced in the 03-03 SUMMARY (plan 03-03 Task 2).
 3. **`_fmt` time zone display.** Recommendation above (convert to `pack.calendar.timezone`); identical for roofing.
+   - **RESOLVED:** Plans do this: `_fmt(iso, pack)` converts to `pack.calendar.timezone` (Etc/UTC for roofing, so output is identical) (plan 03-03 Task 2).
 4. **Add `pack` hash to `turn_start` event payload?** Optional, cheap; skipped unless planner wants Pitfall-17 traceability now.
+   - **RESOLVED:** Skipped: no plan adds the pack hash to the `turn_start` payload (03-02 leaves `_turn_start` unchanged); revisit when pack traceability is needed.
 5. **`always_human` in `escalation.yaml` has no consumer in Phase 3** (triage keeps reading `clients/*.yaml`). Recommendation: include and validate it (D-07), add a golden assertion against `clients/summit-roofing.yaml`.
+   - **RESOLVED:** Included and validated in `escalation.yaml` with a golden assertion against `clients/summit-roofing.yaml` `always_human` (plan 03-01 Task 3); no runtime consumer in Phase 3.
 
 ## Environment Availability
 
