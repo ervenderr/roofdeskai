@@ -205,15 +205,18 @@ def gate(scenarios: list[dict]) -> None:
     baseline = json.loads(bp.read_text())
     results, cids = run_suite(scenarios)
     write_report(results, cids)
+    all_cids = list(cids)
     diff = gate_diff(baseline, {sc["id"]: {"passed": not f} for sc, _, f in results})
     cand = diff["candidate_regressions"]
     by_id = {s["id"]: s for s in scenarios}
     reruns: dict[str, list[bool]] = {i: [] for i in cand}
     for n in range(RERUNS if cand else 0):
         print(f"--- gate rerun {n + 1}/{RERUNS} of {cand}", flush=True)
-        rr, _ = run_suite([by_id[i] for i in cand])
+        rr, rcids = run_suite([by_id[i] for i in cand])
+        all_cids += rcids
         for sc, _, f in rr:
             reruns[sc["id"]].append(not f)
+    assert_local_only(all_cids)  # a hosted fallback answering makes the diff meaningless
     verdict = decide(cand, reruns)
     print(f"improvements: {diff['improvements']}\nnew (not in baseline): {diff['new']}\n"
           f"flaky-pass: {verdict['flaky_pass']}\nregressions: {verdict['regressions']}")
