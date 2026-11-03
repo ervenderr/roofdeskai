@@ -14,7 +14,7 @@ entries:
   - source: cancellation
     text: "Please cancel or reschedule at least 24 hours before your appointment by contacting our team."
   - source: location
-    text: "The clinic is in central Zurich, close to the main station. We see patients from Zurich, Winterthur, Baden, Uster and Dietikon."
+    text: "The clinic is in central Zurich, close to the main station. We see patients from Zurich, Winterthur, Baden, Uster and Dietikon. A customer who gives an address together with a checkup, cleaning, whitening or filling is stating the service they want to book (service_type), not their name."
   - source: parking
     text: "Paid parking is available nearby, and the clinic is easy to reach by tram and train."
   - source: payment
