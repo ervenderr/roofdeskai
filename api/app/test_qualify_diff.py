@@ -100,3 +100,30 @@ def test_address_zero_diff(roofing_pack):
     diffs = [(a, policy.address_status(roofing_pack, a), qualify.address_status(cities, a))
              for a in corpus if policy.address_status(roofing_pack, a) != qualify.address_status(cities, a)]
     assert not diffs, diffs[:10]
+
+
+def test_frozen_digest_old(roofing_pack):  # temporary: removed with the old path
+    from .tests_data import frozen_qualify as Q
+    p = roofing_pack
+    assert grid_digest(lambda l: policy.qualification(p, l), lambda l: policy.missing_fields(p, l),
+                       lambda l: policy.next_question(p, l)) == Q.GRID_SHA256
+    assert addr_digest(lambda a: policy.address_status(p, a)) == Q.ADDR_SHA256
+
+
+def test_frozen_digest_new(roofing_pack):
+    from .tests_data import frozen_qualify as Q
+    p = roofing_pack
+    assert (GRID_COUNT, ADDR_COUNT) == (Q.GRID_COUNT, Q.ADDR_COUNT)
+    assert grid_digest(lambda l: qualify.qualify(p, l), lambda l: qualify.missing_fields(p, l),
+                       lambda l: qualify.next_question(p, l)) == Q.GRID_SHA256
+    cities = next(r.cities for r in p.qualification.rules if r.rule == "in_area")
+    assert addr_digest(lambda a: qualify.address_status(cities, a)) == Q.ADDR_SHA256
+
+
+def test_rule_params_frozen(roofing_pack):
+    from .tests_data import frozen_old as F
+    rules = roofing_pack.qualification.rules
+    assert set(next(r.cities for r in rules if r.rule == "in_area")) == set(F.FROZEN_SERVICE_AREA)
+    assert set(next(r.values for r in rules if r.rule == "in_list" and r.field == "service_type")) == set(
+        F.FROZEN_QUALIFYING_SERVICES)
+    assert next(r.max for r in rules if r.rule == "max_number") == F.FROZEN_MAX_TIMELINE_MONTHS
