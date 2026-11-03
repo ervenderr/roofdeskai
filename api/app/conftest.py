@@ -1,4 +1,6 @@
+import shutil
 import uuid
+from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -71,3 +73,26 @@ def scratch_db():
 def roofing_pack():
     from .pack import load_pack
     return load_pack("summit-roofing")
+
+
+@pytest.fixture
+def packs_dir(tmp_path, monkeypatch):
+    """Tmp businesses_dir holding copies of the real roofing pack and the demo-venue fixture pack (copied, not symlinked)."""
+    real = settings.businesses_dir
+    shutil.copytree(real / "summit-roofing", tmp_path / "summit-roofing", ignore=shutil.ignore_patterns("scenarios"))
+    shutil.copytree(Path(__file__).parent / "tests_data" / "packs" / "demo-venue", tmp_path / "demo-venue")
+    monkeypatch.setattr(settings, "businesses_dir", tmp_path)
+    return tmp_path
+
+
+@pytest.fixture
+def venue_tenant(packs_dir):
+    """Tenant id of the demo-venue fixture pack (tenant row slug 'demo-venue' persists in the dev DB)."""
+    from .tenants import ensure_tenant
+    return ensure_tenant("demo-venue")
+
+
+@pytest.fixture
+def roofing_tenant(packs_dir):
+    from .tenants import ensure_tenant
+    return ensure_tenant("summit-roofing")

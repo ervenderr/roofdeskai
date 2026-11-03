@@ -1,0 +1,2 @@
+safety: '\b(injur(y|ed)|ambulance|fire|bleeding|faint(ed|ing))\b'
+always_human: [injury]

@@ -1,0 +1,6 @@
+timezone: Europe/Zurich
+slot_hours: [10, 12, 14, 16, 18]
+slot_minutes: 60
+days_ahead: 14
+weekdays_only: false
+buffer_minutes: 0

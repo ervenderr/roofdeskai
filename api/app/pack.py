@@ -4,13 +4,15 @@ import re
 import sys
 import uuid
 import threading
+from datetime import time
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated, Literal
 from string import Formatter
 from zoneinfo import ZoneInfo
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError, field_validator, model_validator
 from sqlalchemy import text
 
 from .config import settings
@@ -60,6 +62,49 @@ def _check_template(name: str, t: str) -> None:
     need = TEMPLATE_FIELDS.get(name, set())
     if not (need <= got <= need | {"business"}):
         raise ValueError(f"{name}: fields must be {sorted(need)} (plus optional business), got {sorted(got)}")
+
+
+def _decimal(v, what: str) -> Decimal:
+    # YAML gives float for 35.10 (lossy); only quoted strings and ints are exact.
+    if isinstance(v, bool) or v is None or isinstance(v, float) or not isinstance(v, (str, int)):
+        raise ValueError(f'{what} must be a quoted decimal string like "35.10" (YAML floats lose precision)')
+    try:
+        d = Decimal(str(v).strip())
+    except InvalidOperation:
+        raise ValueError(f"{what} {v!r} is not a number") from None
+    if not d.is_finite():
+        raise ValueError(f"{what} must be finite")
+    return d
+
+
+def _money(v) -> Decimal:
+    d = _decimal(v, "money")
+    if d < 0 or d.as_tuple().exponent < -2:
+        raise ValueError("money must be >= 0 with at most 2 decimals")
+    return d
+
+
+def _pct(v) -> Decimal:
+    d = _decimal(v, "percent")
+    if not 0 < d <= 100:
+        raise ValueError("percent must be > 0 and <= 100")
+    return d
+
+
+def _hhmm(v) -> time:
+    if not isinstance(v, str):  # YAML 1.1 reads an unquoted 17:00 as the int 1020
+        raise ValueError('time must be a quoted "HH:MM" string (an unquoted 17:00 is read by YAML as a number)')
+    if len(v) != 5 or v[2] != ":":
+        raise ValueError(f'time {v!r} must look like "17:00"')
+    try:
+        return time.fromisoformat(v)
+    except ValueError:
+        raise ValueError(f'time {v!r} must look like "17:00"') from None
+
+
+Money = Annotated[Decimal, BeforeValidator(_money)]
+Percent = Annotated[Decimal, BeforeValidator(_pct)]
+HHMM = Annotated[time, BeforeValidator(_hhmm)]
 
 
 class PackMeta(M):
@@ -279,14 +324,24 @@ def _parse(path: Path, model: type[M]):
         raise PackError(f"{path}: {e}") from None
 
 
-def load_pack(slug: str) -> Pack:
-    """Validate and load a pack. No DB, no cache."""
+# Optional module files (services, capacity, connectors): name -> model. Later plans register them and add
+# the matching Pack fields; absent file = module disabled, present-but-bad = PackError.
+OPTIONAL_FILES: dict[str, type[M]] = {}
+
+
+def _parse_optional(path: Path, model: type[M]):
+    return _parse(path, model) if path.exists() else None
+
+
+def load_pack(slug: str, base: Path | None = None) -> Pack:
+    """Validate and load a pack. No DB, no cache. base overrides settings.businesses_dir (fixture packs)."""
     if not SLUG_RE.fullmatch(slug):  # the slug becomes a path
         raise PackError(f"invalid pack slug {slug!r}")
-    root = settings.businesses_dir / slug
+    root = (base or settings.businesses_dir) / slug
     parts = {name: _parse(root / f"{name}.yaml", model) for name, model in FILES.items()}
     if parts["pack"].slug != slug:
         raise PackError(f"{root / 'pack.yaml'}: slug: {parts['pack'].slug!r} does not match folder {slug!r}")
+    optional = {n: _parse_optional(root / f"{n}.yaml", m) for n, m in OPTIONAL_FILES.items()}  # noqa: F841 (validated here; plans 03-05 attach to Pack)
     q = parts["qualification"]
     expected = {r.id for r in q.rules} | CORE_ASK
     got = set(parts["messages"].ask)
