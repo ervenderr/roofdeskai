@@ -1,5 +1,8 @@
+import uuid
+
 import pytest
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 
 from .config import settings
 from .db import engine
@@ -38,3 +41,16 @@ def remove_test_data():
 def no_real_mail(monkeypatch):
     """The dev .env may point at a real mailbox; tests must never email anyone (mail tests patch their own transport)."""
     monkeypatch.setattr(settings, "mail_transport", "mailpit")
+
+
+@pytest.fixture
+def scratch_db():
+    """Empty throwaway database inside the dev cluster; name is generated, never external input."""
+    name = f"scratch_{uuid.uuid4().hex[:8]}"
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as c:
+        c.execute(text(f"CREATE DATABASE {name}"))
+    eng = create_engine(make_url(settings.database_url).set(database=name))
+    yield eng
+    eng.dispose()
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as c:
+        c.execute(text(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)"))
