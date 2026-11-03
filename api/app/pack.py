@@ -356,6 +356,41 @@ class Services(M):
         return v
 
 
+Day = Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+class Shift(M):
+    id: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
+    name: str | None = None
+    days: tuple[Day, ...] = Field(min_length=1)
+    start: HHMM
+    end: HHMM
+    min_staff: int = Field(ge=0)
+    max_covers_per_staff: int = Field(ge=1)
+    staff: int = Field(ge=0)  # default rota; a request may override per date
+    max_covers: int | None = Field(None, ge=1)  # optional hard resource cap
+
+    @model_validator(mode="after")
+    def _window(self):
+        # shortcut: same-day windows only (start < end), overnight shifts are not supported, split them in two
+        if self.start >= self.end:
+            raise ValueError(f"shift {self.id!r}: start must be before end (split overnight shifts in two)")
+        return self
+
+
+class Capacity(M):
+    shifts: tuple[Shift, ...] = Field(min_length=1)
+    horizon_days: int = Field(14, ge=1, le=60)
+
+    @field_validator("shifts")
+    @classmethod
+    def _unique(cls, v):
+        ids = [s.id for s in v]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"duplicate shift id in {ids}")
+        return v
+
+
 class Pack(M):
     slug: str
     hash: str
@@ -366,6 +401,7 @@ class Pack(M):
     messages: Messages
     faq: tuple[FaqEntry, ...]
     services: Services | None = None
+    capacity: Capacity | None = None
 
 
 FILES = {"pack": PackMeta, "calendar": Calendar, "qualification": Qualification,
@@ -400,7 +436,7 @@ def _parse(path: Path, model: type[M]):
 
 # Optional module files (services, capacity, connectors): name -> model. Later plans register them and add
 # the matching Pack fields; absent file = module disabled, present-but-bad = PackError.
-OPTIONAL_FILES: dict[str, type[M]] = {"services": Services}
+OPTIONAL_FILES: dict[str, type[M]] = {"services": Services, "capacity": Capacity}
 
 
 def _parse_optional(path: Path, model: type[M]):
@@ -423,7 +459,7 @@ def load_pack(slug: str, base: Path | None = None) -> Pack:
         raise PackError(f"{root / 'messages.yaml'}: ask: missing {sorted(expected - got)}, unexpected {sorted(got - expected)}")
     return Pack(slug=slug, hash=pack_hash(root), meta=parts["pack"], calendar=parts["calendar"],
                 qualification=q, escalation=parts["escalation"], messages=parts["messages"],
-                faq=parts["faq"].entries, services=optional.get("services"))
+                faq=parts["faq"].entries, services=optional.get("services"), capacity=optional.get("capacity"))
 
 
 def render(template: str, pack: Pack) -> str:

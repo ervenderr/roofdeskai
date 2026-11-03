@@ -1,0 +1,5 @@
+shifts:
+  - {id: weekday_evening, name: Weekday evening, days: [mon, tue, wed, thu, fri], start: "17:00", end: "23:00", min_staff: 2, max_covers_per_staff: 10, staff: 3}
+  - {id: weekend_day, name: Weekend day, days: [sat, sun], start: "10:00", end: "18:00", min_staff: 3, max_covers_per_staff: 8, staff: 4, max_covers: 30}
+  - {id: sunday_night, name: Sunday night, days: [sun], start: "00:00", end: "06:00", min_staff: 1, max_covers_per_staff: 10, staff: 1}
+horizon_days: 14
