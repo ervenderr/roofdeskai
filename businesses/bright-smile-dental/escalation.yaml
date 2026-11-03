@@ -1,0 +1,4 @@
+# Emergency + medication words reach a human before the model runs (policy.escalation_reason, "safety").
+# always_human is data only in the engine today (only clients/*.yaml triage reads it).
+safety: '\b(((severe|unbearable|excruciating|terrible|worst|intense)\b.{0,30}\b(pain|toothache|ache))|((pain|toothache|ache)\b.{0,30}\b(severe|unbearable|excruciating|intense))|swollen|swelling|swelled|abscess|knocked.?out|(tooth|teeth)\b.{0,20}\b(fell|came|knocked|broke|snapped)\b.{0,10}\b(out|off)|loose (tooth|teeth)|(tooth|teeth)\b.{0,15}\bloose|(bleeding|bleeds?|blood)\b.{0,40}\b(won.?t|will not|not|can.?t|cannot|doesn.?t|does not)\b.{0,10}\bstop|bleeding (a lot|heavily|badly)|(broken|fractured|dislocated) jaw|(trouble|difficulty|hard to|can.?t|cannot|unable to) (breathe|breathing|swallow\w*)|painkillers?|ibuprofen|antibiotics?|paracetamol)\b'
+always_human: [emergency, insurance_billing]

@@ -1,0 +1,14 @@
+# Two rules only: no owner / timeline questions for a dental clinic. File order = question order.
+rules:
+  - {id: service_type, field: service_type, rule: in_list, values: [checkup, cleaning, whitening, filling]}
+  - {id: address, field: address, rule: in_area, cities: [zurich, winterthur, baden, uster, dietikon]}
+service_synonyms:
+  checkup: 'check.?up|exam|consult|new patient|first (visit|appointment)|see a dentist|tooth ?ache|sore|hurts?|pain'
+  cleaning: 'clean|scal(e|ing)|polish|hygien'
+  whitening: 'whiten|bleach'
+  filling: 'filling|cavit|decay'
+non_business_pattern: 'brace|aligner|invisalign|implant|orthodont|veneer|root canal|wisdom|denture|extraction|botox'
+# is_owner is never asked or required; these never match, so a model-invented is_owner is dropped as ungrounded.
+owner_yes_pattern: '(?!)'
+owner_no_pattern: '(?!)'
+extra_stopwords: [dental, dentist, clinic, bright, smile, teeth, tooth, patient, patients, family]

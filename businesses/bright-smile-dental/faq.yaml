@@ -1,0 +1,25 @@
+entries:
+  - source: hours
+    text: "Bright Smile Dental is open Monday to Friday from 8am to 6pm."
+  - source: new_patients
+    text: "We welcome new patients. A first visit is a checkup with our dentist and takes about 30 minutes."
+  - source: services
+    text: "We offer checkups, professional cleanings, teeth whitening and fillings."
+  - source: not_offered
+    text: "We do not offer braces, aligners, dental implants or root canal treatment."
+  - source: emergency
+    text: "For a dental emergency such as severe pain, swelling, a knocked-out tooth or bleeding that will not stop, a team member will contact you right away. In a life-threatening emergency call 144."
+  - source: advice
+    text: "We do not give medical advice in chat. A dentist or team member will answer any question about symptoms or medication directly."
+  - source: cancellation
+    text: "Please cancel or reschedule at least 24 hours before your appointment by contacting our team."
+  - source: location
+    text: "The clinic is in central Zurich, close to the main station. We see patients from Zurich, Winterthur, Baden, Uster and Dietikon."
+  - source: parking
+    text: "Paid parking is available nearby, and the clinic is easy to reach by tram and train."
+  - source: payment
+    text: "We accept card payments and TWINT. An invoice can be arranged on request."
+  - source: pricing_insurance
+    text: "Prices depend on the treatment, and we do not quote prices or discuss insurance coverage in chat. A team member will confirm costs and coverage for you."
+  - source: languages
+    text: "Our team speaks German and English."

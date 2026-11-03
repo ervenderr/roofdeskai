@@ -1,0 +1,8 @@
+# Non-UTC on purpose: slot_hours are Europe/Zurich wall-clock hours, stored as UTC instants.
+# The loader has no "Mon-Sat" option (weekdays_only skips Sat+Sun), so online booking is Mon-Fri.
+timezone: Europe/Zurich
+slot_hours: [8, 9, 10, 11, 13, 14, 15, 16, 17]
+slot_minutes: 30
+days_ahead: 14
+weekdays_only: true
+buffer_minutes: 0

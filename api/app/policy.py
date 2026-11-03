@@ -11,7 +11,8 @@ _GENERIC_ESCALATION = {
 }
 _ESCALATION_ORDER = ("human_request", "legal", "safety", "angry")
 _CLAIM_RE = re.compile(
-    r"\$\s?\d[\d,]*|\b\d[\d,]*\s*(?:dollars|usd|php|pesos|percent)\b|\b\d+\s?%|\b\d+[- ]?years?\s+(?:workmanship\s+)?(?:warranty|guarantee)",
+    r"\$\s?\d[\d,]*|\b\d[\d,]*\s*(?:dollars|usd|php|pesos|percent)\b|\b\d+\s?%|\b\d+[- ]?years?\s+(?:workmanship\s+)?(?:warranty|guarantee)"
+    r"|\bchf\s?\d[\d'.,]*|\b\d[\d'.,]*\s*(?:chf|francs?)\b",
     re.I,
 )
 
