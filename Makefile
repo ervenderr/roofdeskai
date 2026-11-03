@@ -25,4 +25,6 @@ g-reset:
 g-logs:
 	$(GCOMPOSE) logs -f api
 g-eval:
-	$(GCOMPOSE) exec -e GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) api python -m evals.runner $(ARGS)
+	$(GCOMPOSE) exec -e GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) $(if $(BASELINE_PATH),-e BASELINE_PATH=$(BASELINE_PATH)) api python -m evals.runner $(ARGS)
+eval-gate:
+	$(MAKE) g-eval ARGS="--gate $(ARGS)"
