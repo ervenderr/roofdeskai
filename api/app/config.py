@@ -13,6 +13,7 @@ class Settings(BaseSettings):
             yield name, "**********" if value and any(h in name for h in SECRET_HINTS) else value
 
     database_url: str
+    default_tenant_id: str = "00000000-0000-0000-0000-000000000001"  # Summit Roofing; dropped as a default in Phase 6
     local_llm_url: str = "http://host.docker.internal:11434/v1"
     local_llm_model: str = "llama3.1:8b"
     embed_model: str = "all-minilm"
