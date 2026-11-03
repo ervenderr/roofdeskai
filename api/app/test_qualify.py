@@ -74,3 +74,77 @@ def test_not_required_rule_skipped():
 def test_next_question():
     assert qualify.next_question(mk(), {}) == "service_type?"
     assert qualify.next_question(mk(), GOOD) == "else"
+
+
+# --- edit-without-code-change: only YAML data differs between loads ---
+import copy
+
+from . import policy
+from .pack import load_pack
+from .test_pack import MIN_PACK, SLUG, biz, write_pack  # noqa: F401  (biz is a fixture)
+
+LEAD = {"service_type": "repair", "is_owner": True, "address": "1 Oak St, Denver", "timeline_months": 8}
+
+
+def _load(biz, edit):
+    data = copy.deepcopy(MIN_PACK)
+    edit(data)
+    write_pack(biz, data)
+    return load_pack(SLUG)
+
+
+def _rule(data, rid):
+    return next(r for r in data["qualification"]["rules"] if r["id"] == rid)
+
+
+def test_edit_rule_changes_verdict(biz):
+    assert qualify.qualify(_load(biz, lambda d: None), LEAD) == "disqualified"
+    p = _load(biz, lambda d: _rule(d, "timeline_months").update(max=12))
+    assert qualify.qualify(p, LEAD) == "qualified"
+
+
+def test_edit_cities_changes_verdict(biz):
+    lead = LEAD | {"timeline_months": 3, "address": "5 Main St, Austin"}
+    assert qualify.qualify(_load(biz, lambda d: None), lead) == "disqualified"
+    p = _load(biz, lambda d: _rule(d, "address").update(cities=["denver", "austin"]))
+    assert qualify.qualify(p, lead) == "qualified"
+
+
+def _drop_timeline(d):
+    d["qualification"]["rules"] = [r for r in d["qualification"]["rules"] if r["id"] != "timeline_months"]
+    del d["messages"]["ask"]["timeline_months"]
+
+
+def test_remove_rule(biz):
+    lead = LEAD | {"timeline_months": None}
+    assert "timeline_months" in qualify.missing_fields(_load(biz, lambda d: None), lead)
+    p = _load(biz, _drop_timeline)
+    assert "timeline_months" not in qualify.missing_fields(p, lead)
+    assert qualify.qualify(p, lead) == "qualified"
+
+
+def test_edit_question_and_order_change_next_question(biz):
+    assert qualify.next_question(_load(biz, lambda d: None), {}) == "s?"
+    p = _load(biz, lambda d: d["messages"]["ask"].update(service_type="What service?"))
+    assert qualify.next_question(p, {}) == "What service?"
+    p = _load(biz, lambda d: d["qualification"]["rules"].reverse())
+    assert qualify.next_question(p, {}) == "t?"
+
+
+def test_edit_disqualify_text(biz):
+    p = _load(biz, lambda d: d["messages"].update(disqualify="Sorry, outside our area."))
+    assert qualify.qualify(p, LEAD) == "disqualified" and p.messages.disqualify == "Sorry, outside our area."
+
+
+def test_edit_synonyms_changes_grounding(biz):
+    assert policy.is_grounded(_load(biz, lambda d: None), "service_type", "repair", "please fix it")
+    p = _load(biz, lambda d: d["qualification"]["service_synonyms"].update(repair="mend"))
+    assert not policy.is_grounded(p, "service_type", "repair", "please fix it")
+    assert policy.is_grounded(p, "service_type", "repair", "please mend it")
+
+
+def test_edit_non_business_pattern_changes_grounding(biz):
+    assert policy.is_grounded(_load(biz, lambda d: None), "service_type", "other", "clean my gutter")
+    p = _load(biz, lambda d: d["qualification"].update(non_business_pattern="paint"))
+    assert not policy.is_grounded(p, "service_type", "other", "clean my gutter")
+    assert policy.is_grounded(p, "service_type", "other", "please paint it")
