@@ -53,6 +53,7 @@ def env(monkeypatch, roofing_tenant, venue_tenant):
         c.execute(text("DELETE FROM brief_runs WHERE tenant_id=:t"), {"t": venue_tenant})
         c.execute(text("DELETE FROM drafts WHERE tenant_id=:t"), {"t": venue_tenant})
         c.execute(text("DELETE FROM capacity_flags WHERE tenant_id=:t"), {"t": venue_tenant})
+        c.execute(text("DELETE FROM tenant_api_keys WHERE label='test-run-flows'"))
 
 
 def script(monkeypatch, *turns):

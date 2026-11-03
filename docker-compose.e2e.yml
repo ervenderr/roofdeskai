@@ -1,0 +1,11 @@
+# One-off overlay for the Phase 8 headless E2E (branch project only): mounts the gitignored ./.e2e-businesses
+# (businesses/* plus the demo-venue fixture pack) over the base mount and sends mail to mailpit / example.test.
+# Never use on the live stack.
+services:
+  api:
+    volumes:
+      - ./.e2e-businesses:/srv/businesses:ro
+    environment:
+      MAIL_TRANSPORT: mailpit
+      OWNER_EMAIL: owner@example.test
+      TENANT_API_KEYS: ${TENANT_API_KEYS:-}  # for `make run-flows`-style runs; value from the host shell only

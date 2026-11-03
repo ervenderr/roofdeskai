@@ -4,3 +4,4 @@ __pycache__/
 node_modules/
 HANDOVER.md
 .DS_Store
+.e2e-businesses/

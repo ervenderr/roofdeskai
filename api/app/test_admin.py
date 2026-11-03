@@ -139,3 +139,11 @@ def test_admin_without_tenant_is_400_and_writes_nothing(client):
     assert [r.status_code for r in calls] == [400, 400, 400]
     assert all(r.json()["detail"] == NEEDS_TENANT for r in calls)
     assert {t: _count(t) for t in before} == before
+
+
+def test_tenant_list_tolerates_a_missing_pack_dir(client):
+    slug = f"test-nopack-{uuid.uuid4().hex[:6]}"  # removed by the session cleanup (test-% tenants)
+    with engine.begin() as c:
+        c.execute(text("INSERT INTO tenants (slug, name, timezone, pack_slug) VALUES (:s, 'x', 'UTC', :s)"), {"s": slug})
+    r = client.get("/admin/tenants", headers=NO_TENANT)
+    assert r.status_code == 200 and slug in [t["slug"] for t in r.json()]
