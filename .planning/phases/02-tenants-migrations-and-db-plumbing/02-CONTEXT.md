@@ -40,7 +40,7 @@ Make the database multi-tenant ready with no behaviour change for Summit Roofing
 - **D-15:** [auto] `agent_events(id, tenant_id, conversation_id, kind, payload jsonb, created_at)` is append-only (no UPDATE/DELETE grant intent, documented; trigger blocks UPDATE/DELETE). Written for turn start, tool call, escalation. The existing `events` table stays as is.
 
 ### Regression gate
-- **D-16:** [auto] Every plan ends with `make g-test` and a `make eval-gate` run (subset allowed mid-phase, full run before phase verification). Roofing must stay 94/96 with the same two failures.
+- **D-16:** [auto] Every plan ends with pytest in the branch stack api container and a `make eval-gate` run (subset allowed mid-phase, full run before phase verification). Roofing must stay 94/96 with the same two failures.
 
 ### Claude's Discretion
 Migration file naming details, exact set of child tables getting composite FKs, test layout.
@@ -58,7 +58,7 @@ Migration file naming details, exact set of child tables getting composite FKs, 
 - `.planning/research/ARCHITECTURE.md` — tenant_id passing, untenanted modules
 - `.planning/phases/01-baseline-freeze-and-environment-isolation/01-ROOFING-INVENTORY.md` — hidden coupling list
 - `db/init.sql`, `db/outreach.sql`, `db/faq_seed.sql`, `api/app/db.py`, `api/app/bootstrap.py`, `api/app/tools.py`, `api/app/faq.py`, `api/app/admin.py`
-- `Makefile` (`g-up`, `g-test`, `eval-gate`), `docker-compose.global.yml`, `evals/baselines/v1-roofing.json`
+- `Makefile` (`g-up`, `eval-gate`), `docker-compose.global.yml`, `evals/baselines/v1-roofing.json`
 
 </canonical_refs>
 
