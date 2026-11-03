@@ -75,3 +75,14 @@ def test_endpoint_requires_admin_key(monkeypatch):
     _llm(monkeypatch, '{"category": "new_lead", "confidence": 0.9, "draft": "Hi"}')
     r = c.post("/triage", json={"message": "need a quote"}, headers={"x-admin-key": settings.admin_api_key})
     assert r.status_code == 200 and r.json()["category"] == "new_lead"
+
+
+def test_triage_escalates_roofing_safety_text(monkeypatch):
+    _llm(monkeypatch, '{"category": "question", "confidence": 0.99, "draft": "x"}')
+    r = triage.triage("there is a gas leak in my attic", PROFILE)
+    assert r.needs_human and "safety" in r.reason
+
+
+def test_triage_keeps_roofing_stopwords(monkeypatch):
+    _llm(monkeypatch, '{"category": "question", "confidence": 0.99, "draft": "Roof roof roofing summit"}')
+    assert triage.triage("hi", PROFILE).draft == "Roof roof roofing summit"

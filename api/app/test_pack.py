@@ -149,6 +149,9 @@ def test_cli_fail():
 
 
 # ---- roofing pack golden tests ----
+import ast, re, shutil  # noqa: E402
+from pathlib import Path  # noqa: E402
+
 from . import agent, faq, policy, tools  # noqa: E402
 from .tests_data import frozen_old as F  # noqa: E402
 
@@ -173,13 +176,6 @@ def _check(p, o):
     assert set(q.extra_stopwords) == {"roof", "roofing", "summit"}
 
 
-def _live():
-    return dict(area=policy.SERVICE_AREA, qual=policy.QUALIFYING_SERVICES, months=policy.MAX_TIMELINE_MONTHS,
-                yes=policy._OWN_YES, no=policy._OWN_NO, nonbiz=policy._NON_ROOF, service=policy._SERVICE,
-                escalation=policy._ESCALATION_PATTERNS, ask=policy.ASK, fallback=policy.SAFE_FALLBACK,
-                faq=faq.FAQ, generic=policy._GENERIC)
-
-
 def _frozen():
     return dict(area=F.FROZEN_SERVICE_AREA, qual=F.FROZEN_QUALIFYING_SERVICES, months=F.FROZEN_MAX_TIMELINE_MONTHS,
                 yes=F.FROZEN_OWN_YES, no=F.FROZEN_OWN_NO, nonbiz=F.FROZEN_NON_ROOF, service=F.FROZEN_SERVICE,
@@ -187,10 +183,6 @@ def _frozen():
                 closed=F.FROZEN_CLOSED_REPLY, disq=F.FROZEN_DISQUALIFY_REPLY, nurture=F.FROZEN_NURTURE_REPLY,
                 noslots=F.FROZEN_NO_SLOTS_REPLY, faq=F.FROZEN_FAQ, hours=F.FROZEN_SLOT_HOURS,
                 days=F.FROZEN_SLOT_DAYS_AHEAD, generic=F.FROZEN_GENERIC)
-
-
-def test_golden_live(roofing_pack):
-    _check(roofing_pack, _live())  # removed in plan 03-03 when the old constants go
 
 
 def test_golden_frozen(roofing_pack):
@@ -434,3 +426,116 @@ def test_ensure_slots_live():
     assert n1 == n2 > 0 and seq1 == seq2 and other >= 0
     want = sorted(s for s, _ in slot_instants(get_pack(tid).calendar, datetime.now(now.tzinfo)))
     assert [h for h in have if h >= want[0]][:len(want)] == want
+
+
+# ---- policy equivalence (plan 03-04) ----
+def _old_escalation(message, only=None):
+    for reason, pattern in F.FROZEN_ESCALATION.items():
+        if (only is None or reason in only) and re.search(pattern, message, re.I):
+            return reason
+    return None
+
+
+ESC_SAMPLES = ["Can I talk to a real person?", "I'm calling my lawyer", "part of my roof collapsed",
+               "This is ridiculous, you're useless", "I rent my place in Denver", "gas smell in the attic",
+               "this is ridiculous, part of my roof collapsed", "I will sue you and it is a scam",
+               "speak to a manager, there is a gas leak", "my wires are exposed wires, furious", "hello there",
+               "I will take this to court, worst service"]
+
+
+@pytest.mark.parametrize("msg", ESC_SAMPLES)
+@pytest.mark.parametrize("only", [None, ("safety", "legal")])
+def test_escalation_equivalence(roofing_pack, msg, only):
+    assert policy.escalation_reason(msg, only=only, pack=roofing_pack) == _old_escalation(msg, only)
+
+
+def test_escalation_mixed_safety_angry_is_safety(roofing_pack):
+    assert policy.escalation_reason("this is ridiculous, part of my roof collapsed", pack=roofing_pack) == "safety"
+
+
+def test_escalation_without_pack_has_no_safety():
+    assert policy.escalation_reason("gas leak and a collapsed ceiling") is None
+    assert policy.escalation_reason("I will sue you") == "legal"
+    assert policy.escalation_reason("this is ridiculous, part of my roof collapsed") == "angry"
+
+
+def _old_grounded(field, value, message, asked=""):
+    msg = message.lower()
+    if field == "is_owner":
+        if value:
+            return bool(re.search(F.FROZEN_OWN_YES, msg)) and not re.search(F.FROZEN_OWN_NO, msg)
+        answered_no = "own" in asked.lower() and re.match(r"\W*(no|nope|nah)\b", msg)
+        return bool(re.search(F.FROZEN_OWN_NO, msg) or answered_no)
+    if field == "service_type":
+        return bool(re.search(F.FROZEN_NON_ROOF if value == "other" else F.FROZEN_SERVICE[value], msg))
+    return None
+
+
+GRID_MSGS = ["my roof has a leak", "I own the house", "I rent", "yes", "no", "please fix my gutter", "new roof please",
+             "can you inspect it", "solar panels", "just the roof", "I'm a tenant", "I don't own it", "hello"]
+
+
+@pytest.mark.parametrize("msg", GRID_MSGS)
+def test_grounding_equivalence(roofing_pack, msg):
+    for value in ("repair", "replacement", "inspection", "other"):
+        assert policy.is_grounded(roofing_pack, "service_type", value, msg) == _old_grounded("service_type", value, msg)
+    for value in (True, False):
+        for asked in ("", "Do you own the property?"):
+            assert policy.is_grounded(roofing_pack, "is_owner", value, msg, asked) == _old_grounded("is_owner", value, msg, asked)
+
+
+def _old_supported(answer, faq_texts):
+    vocab = policy._tokens(" ".join(faq_texts)) | F.FROZEN_GENERIC
+    words = re.findall(r"[a-z]{4,}", answer.lower())
+    return not words or sum(not policy._same_word(w, vocab) for w in words) / len(words) <= 0.4
+
+
+@pytest.mark.parametrize("answer", ["The roof is free", "Summit Roofing serves Denver", "We are licensed and insured roofing",
+                                    "It takes about 45 minutes", "Thanks, happy to help with the roof inspection"])
+def test_answer_supported_equivalence(roofing_pack, answer):
+    faq = ["The inspection takes about 45 to 60 minutes."]
+    assert policy.answer_supported(answer, faq, roofing_pack) == _old_supported(answer, faq)
+
+
+def test_answer_supported_without_pack_keeps_core_stopwords_only():
+    assert policy.answer_supported("roof roof roof roof", ["nothing here"]) is False  # roof is a pack stopword
+
+
+# ---- cache: tenants never share packs (T-03-14) ----
+def test_cache_interleaved_tenants_and_reload(tmp_path, monkeypatch):
+    from .pack import _CACHE
+    biz = tmp_path
+    real = settings.businesses_dir / "summit-roofing"
+    monkeypatch.setattr(settings, "businesses_dir", tmp_path)
+    other = "00000000-0000-0000-0000-0000000000c2"
+    shutil.copytree(real, biz / "summit-roofing")
+    write_pack(biz)
+    with db.system() as c:
+        c.execute(text("INSERT INTO tenants (id, slug, name, timezone, pack_slug) VALUES (:t, 'test-cache', 'C', 'UTC', :p) "
+                       "ON CONFLICT (id) DO UPDATE SET pack_slug = :p"), {"t": other, "p": SLUG})
+    a1, b1 = get_pack(), get_pack(other)
+    a2, b2 = get_pack(), get_pack(other)
+    assert (a1.slug, b1.slug) == ("summit-roofing", SLUG) and a1 is a2 and b1 is b2
+    path = biz / SLUG / "messages.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["safe_fallback"] = "changed fallback"
+    path.write_text(yaml.safe_dump(data, sort_keys=False))
+    b3 = get_pack(other)
+    assert b3.hash != b1.hash and b3.messages.safe_fallback == "changed fallback"
+    assert len([k for k in _CACHE if k[0] == other]) == 1
+    assert get_pack().slug == "summit-roofing"
+
+
+# ---- no business globals in core modules (PACK-07) ----
+CORE = ("policy.py", "agent.py", "tools.py", "faq.py", "admin.py")
+OLD_NAMES = {"SERVICE_AREA", "QUALIFYING_SERVICES", "MAX_TIMELINE_MONTHS", "SAFE_FALLBACK", "ASK", "_OWN_YES", "_OWN_NO",
+             "_SERVICE", "_NON_ROOF", "FAQ", "SLOT_HOURS", "SLOT_DAYS_AHEAD"}
+
+
+@pytest.mark.parametrize("name", CORE)
+def test_no_globals(name):
+    src = (Path(__file__).parent / name).read_text()
+    assert not re.findall(r"summit|roof(?!desk)|denver", src, re.I)
+    assigned = {t.id for n in ast.parse(src).body if isinstance(n, (ast.Assign, ast.AnnAssign))
+                for t in (n.targets if isinstance(n, ast.Assign) else [n.target]) if isinstance(t, ast.Name)}
+    assert not assigned & OLD_NAMES

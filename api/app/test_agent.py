@@ -170,3 +170,28 @@ def test_retrying_a_message_after_a_failed_turn_does_not_save_it_twice(monkeypat
     with engine.connect() as c:
         n = c.execute(text("SELECT count(*) FROM messages WHERE conversation_id=:c AND role='user'"), {"c": cid}).scalar()
     assert n == 1
+
+
+def _force_state(cid, st):
+    with engine.begin() as c:
+        c.execute(text("UPDATE conversations SET state=:s WHERE id=:i"), {"s": st, "i": cid})
+
+
+@pytest.mark.parametrize("st", ["DONE", "DISQUALIFY"])
+def test_closed_conversation_still_escalates_safety(monkeypatch, st):
+    monkeypatch.setattr(llm, "chat", lambda m: pytest.fail("LLM must not be called"))
+    cid, _ = agent.handle_turn("let me speak to a real person")
+    _force_state(cid, st)
+    _, reply = agent.handle_turn("there is a gas leak and my roof is on fire", cid)
+    assert state(cid).state == "ESCALATE" and "follow up" in reply
+    with engine.connect() as c:
+        reasons = [r[0] for r in c.execute(text("SELECT reason FROM escalations WHERE conversation_id=:i"), {"i": cid})]
+    assert "safety" in reasons
+
+
+def test_closed_conversation_plain_message_gets_closed_reply(monkeypatch):
+    monkeypatch.setattr(llm, "chat", lambda m: pytest.fail("LLM must not be called"))
+    cid, _ = agent.handle_turn("let me speak to a real person")
+    _force_state(cid, "DONE")
+    _, reply = agent.handle_turn("thanks a lot", cid)
+    assert "booked" in reply and state(cid).state == "DONE"
