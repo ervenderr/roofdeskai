@@ -1,0 +1,418 @@
+{
+  "id": "daily-brief",
+  "name": "Daily brief",
+  "active": true,
+  "nodes": [
+    {
+      "id": "hourly",
+      "name": "Hourly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "manual",
+      "name": "Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "id": "list-tenants",
+      "name": "List tenants",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/admin/tenants",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        220,
+        100
+      ]
+    },
+    {
+      "id": "each-tenant",
+      "name": "Each tenant",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        440,
+        100
+      ]
+    },
+    {
+      "id": "check-key",
+      "name": "Check key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const id = $input.first().json.id;\nconst keys = JSON.parse($env.TENANT_API_KEYS || '{}');\nif (!keys[id]) throw new Error('no key for tenant ' + id);  // never log the map\nreturn [{ json: $input.first().json }];"
+      },
+      "position": [
+        660,
+        100
+      ]
+    },
+    {
+      "id": "tenant-me",
+      "name": "Tenant me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/tenant/me",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Each tenant').first().json.id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        880,
+        100
+      ]
+    },
+    {
+      "id": "gate",
+      "name": "Gate",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0",
+              "leftValue": "={{ ($json.enabled_modules || []).includes('connectors') && !!$json.owner_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1100,
+        100
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "due",
+      "name": "Due",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/daily-brief/due",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Each tenant').first().json.id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1320,
+        100
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "is-due",
+      "name": "Is due",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0",
+              "leftValue": "={{ (($json.due || []).length > 0) && ($('Gate').first().json.enabled_modules || []).includes('connectors') && !!$('Gate').first().json.owner_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1540,
+        100
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "brief",
+      "name": "Brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/daily-brief",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$json.due[0].tenant_id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        1760,
+        100
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "send-mail",
+      "name": "Send brief",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({From: {Email: 'no-reply@roofdesk.test', Name: $('Gate').first().json.name}, To: $json.text ? [{Email: $('Gate').first().json.owner_email}] : [], Subject: 'Daily brief ' + $json.local_date + ': ' + $('Gate').first().json.name, Text: $json.text, HTML: $json.html}) }}"
+      },
+      "position": [
+        1980,
+        100
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "loop-end",
+      "name": "Loop end",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: {} }];"
+      },
+      "position": [
+        2200,
+        100
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "note",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "Hourly; the API decides who is due (POST /daily-brief/due), n8n never computes local time. The owner/module gate runs BEFORE POST /daily-brief because that call writes brief_runs and makes the tenant not-due for the local date. Residual risk: a mail failure after the row is written means no retry (at most once); the operator re-runs with POST /daily-brief {\"force\": true}.",
+        "height": 200,
+        "width": 520
+      },
+      "position": [
+        0,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Hourly": {
+      "main": [
+        [
+          {
+            "node": "List tenants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual": {
+      "main": [
+        [
+          {
+            "node": "List tenants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List tenants": {
+      "main": [
+        [
+          {
+            "node": "Each tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Each tenant": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check key": {
+      "main": [
+        [
+          {
+            "node": "Tenant me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tenant me": {
+      "main": [
+        [
+          {
+            "node": "Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gate": {
+      "main": [
+        [
+          {
+            "node": "Due",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Due": {
+      "main": [
+        [
+          {
+            "node": "Is due",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is due": {
+      "main": [
+        [
+          {
+            "node": "Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brief": {
+      "main": [
+        [
+          {
+            "node": "Send brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send brief": {
+      "main": [
+        [
+          {
+            "node": "Loop end",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop end": {
+      "main": [
+        [
+          {
+            "node": "Each tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler",
+    "saveDataSuccessExecution": "none"
+  }
+}

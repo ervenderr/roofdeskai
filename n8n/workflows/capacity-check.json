@@ -1,0 +1,658 @@
+{
+  "id": "capacity-check",
+  "name": "Capacity check",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "capacity-check",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "capacity-check"
+    },
+    {
+      "id": "normalize",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst b = j.body ?? j;\nconst q = j.query ?? {};\nconst tid = b.tenant_id ?? q.tenant_id;\nif (!tid || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(tid))) throw new Error('payload needs a valid tenant_id');\n\nconst out = { tenant_id: String(tid) };\nfor (const k of ['bookings','staff_overrides','first','last']) if (b[k] !== undefined) out[k] = b[k];\nreturn [{ json: out }];"
+      },
+      "position": [
+        220,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "reject-bad-payload",
+      "name": "Reject bad payload",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({error: $json.error?.message || 'bad payload'}) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "id": "check-hook",
+      "name": "Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/capacity/check",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$json.tenant_id] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const { tenant_id, ...rest } = $json; return JSON.stringify(rest); })() }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.statusCode === 200 ? {checked_shifts: $json.body.checked_shifts, flags: (($json.body?.flags || []).filter(f => ['new','reflagged'].includes(f.status))).length} : $json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      },
+      "position": [
+        660,
+        -100
+      ]
+    },
+    {
+      "id": "hook-alerts",
+      "name": "Has alerts",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0",
+              "leftValue": "={{ (($json.statusCode === 200) && ((($json.body?.flags || []).filter(f => ['new','reflagged'].includes(f.status))).length > 0)) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        660,
+        100
+      ]
+    },
+    {
+      "id": "owner-tenant-me",
+      "name": "Owner tenant me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/tenant/me",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Normalize').first().json.tenant_id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        880,
+        100
+      ]
+    },
+    {
+      "id": "require-owner",
+      "name": "Require owner",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const me = $input.first().json;\nif (!me.owner_email) throw new Error('no owner email for tenant ' + me.slug + ' (set pack meta owner_email or OWNER_EMAIL)');\nreturn [{ json: me }];"
+      },
+      "position": [
+        1100,
+        100
+      ]
+    },
+    {
+      "id": "notify-owner",
+      "name": "Notify owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const a = $('Check').first().json.body.flags.filter(f => ['new','reflagged'].includes(f.status)); return JSON.stringify({From: {Email: 'no-reply@roofdesk.test', Name: $json.name}, To: [{Email: $json.owner_email}], Subject: 'Capacity flags: ' + a.length, Text: 'Capacity flags (' + a.length + '):\\n' + a.map(f => f.date + ' ' + f.shift_id + ': staff ' + f.staff + ', covers ' + f.covers + ', capacity ' + f.capacity + ' [' + f.status + ']').join('\\n')}); })() }}"
+      },
+      "position": [
+        1320,
+        100
+      ]
+    },
+    {
+      "id": "nightly",
+      "name": "Nightly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3 * * *"
+            }
+          ]
+        }
+      },
+      "position": [
+        0,
+        500
+      ]
+    },
+    {
+      "id": "manual",
+      "name": "Manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {},
+      "position": [
+        0,
+        700
+      ]
+    },
+    {
+      "id": "list-tenants",
+      "name": "List tenants",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/admin/tenants",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Admin-Key",
+              "value": "={{ $env.ADMIN_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        220,
+        600
+      ]
+    },
+    {
+      "id": "each-tenant",
+      "name": "Each tenant",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "position": [
+        440,
+        600
+      ]
+    },
+    {
+      "id": "check-key",
+      "name": "Check key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const id = $input.first().json.id;\nconst keys = JSON.parse($env.TENANT_API_KEYS || '{}');\nif (!keys[id]) throw new Error('no key for tenant ' + id);  // never log the map\nreturn [{ json: $input.first().json }];"
+      },
+      "position": [
+        660,
+        600
+      ]
+    },
+    {
+      "id": "tenant-me",
+      "name": "Tenant me",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.API_URL }}/tenant/me",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$('Each tenant').first().json.id] }}"
+            }
+          ]
+        }
+      },
+      "position": [
+        880,
+        600
+      ]
+    },
+    {
+      "id": "gate",
+      "name": "Gate",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0",
+              "leftValue": "={{ ($json.enabled_modules || []).includes('capacity') && !!$json.owner_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1100,
+        600
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "check-night",
+      "name": "Nightly check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/capacity/check",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$json.tenant_id] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        1320,
+        600
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "night-alerts",
+      "name": "Night alerts",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c0",
+              "leftValue": "={{ $json.statusCode === 200 && !!$('Gate').first().json.owner_email && ((($json.body?.flags || []).filter(f => ['new','reflagged'].includes(f.status))).length > 0) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "position": [
+        1540,
+        600
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "id": "night-mail",
+      "name": "Night mail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "http://mailpit:8025/api/v1/send",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const a = ($json.body?.flags || []).filter(f => ['new','reflagged'].includes(f.status)); return JSON.stringify({From: {Email: 'no-reply@roofdesk.test', Name: $('Gate').first().json.name}, To: a.length ? [{Email: $('Gate').first().json.owner_email}] : [], Subject: 'Capacity flags: ' + a.length, Text: 'Capacity flags (' + a.length + '):\\n' + a.map(f => f.date + ' ' + f.shift_id + ': staff ' + f.staff + ', covers ' + f.covers + ', capacity ' + f.capacity + ' [' + f.status + ']').join('\\n')}); })() }}"
+      },
+      "position": [
+        1760,
+        600
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "loop-end",
+      "name": "Loop end",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{ json: {} }];"
+      },
+      "position": [
+        1980,
+        600
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "note",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "Only flags with status new or reflagged are mailed; a non-200 from the API is skipped, not retried. A source_unavailable reply carries no flags, so nothing is sent. Nightly lane: tenants without the capacity module or an owner address are skipped.",
+        "height": 160,
+        "width": 520
+      },
+      "position": [
+        0,
+        900
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject bad payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has alerts": {
+      "main": [
+        [
+          {
+            "node": "Owner tenant me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner tenant me": {
+      "main": [
+        [
+          {
+            "node": "Require owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require owner": {
+      "main": [
+        [
+          {
+            "node": "Notify owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nightly": {
+      "main": [
+        [
+          {
+            "node": "List tenants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual": {
+      "main": [
+        [
+          {
+            "node": "List tenants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List tenants": {
+      "main": [
+        [
+          {
+            "node": "Each tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Each tenant": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Check key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check key": {
+      "main": [
+        [
+          {
+            "node": "Tenant me",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tenant me": {
+      "main": [
+        [
+          {
+            "node": "Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gate": {
+      "main": [
+        [
+          {
+            "node": "Nightly check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nightly check": {
+      "main": [
+        [
+          {
+            "node": "Night alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Night alerts": {
+      "main": [
+        [
+          {
+            "node": "Night mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Night mail": {
+      "main": [
+        [
+          {
+            "node": "Loop end",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop end": {
+      "main": [
+        [
+          {
+            "node": "Each tenant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler",
+    "saveDataSuccessExecution": "none"
+  }
+}

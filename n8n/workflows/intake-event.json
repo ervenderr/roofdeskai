@@ -1,0 +1,168 @@
+{
+  "id": "intake-event",
+  "name": "Intake event",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "intake-event",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "intake-event"
+    },
+    {
+      "id": "normalize",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nconst b = j.body ?? j;\nconst q = j.query ?? {};\nconst tid = b.tenant_id ?? q.tenant_id;\nif (!tid || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(tid))) throw new Error('payload needs a valid tenant_id');\nif (!['waiver','checkin','result'].includes(b.event)) throw new Error('event must be waiver, checkin or result');\nif (!b.payload || typeof b.payload !== 'object' || Array.isArray(b.payload)) throw new Error('payload must be an object');\nreturn [{ json: { tenant_id: String(tid), event: b.event, payload: b.payload } }];"
+      },
+      "position": [
+        220,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "reject-bad-payload",
+      "name": "Reject bad payload",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({error: $json.error?.message || 'bad payload'}) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "position": [
+        440,
+        200
+      ]
+    },
+    {
+      "id": "post-event",
+      "name": "Post event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_URL }}/intake_event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ JSON.parse($env.TENANT_API_KEYS)[$json.tenant_id] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ event: $json.event, payload: $json.payload }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      },
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "id": "note",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "parameters": {
+        "content": "Passes the API status and body back to the sender (a 422 mapping error reaches the caller). No mail, no payload logging. Success executions are not stored (payloads are PII); retention is owned by Phase 9. Internal port: the caller names the tenant.",
+        "height": 160,
+        "width": 480
+      },
+      "position": [
+        0,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Post event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject bad payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post event": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "error-handler",
+    "saveDataSuccessExecution": "none"
+  }
+}
