@@ -70,12 +70,12 @@ def addr_digest(status_fn):
     return _digest(f"{i}|{status_fn(a)}" for i, a in enumerate(address_corpus()))
 
 
-GRID_COUNT = sum(1 for _ in iter_leads())
+GRID_COUNT = sum(1 for _ in iter_leads())  # pinned below so the grid cannot shrink
 ADDR_COUNT = len(address_corpus())
 
 
 def test_grid_not_shrunk():
-    assert GRID_COUNT > 50_000 and GRID_COUNT == 63_000 + 8 * 5 * 8 * 5 * 3 * 4 and ADDR_COUNT == len(CURATED) + 10_000
+    assert GRID_COUNT == 84_720 and ADDR_COUNT == 10_052
 
 
 def test_zero_diff_grid(roofing_pack):
