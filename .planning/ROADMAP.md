@@ -81,7 +81,14 @@ Plans:
   2. Roofing scores 94/96 with the same two failures
   3. Dental pack (`bright-smile-dental`, synthetic data) has about 40 scenarios, no category under 90%, and emergency escalation recall 100%
   4. Interleaved two-tenant conversations and cross-tenant retrieval scenarios show zero leakage
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 05-01-PLAN.md — per-pack runner, ensure_tenant, scenario move, roofing gate subset
+- [ ] 05-02-PLAN.md — dental pack YAML, loader and deterministic emergency-recall tests, CHF claim guard
+- [ ] 05-03-PLAN.md — 43 dental scenarios with validation tests
+- [ ] 05-04-PLAN.md — two-tenant isolation tests
+- [ ] 05-05-PLAN.md — dental full run, bounded tuning, baseline if gates met
+- [ ] 05-06-PLAN.md — roofing full gate 94/96, dental gate/flake, phase summary
 
 ### Phase 6: Per-Tenant Keys and RLS Enforcement
 **Goal**: Tenants are isolated by credential and by the database, so multi-tenant exposure is safe.
