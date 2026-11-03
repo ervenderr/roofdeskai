@@ -1,3 +1,4 @@
+from pathlib import Path
 import uuid
 
 import pytest
@@ -331,3 +332,9 @@ def test_cannot_continue_other_tenants_conversation(tb, monkeypatch):
 def test_outreach_llm_calls_stay_untenanted():
     with db.system() as c:
         assert c.execute(text("SELECT count(*) FROM llm_calls WHERE tenant_id IS NOT NULL AND conversation_id IS NULL")).scalar() == 0
+
+
+@pytest.mark.parametrize("name", ["tools.py", "faq.py", "agent.py", "main.py"])
+def test_no_raw_engine_calls(name):
+    src = (Path(__file__).parent / name).read_text()
+    assert "engine.begin(" not in src and "engine.connect(" not in src
