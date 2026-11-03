@@ -255,7 +255,7 @@ FILES = {"pack": PackMeta, "calendar": Calendar, "qualification": Qualification,
 def pack_hash(root: Path) -> str:
     h = hashlib.sha256()
     for p in sorted(root.rglob("*")):
-        if p.is_file():
+        if p.is_file() and p.relative_to(root).parts[0] != "scenarios":  # scenarios are eval data, not the pack
             h.update(p.relative_to(root).as_posix().encode() + b"\0" + p.read_bytes())
     return h.hexdigest()
 

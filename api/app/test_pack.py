@@ -72,6 +72,18 @@ def test_minimal_pack_loads(biz):
     assert p.slug == SLUG and p.meta.business == "Demo Biz" and len(p.hash) == 64
 
 
+def test_pack_hash_ignores_scenarios(biz):
+    write_pack(biz)
+    h0 = load_pack(SLUG).hash
+    (biz / SLUG / "scenarios").mkdir()
+    (biz / SLUG / "scenarios" / "x.yaml").write_text("- id: a\n")
+    assert load_pack(SLUG).hash == h0
+    (biz / SLUG / "scenarios" / "x.yaml").write_text("- id: b\n")
+    assert load_pack(SLUG).hash == h0
+    (biz / SLUG / "faq.yaml").write_text((biz / SLUG / "faq.yaml").read_text() + "\n# changed\n")
+    assert load_pack(SLUG).hash != h0
+
+
 def _rule(q, rid):
     return next(r for r in q["rules"] if r["id"] == rid)
 
