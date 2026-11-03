@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 
-from . import llm, mailer, policy, speech, tools
+from . import llm, mailer, policy, qualify, speech, tools
 from .config import settings
 from .db import record_event, tx
 from .logctx import current_tenant
@@ -81,7 +81,7 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
         return _escalate(cid, "validation_failure", t, pack)
 
     lead = _row("SELECT * FROM leads WHERE id=:i", lead_id, t)
-    verdict = policy.qualification(pack, lead)
+    verdict = qualify.qualify(pack, lead)
 
     if verdict == "disqualified":
         _set_lead_status(lead_id, "disqualified", t)
@@ -116,7 +116,7 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
 
     if state == "GREETING":
         _set_state(cid, "COLLECT", t=t)
-    return _answer(cid, turn, is_question, faq, message, policy.next_question(pack, lead), t, pack)
+    return _answer(cid, turn, is_question, faq, message, qualify.next_question(pack, lead), t, pack)
 
 
 def _answer(cid: int, turn: Turn, is_question: bool, faq: list[str], message: str, follow_up: str, t: str, pack: Pack) -> str:

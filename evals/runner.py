@@ -18,7 +18,7 @@ from pathlib import Path
 import yaml
 from sqlalchemy import text
 
-from app import policy
+from app import qualify
 from app.agent import PROMPT, handle_turn
 from app.config import settings
 from app.config import settings
@@ -94,7 +94,7 @@ def run_scenario(sc: dict) -> dict:
                                           {"i": cid})}
         lead = dict(c.execute(text("SELECT * FROM leads WHERE id=:i"), {"i": convo["lead_id"]}).mappings().one())
         booked = c.execute(text("SELECT count(*) FROM appointments WHERE lead_id=:i"), {"i": convo["lead_id"]}).scalar()
-    invalid_booking = bool(booked) and policy.qualification(get_pack(settings.default_tenant_id), lead) != "qualified"
+    invalid_booking = bool(booked) and qualify.qualify(get_pack(settings.default_tenant_id), lead) != "qualified"
     return {"cid": cid, "replies": replies, "times": times, "called": called, "invalid_booking": invalid_booking, **convo}
 
 
