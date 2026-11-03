@@ -10,12 +10,13 @@ import httpx
 import openai
 from sqlalchemy import text
 
-from . import llm
+from . import llm, mailer
 from .config import settings
 from .db import record_event, tx
 from .faq import vector_literal
 from .pack import Calendar, get_pack
 from .schemas import LeadFields
+from .tenants import owner_email
 
 log = logging.getLogger("leadpilot.tools")
 
@@ -147,20 +148,34 @@ def escalate_to_human(conversation_id: int, reason: str, tenant_id: str) -> dict
 
 
 def _notify_escalation(conversation_id: int, reason: str, tenant_id: str) -> None:
-    """Fire-and-forget alert to n8n for web-chat escalations. Carries no customer data, only a link. A failure never blocks the handoff."""
-    if not settings.escalation_webhook_url:
-        return
+    """Alert for web-chat escalations: n8n webhook when configured and healthy, else direct mail to the owner.
+    Carries no customer data, only a link. A failure never blocks the handoff."""
     with tx(tenant_id) as c:
         channel = c.execute(text("SELECT channel FROM conversations WHERE id=:i AND tenant_id=:t"),
                             {"i": conversation_id, "t": _tid(tenant_id)}).scalar()
     if channel != "web":  # n8n-fronted channels (sms/email) branch on the inbound response instead; avoid double alerts
         return
+    link = f"{settings.public_url}/conversations/{conversation_id}"
+    if settings.escalation_webhook_url:
+        try:
+            r = httpx.post(settings.escalation_webhook_url, timeout=3, json={
+                "tenant_id": str(tenant_id), "conversation_id": conversation_id, "reason": reason, "link": link})
+            r.raise_for_status()
+            return
+        except httpx.HTTPError as e:
+            log.warning("escalation webhook for conversation %s failed: %s", conversation_id, type(e).__name__)
+    _mail_owner(conversation_id, reason, link, tenant_id)
+
+
+def _mail_owner(conversation_id: int, reason: str, link: str, tenant_id: str) -> None:
+    owner = owner_email(get_pack(tenant_id))
+    if not owner:
+        log.warning("escalation for conversation %s: no owner email configured", conversation_id)
+        return
     try:
-        httpx.post(settings.escalation_webhook_url, timeout=3, json={
-            "conversation_id": conversation_id, "reason": reason,
-            "link": f"{settings.public_url}/conversations/{conversation_id}"})
-    except httpx.HTTPError as e:
-        log.warning("escalation alert for conversation %s failed: %s", conversation_id, type(e).__name__)
+        mailer.send(owner, f"Escalation ({reason}): conversation {conversation_id}", f"A customer needs a human.\nConversation: {link}")
+    except mailer.MailError:
+        log.exception("escalation mail for conversation %s failed", conversation_id)
 
 
 def run(cid: int, name: str, args: dict, fn, *, tenant_id: str) -> tuple[bool, dict]:

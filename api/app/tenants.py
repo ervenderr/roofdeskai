@@ -1,6 +1,7 @@
 """Tenant directory helpers. Pure get-or-create; no HTTP, no keys (Phase 6)."""
 from sqlalchemy import text
 
+from .config import settings
 from .db import system, tx
 from .faq import seed_faq
 from .pack import PackError, get_pack, load_pack
@@ -25,3 +26,8 @@ def sync_faq(t: str) -> None:
         have = sorted(r[0] for r in c.execute(text("SELECT text FROM faq_chunks WHERE tenant_id=:t"), {"t": t}))
     if have != want:
         seed_faq(t, reload=True)
+
+
+def owner_email(pack) -> str | None:
+    """Per-tenant pack address, else the global OWNER_EMAIL; empty counts as unset."""
+    return pack.meta.owner_email or settings.owner_email or None

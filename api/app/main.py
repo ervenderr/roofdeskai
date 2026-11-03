@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from .admin import router as admin_router
 from .tenant_admin import router as tenant_admin_router
+from .tenant_routes import router as tenant_router
 from .bootstrap import bootstrap_schema
 from .drafts import router as drafts_router
 from .quotes import router as quotes_router
@@ -55,6 +56,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="RoofDesk AI", lifespan=lifespan)
 app.include_router(admin_router)
 app.include_router(tenant_admin_router)
+app.include_router(tenant_router)
 app.include_router(outreach_router)
 app.include_router(pilot_router)
 app.include_router(intake_router)

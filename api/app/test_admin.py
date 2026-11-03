@@ -1,5 +1,6 @@
 import uuid
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -89,7 +90,7 @@ def test_escalation_alert_only_fires_for_web_chat(client, monkeypatch):
     from . import agent, tools
     sent = []
     monkeypatch.setattr(settings, "escalation_webhook_url", "http://n8n.test/hook")
-    monkeypatch.setattr(tools.httpx, "post", lambda url, **kw: sent.append(kw["json"]))
+    monkeypatch.setattr(tools.httpx, "post", lambda url, **kw: sent.append(kw["json"]) or httpx.Response(200, request=httpx.Request("POST", url)))
     web, _ = agent.handle_turn("let me speak to a real person", tenant_id=T)
     sms, _ = agent.handle_turn("let me speak to a real person", external_id="sms:alert-test", channel="sms", tenant_id=T)
     assert [s["conversation_id"] for s in sent] == [web]
