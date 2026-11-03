@@ -1,4 +1,5 @@
 """MOD-06: review reply post-check (pure) and POST /reviews/draft."""
+import json
 from pathlib import Path
 
 import pytest
@@ -125,3 +126,146 @@ def test_shipped_packs_have_no_reviews_block():
 def test_reviews_model_rejects_unknown_key():
     with pytest.raises(Exception):
         Reviews(tone="x", signature="y", forbidden_topics=[], surprise=1)
+
+
+# ---- POST /reviews/draft ----
+import inspect
+import re
+
+from fastapi.testclient import TestClient
+from sqlalchemy import text
+
+from . import auth, db, llm, ratelimit
+from .config import settings
+from .engine import reviews as reviews_mod
+from .main import app
+from . import reviews_routes
+
+REVIEW = {"review_text": "Fun room but the host was late.", "rating": 3, "platform": "google"}
+OK = "Thank you for your feedback. We're sorry to hear the start was delayed. The Demo Venue team"
+BADR = "We will refund you in full."
+
+
+@pytest.fixture(autouse=True)
+def _reset_limiter():
+    ratelimit._hits.clear()
+
+
+@pytest.fixture
+def client():
+    return TestClient(app)
+
+
+@pytest.fixture
+def h(venue_tenant):
+    def wipe():
+        with db.system() as c:
+            c.execute(text("DELETE FROM drafts WHERE tenant_id = :t"), {"t": venue_tenant})
+    wipe()
+    yield {"X-API-Key": auth.issue_key(venue_tenant)["key"]}
+    wipe()
+
+
+def script(monkeypatch, *outputs):
+    calls, it = [], iter(outputs)
+
+    def fake(messages, providers=None):
+        calls.append(messages)
+        out = next(it)
+        if isinstance(out, Exception):
+            raise out
+        return {"content": out, "model": "fake"}
+
+    monkeypatch.setattr(llm, "chat", fake)
+    return calls
+
+
+def count(t):
+    with db.tx(t) as c:
+        return c.execute(text("SELECT count(*) FROM drafts")).scalar()
+
+
+def test_passing_draft_is_pending(client, h, monkeypatch):
+    calls = script(monkeypatch, OK)
+    r = client.post("/reviews/draft", json=REVIEW, headers=h)
+    assert r.status_code == 200, r.text
+    b = r.json()
+    assert b["status"] == "pending" and b["kind"] == "review_reply" and b["payload"]["reply_text"] == OK and b["deduped"] is False
+    p = json.dumps(calls[0])
+    assert "<review>" in p and "Fun room" in p
+
+
+def test_regenerate_once_then_pending(client, h, monkeypatch):
+    calls = script(monkeypatch, BADR, OK)
+    b = client.post("/reviews/draft", json=REVIEW, headers=h).json()
+    assert b["status"] == "pending" and len(calls) == 2
+    retry = calls[1][-1]["content"]  # codes only, never the rejected text
+    assert "compensation" in retry and "refund" not in retry
+
+
+def test_two_bad_is_needs_human_without_reply_text(client, h, venue_tenant, monkeypatch):
+    calls = script(monkeypatch, BADR, "Our fault, 20% off, mail a@b.co")
+    b = client.post("/reviews/draft", json=REVIEW, headers=h).json()
+    assert b["status"] == "needs_human" and len(calls) == 2
+    p = b["payload"]
+    assert p["attempts"] == 2 and "compensation" in p["violations"] and "reply_text" not in p
+    with db.tx(venue_tenant) as c:
+        raw = json.dumps([dict(r) for r in c.execute(text("SELECT payload FROM drafts")).mappings()], default=str)
+        ev = json.dumps([dict(r) for r in c.execute(text("SELECT payload FROM agent_events WHERE kind='draft_created' ORDER BY id DESC LIMIT 1")).mappings()], default=str)
+    assert "refund" not in raw and "a@b.co" not in raw and "refund" not in ev
+
+
+def test_llm_down_is_502_and_no_row(client, h, venue_tenant, monkeypatch):
+    script(monkeypatch, RuntimeError("down"))
+    assert client.post("/reviews/draft", json=REVIEW, headers=h).status_code == 502
+    assert count(venue_tenant) == 0
+
+
+def test_dedupe(client, h, venue_tenant, monkeypatch):
+    script(monkeypatch, OK, OK)
+    a = client.post("/reviews/draft", json=REVIEW, headers=h).json()
+    b = client.post("/reviews/draft", json=REVIEW, headers=h).json()
+    assert b["deduped"] is True and a["id"] == b["id"] and count(venue_tenant) == 1
+
+
+def test_all_ratings_same_path(client, h, monkeypatch):
+    seen = set()
+    for n in range(1, 6):
+        script(monkeypatch, BADR, OK)
+        b = client.post("/reviews/draft", json={**REVIEW, "rating": n}, headers=h).json()
+        seen.add((b["status"], tuple(b["payload"].get("violations", []))))
+    assert len(seen) == 1
+
+
+def test_no_rating_branching_and_no_http_client():
+    for mod in (reviews_mod, reviews_routes):
+        src = inspect.getsource(mod)
+        assert not re.search(r"\brating\b\s*(==|!=|<=|>=|<|>|\bin\b)", src), mod.__name__
+        assert not re.search(r"\b(if|elif|while)\b[^\n]*\brating\b", src), mod.__name__
+        assert not re.search(r"^\s*(import|from)\s+(httpx|requests|urllib|aiohttp|smtplib|openai)", src, re.M), mod.__name__
+
+
+def test_no_reviews_block_is_404(client, roofing_tenant, monkeypatch):
+    script(monkeypatch)
+    hh = {"X-API-Key": auth.issue_key(roofing_tenant)["key"]}
+    r = client.post("/reviews/draft", json=REVIEW, headers=hh)
+    assert r.status_code == 404 and r.json()["detail"] == "module not enabled"
+
+
+def test_admin_key_alone_is_401(client, monkeypatch):
+    monkeypatch.setattr(settings, "admin_api_key", "adm")
+    assert client.post("/reviews/draft", json=REVIEW, headers={"X-Admin-Key": "adm"}).status_code == 401
+
+
+def test_rate_limit_429(client, h, monkeypatch):
+    monkeypatch.setattr(settings, "module_llm_rate_per_min", 1)
+    script(monkeypatch, OK, OK)
+    assert client.post("/reviews/draft", json=REVIEW, headers=h).status_code == 200
+    assert client.post("/reviews/draft", json={**REVIEW, "review_text": "other"}, headers=h).status_code == 429
+
+
+@pytest.mark.parametrize("body", [{}, {**REVIEW, "rating": 0}, {**REVIEW, "rating": 6}, {**REVIEW, "platform": "yelp"},
+                                  {**REVIEW, "review_text": ""}, {**REVIEW, "review_text": "x" * 4001}, {**REVIEW, "extra": 1}])
+def test_bad_body_is_422(client, h, monkeypatch, body):
+    script(monkeypatch)
+    assert client.post("/reviews/draft", json=body, headers=h).status_code == 422
