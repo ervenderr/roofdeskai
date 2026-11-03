@@ -64,6 +64,14 @@ def test_unsupported_claim():
     assert not policy.unsupported_claim("Happy to help!", kb)
 
 
+def test_unsupported_claim_chf():
+    kb = ["Prices depend on the treatment."]
+    assert policy.unsupported_claim("A whitening costs CHF 450.", kb)
+    assert policy.unsupported_claim("450 francs", kb)
+    assert policy.unsupported_claim("CHF 1'200", kb)
+    assert not policy.unsupported_claim("We offer cleanings.", kb)
+
+
 def test_update_lead_schema_rejects_unknown_and_bad_values():
     with pytest.raises(ValidationError):
         LeadFields.model_validate({"status": "booked"})
