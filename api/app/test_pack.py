@@ -408,9 +408,9 @@ def test_slots_buffer_drops_starts():
     from datetime import datetime, timezone
     from .tools import slot_instants
     now = datetime(2026, 11, 2, 10, tzinfo=timezone.utc)
-    # 9-10, gap 1h to 11: buffer 120 drops 11, keeps 14 (4h after 10)
+    # 9-10, gaps 1h/3h/1h: buffer 120 drops 11 and 16, keeps 14
     got = {s.hour for s, _ in slot_instants(_cal(buffer_minutes=120, days_ahead=1), now)}
-    assert got == {9, 14, 16}
+    assert got == {9, 14}
 
 
 def test_ensure_slots_live():

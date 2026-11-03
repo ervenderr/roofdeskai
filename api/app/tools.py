@@ -3,6 +3,8 @@ import json
 import logging
 import re
 import time
+from datetime import datetime, time as dtime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import httpx
 import openai
@@ -12,6 +14,7 @@ from . import llm
 from .config import settings
 from .db import record_event, tx
 from .faq import vector_literal
+from .pack import Calendar, get_pack
 from .schemas import LeadFields
 
 log = logging.getLogger("leadpilot.tools")
@@ -21,8 +24,23 @@ class ToolError(Exception):
     pass
 
 
-SLOT_HOURS = (9, 11, 14, 16)
-SLOT_DAYS_AHEAD = 14
+def slot_instants(cal: Calendar, now: datetime) -> list[tuple[datetime, datetime]]:
+    """Pure: UTC (start, end) pairs for tomorrow..days_ahead in the calendar's zone. A buffer drops starts too close to the previous slot's end."""
+    tz = ZoneInfo(cal.timezone)
+    today = now.astimezone(tz).date()
+    out = []
+    for i in range(1, cal.days_ahead + 1):
+        day = today + timedelta(days=i)
+        if cal.weekdays_only and day.isoweekday() >= 6:
+            continue
+        last_end = None
+        for h in cal.slot_hours:
+            start = datetime.combine(day, dtime(h), tzinfo=tz).astimezone(timezone.utc)
+            if last_end and start < last_end + timedelta(minutes=cal.buffer_minutes):
+                continue
+            last_end = start + timedelta(minutes=cal.slot_minutes)
+            out.append((start, last_end))
+    return out
 
 
 def _tid(tenant_id: str | None) -> str:
@@ -30,17 +48,18 @@ def _tid(tenant_id: str | None) -> str:
 
 
 def ensure_slots(tenant_id: str | None = None) -> None:
-    """Top up weekday slots (9/11/14/16) for the next 14 days; safe to repeat, so the calendar never runs dry."""
+    """Top up the tenant's pack-defined slots; safe to repeat, so the calendar never runs dry."""
+    t = _tid(tenant_id)
+    rows = slot_instants(get_pack(t).calendar, datetime.now(timezone.utc))
+    if not rows:
+        return
     with tx(tenant_id) as c:
         c.execute(text(
             "INSERT INTO slots (tenant_id, start_time, end_time) "
-            "SELECT :t, d + make_interval(hours => h), d + make_interval(hours => h + 1) "
-            "FROM generate_series(date_trunc('day', now()) + interval '1 day', "
-            "date_trunc('day', now()) + make_interval(days => :n), interval '1 day') d, unnest(:hours) h "
-            "WHERE extract(isodow FROM d) < 6 "
-            "AND NOT EXISTS (SELECT 1 FROM slots s WHERE s.tenant_id = :t AND s.start_time = d + make_interval(hours => h)) "
+            "SELECT :t, s, e FROM unnest(CAST(:starts AS timestamptz[]), CAST(:ends AS timestamptz[])) AS u(s, e) "
+            "WHERE NOT EXISTS (SELECT 1 FROM slots x WHERE x.tenant_id = :t AND x.start_time = s) "
             "ON CONFLICT (tenant_id, start_time) DO NOTHING"),
-            {"n": SLOT_DAYS_AHEAD, "hours": list(SLOT_HOURS), "t": _tid(tenant_id)})
+            {"t": t, "starts": [r[0] for r in rows], "ends": [r[1] for r in rows]})
 
 
 def get_available_slots(limit: int = 5, tenant_id: str | None = None) -> dict:
