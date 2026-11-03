@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from . import llm, mailer, policy
 from .admin import require_admin
 from .config import settings
+from .pack import get_pack
 
 log = logging.getLogger("leadpilot.triage")
 PROMPT = "triage.v1"
@@ -60,13 +61,14 @@ def triage(message: str, profile: dict) -> TriageOut:
     """The model sorts and drafts; code decides when a person must look (legal/safety/anger, low confidence, sensitive category)."""
     category, confidence, draft = _ask(message, profile)
     facts = profile.get("facts", [])
-    if draft and (policy.unsupported_claim(draft, facts) or not policy.answer_supported(draft, facts)):
+    pack = get_pack(settings.default_tenant_id)  # the default client profile's pack: roofing safety regex and stopwords
+    if draft and (policy.unsupported_claim(draft, facts) or not policy.answer_supported(draft, facts, pack)):
         log.warning("triage: draft not supported by the profile facts; replaced")
         draft = SAFE_DRAFT
     if category not in profile["categories"]:
         category, confidence = "other", 0.0
     reason = None
-    if code := policy.escalation_reason(message):
+    if code := policy.escalation_reason(message, pack=pack):
         reason = f"customer message looks {code}"
     elif category == "other" or category in profile.get("always_human", []):  # "other" means we could not sort it
         reason = f"{category} goes to a person"

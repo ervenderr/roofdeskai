@@ -58,7 +58,7 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
     if state == "ESCALATE":
         return pack.messages.closed[state]
     # Safety and legal messages reach a human even after the conversation is closed.
-    reason = policy.escalation_reason(message, only=("safety", "legal") if state in CLOSED_STATES else None)
+    reason = policy.escalation_reason(message, only=("safety", "legal") if state in CLOSED_STATES else None, pack=pack)
     if reason:
         return _escalate(cid, reason, t, pack)
     if state in CLOSED_STATES:
@@ -74,14 +74,14 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
         return _escalate(cid, turn.escalate_reason, t, pack)
 
     asked = next((m["content"] for m in reversed(_history(cid, t)[:-1]) if m["role"] == "assistant"), "")
-    fields, dropped = policy.ground(turn.extracted.model_dump(exclude_none=True, mode="json"), message, asked)
+    fields, dropped = policy.ground(pack, turn.extracted.model_dump(exclude_none=True, mode="json"), message, asked)
     if dropped:
         log.warning("conversation %s: dropped ungrounded fields %s", cid, dropped)
     if fields and not tools.run(cid, "update_lead", {"lead_id": lead_id, "fields": fields}, tools.update_lead, tenant_id=t)[0]:
         return _escalate(cid, "validation_failure", t, pack)
 
     lead = _row("SELECT * FROM leads WHERE id=:i", lead_id, t)
-    verdict = policy.qualification(lead)
+    verdict = policy.qualification(pack, lead)
 
     if verdict == "disqualified":
         _set_lead_status(lead_id, "disqualified", t)
@@ -116,7 +116,7 @@ def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
 
     if state == "GREETING":
         _set_state(cid, "COLLECT", t=t)
-    return _answer(cid, turn, is_question, faq, message, policy.next_question(lead), t, pack)
+    return _answer(cid, turn, is_question, faq, message, policy.next_question(pack, lead), t, pack)
 
 
 def _answer(cid: int, turn: Turn, is_question: bool, faq: list[str], message: str, follow_up: str, t: str, pack: Pack) -> str:
@@ -125,10 +125,10 @@ def _answer(cid: int, turn: Turn, is_question: bool, faq: list[str], message: st
     answer = ""
     if is_question:
         answer = turn.reply.strip() or _faq_answer(cid, message, faq, t, pack)
-        if not answer or not faq or policy.unsupported_claim(answer, faq) or not policy.answer_supported(answer, faq):
+        if not answer or not faq or policy.unsupported_claim(answer, faq) or not policy.answer_supported(answer, faq, pack):
             if answer:
                 log.warning("conversation %s: FAQ answer not supported by the knowledge base; replaced", cid)
-            answer = policy.SAFE_FALLBACK
+            answer = pack.messages.safe_fallback
     return f"{answer} {follow_up}".strip()
 
 

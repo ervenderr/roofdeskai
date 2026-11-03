@@ -24,6 +24,7 @@ from app.config import settings
 from app.config import settings
 from app.db import system, tx
 from app.llm import LLM_TEMPERATURE, load_prompt
+from app.pack import get_pack
 
 HERE = Path(__file__).parent
 BASELINE = HERE / "baselines" / "v1-roofing.json"
@@ -93,7 +94,7 @@ def run_scenario(sc: dict) -> dict:
                                           {"i": cid})}
         lead = dict(c.execute(text("SELECT * FROM leads WHERE id=:i"), {"i": convo["lead_id"]}).mappings().one())
         booked = c.execute(text("SELECT count(*) FROM appointments WHERE lead_id=:i"), {"i": convo["lead_id"]}).scalar()
-    invalid_booking = bool(booked) and policy.qualification(lead) != "qualified"
+    invalid_booking = bool(booked) and policy.qualification(get_pack(settings.default_tenant_id), lead) != "qualified"
     return {"cid": cid, "replies": replies, "times": times, "called": called, "invalid_booking": invalid_booking, **convo}
 
 
