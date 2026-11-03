@@ -66,3 +66,39 @@ def test_001_advances_faq_sequence(scratch_db):
         nxt = c.execute(text("SELECT nextval(pg_get_serial_sequence('faq_chunks','id'))")).scalar()
         mx = c.execute(text("SELECT max(id) FROM faq_chunks")).scalar()
     assert nxt > mx
+
+
+# ---- data-bearing upgrade (002-003) ----
+def _seed_baseline(eng, dup=False):
+    _baseline(eng)
+    with eng.begin() as c:
+        c.execute(text("DELETE FROM slots"))
+        c.execute(text("INSERT INTO leads (name) VALUES ('l')"))
+        c.execute(text("INSERT INTO conversations (lead_id, external_id) SELECT id, 'e' FROM leads"))
+        c.execute(text("INSERT INTO messages (conversation_id, role, content) SELECT id, 'user', 'hi' FROM conversations"))
+        c.execute(text("INSERT INTO llm_calls (conversation_id, model) SELECT id, 'm' FROM conversations"))
+        c.execute(text("INSERT INTO llm_calls (model) VALUES ('outreach')"))
+        c.execute(text("INSERT INTO slots (start_time, end_time) VALUES ('2030-01-01', '2030-01-01')"))
+        if dup:
+            c.execute(text("INSERT INTO slots (start_time, end_time) VALUES ('2030-01-01', '2030-01-01')"))
+
+
+def test_upgrade_preserves_and_backfills(scratch_db):
+    _seed_baseline(scratch_db)
+    bootstrap.bootstrap_schema(scratch_db)
+    with scratch_db.begin() as c:
+        for t in ("leads", "conversations", "messages", "slots"):
+            assert c.execute(text(f"SELECT count(*), count(*) FILTER (WHERE tenant_id=:d) FROM {t}"),
+                             {"d": settings.default_tenant_id}).one() == (1, 1), t
+        assert c.execute(text("SELECT count(*) FROM llm_calls WHERE tenant_id=:d"), {"d": settings.default_tenant_id}).scalar() == 1
+        assert c.execute(text("SELECT count(*) FROM llm_calls WHERE tenant_id IS NULL")).scalar() == 1
+
+
+def test_duplicate_slots_abort_003(scratch_db):
+    _seed_baseline(scratch_db, dup=True)
+    with pytest.raises(Exception, match="duplicate slot"):
+        bootstrap.bootstrap_schema(scratch_db)
+    v = _versions(scratch_db)
+    assert "002_tenant_columns" in v and "003_tenant_keys" not in v
+    with scratch_db.begin() as c:
+        assert c.execute(text("SELECT count(*) FROM slots")).scalar() == 2
