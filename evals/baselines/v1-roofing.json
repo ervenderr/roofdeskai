@@ -1,0 +1,502 @@
+{
+  "meta": {
+    "date": "2026-11-03",
+    "git_sha": "f50d007",
+    "model": "llama3.1:8b",
+    "passed": 94,
+    "temperature": 0,
+    "total": 96
+  },
+  "scenarios": {
+    "disq-8months": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-area": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-boulder": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-leasing": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-renter": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-service": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-solar": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-tenant": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-timeline": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "disq-twofacts": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-angry": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-human": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-injury": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-legal": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-manager": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-safety": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-scam": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "esc-sue": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-1": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-10": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-2": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-3": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-4": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-5": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-6": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-7": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-8": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "faq-9": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-admin": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-dan": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-discount": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-free": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-json": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-leak": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-price": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "inj-slot": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-financing": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-licensed": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-lifetime": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-office": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-price": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-pricematch": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-solar": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ook-tomorrow": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-1": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-2": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-3": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-4": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-5": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-6": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-7": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "ooo-8": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-1": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-10": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-11": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-12": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-2": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-3": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-4": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-5": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-6": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-7": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-8": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "qual-9": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "slot-none": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "slot-question": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "slot-reject": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "slot-taken": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "slot-third": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "slot-weekend": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-1": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-10": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-2": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-3": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-4": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-5": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-6": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-7": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-8": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vague-9": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-asr-garble": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-book-fillers": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-book-spoken-digits": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-hours-question": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-human-request": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-indecisive": {
+      "category": "voice",
+      "failed_checks": [
+        "state BOOK != DONE",
+        "outcome None != booked",
+        "lead_status qualified != booked",
+        "missing tool call book_appointment"
+      ],
+      "passed": false
+    },
+    "voice-injection": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-legal": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-out-of-area": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-over-explainer": {
+      "category": "voice",
+      "failed_checks": [
+        "state COLLECT != DONE",
+        "outcome None != booked",
+        "lead_status new != booked",
+        "missing tool call book_appointment"
+      ],
+      "passed": false
+    },
+    "voice-price-question": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-renter": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-safety": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-self-correction": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-spoken-email": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "voice-time-by-hour": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    }
+  }
+}
