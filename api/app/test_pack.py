@@ -6,9 +6,9 @@ import pytest
 import yaml
 from sqlalchemy import text
 
-from . import db
+from . import db, llm
 from .config import settings
-from .pack import PackError, get_pack, load_pack
+from .pack import PackError, get_pack, load_pack, render
 
 SLUG = "demo-biz"
 MIN_PACK = {
@@ -221,3 +221,80 @@ def test_get_pack_default():
 def test_cli_ok():
     r = subprocess.run([sys.executable, "-m", "app.pack", "summit-roofing"], capture_output=True, text=True)
     assert r.returncode == 0 and "summit-roofing" in r.stdout
+
+
+SAMPLE = {"<<asked>>": "which?", "<<known>>": "{}", "<<faq>>": "- a"}
+
+
+def _fill(body):
+    for k, v in SAMPLE.items():
+        body = body.replace(k, v)
+    return body
+
+
+def test_render_agent(roofing_pack):
+    assert render(llm.load_prompt("agent.v2")[1], roofing_pack) == F.FROZEN_AGENT_V2
+
+
+def test_render_faq(roofing_pack):
+    assert render(llm.load_prompt("faq-answer.v1")[1], roofing_pack) == F.FROZEN_FAQ_ANSWER_V1
+
+
+def test_render_full_message(roofing_pack):
+    got = _fill(render(llm.load_prompt("agent.v2")[1], roofing_pack))
+    assert got == _fill(F.FROZEN_AGENT_V2) and "{{" not in got
+
+
+def test_render_unknown_placeholder(roofing_pack):
+    with pytest.raises(PackError, match="typo"):
+        render("hi {{typo}}", roofing_pack)
+
+
+def test_render_prompt_version_headers():
+    assert llm.load_prompt("agent.v2")[0] == "agent.v2"
+    assert llm.load_prompt("faq-answer.v1")[0] == "faq-answer.v1"
+
+
+def test_render_service_enum(roofing_pack):
+    assert render("{{service_enum}}", roofing_pack) == '"repair" | "replacement" | "inspection" | "other"'
+
+
+@pytest.mark.parametrize("field", ["business", "kind", "offer"])
+@pytest.mark.parametrize("bad", ["{{x}}", "<<faq>>"])
+def test_meta_rejects_tokens(biz, field, bad):
+    write_pack(biz, _mut("pack", lambda p: p.update({field: bad})))
+    with pytest.raises(PackError, match="pack.yaml"):
+        load_pack(SLUG)
+
+
+def test_seed_faq_from_pack(monkeypatch):
+    tid = "00000000-0000-0000-0000-0000000000c3"
+    with db.system() as c:
+        c.execute(text("INSERT INTO tenants (id, slug, name, timezone, pack_slug) VALUES "
+                       "(:t, 'test-faqpack', 'F', 'UTC', 'summit-roofing') ON CONFLICT DO NOTHING"), {"t": tid})
+    monkeypatch.setattr(faq.llm, "embed", lambda t: [0.1] * 384)
+    faq.seed_faq(tid, reload=True)
+    with db.system() as c:
+        rows = [tuple(r) for r in c.execute(text("SELECT source, text FROM faq_chunks WHERE tenant_id=:t ORDER BY id"), {"t": tid})]
+    assert rows == [(e.source, e.text) for e in get_pack(tid).faq]
+
+
+def test_faq_seed_sql_matches_pack(roofing_pack):
+    import re
+    from pathlib import Path
+    sql = Path("/srv/db/faq_seed.sql")
+    if not sql.exists():
+        pytest.skip("/srv/db is not mounted in this container")
+    rows = re.findall(r"INSERT INTO public\.faq_chunks \(id, source, text, embedding\) VALUES \(\d+, '((?:[^']|'')*)', '((?:[^']|'')*)', '",
+                      sql.read_text())
+    rows = [(a.replace("''", "'"), b.replace("''", "'")) for a, b in rows]
+    assert rows == [(e.source, e.text) for e in roofing_pack.faq]
+
+
+def test_handle_turn_missing_pack():
+    tid = "00000000-0000-0000-0000-0000000000c1"
+    with db.system() as c:
+        c.execute(text("INSERT INTO tenants (id, slug, name, timezone, pack_slug) VALUES "
+                       "(:t, 'test-nopack', 'N', 'UTC', NULL) ON CONFLICT DO NOTHING"), {"t": tid})
+    with pytest.raises(PackError):
+        agent.handle_turn("hello", tenant_id=tid)

@@ -72,6 +72,13 @@ class PackMeta(M):
 
     check_tz = field_validator("timezone")(_tz)
 
+    @field_validator("business", "kind", "offer")
+    @classmethod
+    def _no_tokens(cls, v):
+        if "{{" in v or "<<" in v:  # would be re-expanded by render() or the runtime <<...>> fills
+            raise ValueError("must not contain '{{' or '<<'")
+        return v
+
 
 class Calendar(M):
     timezone: str
@@ -234,6 +241,17 @@ def load_pack(slug: str) -> Pack:
     return Pack(slug=slug, hash=pack_hash(root), meta=parts["pack"], calendar=parts["calendar"],
                 qualification=q, escalation=parts["escalation"], messages=parts["messages"],
                 faq=parts["faq"].entries)
+
+
+def render(template: str, pack: Pack) -> str:
+    """Fill the {{...}} pack tokens by plain replace; a leftover {{ is a template typo."""
+    enum = " | ".join(f'"{s.value}"' for s in pack.qualification.service_synonyms) + ' | "other"'
+    for k, v in {"business": pack.meta.business, "kind": pack.meta.kind, "offer": pack.meta.offer,
+                 "service_enum": enum}.items():
+        template = template.replace("{{" + k + "}}", v)
+    if "{{" in template:
+        raise PackError(f"unresolved placeholder in prompt: {template[template.index('{{'):][:40]!r}")
+    return template
 
 
 _CACHE: dict[tuple[str, str], Pack] = {}  # (tenant_id, pack_hash) -> Pack; not business data
