@@ -10,6 +10,7 @@ from . import llm, mailer, policy, speech, tools
 from .config import settings
 from .db import record_event, tx
 from .logctx import current_tenant
+from .pack import Pack, get_pack, render
 from .schemas import Turn
 
 log = logging.getLogger("leadpilot.agent")
@@ -38,11 +39,12 @@ def handle_turn(message: str, cid: int | None = None, external_id: str | None = 
     token = current_tenant.set(t)  # set here, not in middleware: sync endpoints run in a threadpool
     try:
         cid = _open(cid, external_id, channel, t)
+        pack = get_pack(t)
         _turn_start(t, cid, channel)
         message = speech.normalize(message)
         if _last_message(cid, t) != ("user", message):  # a retry after a failed turn (502) must not repeat the customer's message
             _save(cid, "user", message, t)
-        reply = _decide(cid, message, t)
+        reply = _decide(cid, message, t, pack)
         _save(cid, "assistant", reply, t)
         return cid, reply
     finally:
@@ -57,7 +59,7 @@ def _turn_start(t: str, cid: int, channel: str) -> None:
         log.exception("agent_events write failed (turn_start)")
 
 
-def _decide(cid: int, message: str, t: str) -> str:
+def _decide(cid: int, message: str, t: str, pack: Pack) -> str:
     convo = _row("SELECT * FROM conversations WHERE id=:i", cid, t)
     state, lead_id = convo["state"], convo["lead_id"]
     if state == "ESCALATE":
@@ -72,7 +74,7 @@ def _decide(cid: int, message: str, t: str) -> str:
     ok, res = tools.run(cid, "lookup_faq", {"query": message}, tools.lookup_faq, tenant_id=t)
     faq = res["chunks"] if ok else []
 
-    turn = _ask_llm(cid, state, _row("SELECT * FROM leads WHERE id=:i", lead_id, t), faq, t)
+    turn = _ask_llm(cid, state, _row("SELECT * FROM leads WHERE id=:i", lead_id, t), faq, t, pack)
     if turn is None:
         return _escalate(cid, "validation_failure", t)
     if turn.escalate_reason:
@@ -117,19 +119,19 @@ def _decide(cid: int, message: str, t: str) -> str:
                 _notify_booking(lead_id, _fmt(res["start"]), t)
                 return f"You're booked for {_fmt(res['start'])}. We'll see you then!"
             return _offer_slots(cid, lead_id, "Sorry, that time isn't available. ", t)
-        return _answer(cid, turn, is_question, faq, message, "Which of those openings works for you? Just say first, second, and so on.", t)
+        return _answer(cid, turn, is_question, faq, message, "Which of those openings works for you? Just say first, second, and so on.", t, pack)
 
     if state == "GREETING":
         _set_state(cid, "COLLECT", t=t)
-    return _answer(cid, turn, is_question, faq, message, policy.next_question(lead), t)
+    return _answer(cid, turn, is_question, faq, message, policy.next_question(lead), t, pack)
 
 
-def _answer(cid: int, turn: Turn, is_question: bool, faq: list[str], message: str, follow_up: str, t: str) -> str:
+def _answer(cid: int, turn: Turn, is_question: bool, faq: list[str], message: str, follow_up: str, t: str, pack: Pack) -> str:
     """FAQ answer (if the customer asked a question) followed by the code's next question. The model's answer
     must stick to the FAQ; if it is empty, a second focused call tries. Anything unsupported -> safe fallback."""
     answer = ""
     if is_question:
-        answer = turn.reply.strip() or _faq_answer(cid, message, faq, t)
+        answer = turn.reply.strip() or _faq_answer(cid, message, faq, t, pack)
         if not answer or not faq or policy.unsupported_claim(answer, faq) or not policy.answer_supported(answer, faq):
             if answer:
                 log.warning("conversation %s: FAQ answer not supported by the knowledge base; replaced", cid)
@@ -137,12 +139,12 @@ def _answer(cid: int, turn: Turn, is_question: bool, faq: list[str], message: st
     return f"{answer} {follow_up}".strip()
 
 
-def _faq_answer(cid: int, question: str, faq: list[str], t: str) -> str:
+def _faq_answer(cid: int, question: str, faq: list[str], t: str, pack: Pack) -> str:
     """Second-chance plain-text answer built only from the retrieved FAQ. Returns '' if it cannot answer."""
     if not faq:
         return ""
     version, template = llm.load_prompt("faq-answer.v1")
-    system = template.replace("<<faq>>", "\n".join(f"- {t}" for t in faq))
+    system = render(template, pack).replace("<<faq>>", "\n".join(f"- {t}" for t in faq))
     out = llm.chat([{"role": "system", "content": system}, {"role": "user", "content": question}])
     _log_llm(cid, out, version, None, t)
     text_ = out["content"].strip()
@@ -161,13 +163,13 @@ def _offer_slots(cid: int, lead_id: int, prefix: str, t: str) -> str:
     return f"{prefix}Here are the next openings: {options}. Which one works for you?"
 
 
-def _ask_llm(cid: int, state: str, lead: dict, faq: list[str], t: str) -> Turn | None:
+def _ask_llm(cid: int, state: str, lead: dict, faq: list[str], t: str, pack: Pack) -> Turn | None:
     """Parse the model output against the Turn schema; one repair retry, then give up (caller escalates)."""
     version, template = llm.load_prompt(PROMPT)
     known = {k: v for k, v in lead.items() if k in _KNOWN_KEYS and v is not None}
     history = _history(cid, t)
     asked = next((m["content"] for m in reversed(history[:-1]) if m["role"] == "assistant"), "(nothing yet)")
-    system = (template.replace("<<asked>>", asked)
+    system = (render(template, pack).replace("<<asked>>", asked)
               .replace("<<known>>", json.dumps(known))
               .replace("<<faq>>", "\n".join(f"- {t}" for t in faq) or "- (no relevant entries)"))
     messages = [{"role": "system", "content": system}, *history]

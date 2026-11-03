@@ -39,7 +39,7 @@ async def lifespan(_: FastAPI):
         try:
             seed_faq(tenant)
         except Exception:
-            pass  # already logged; the API still serves, FAQ lookups just return nothing
+            log.exception("faq seed failed for tenant %s", tenant)  # the API still serves, FAQ lookups just return nothing
     yield
 
 

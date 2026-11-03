@@ -146,6 +146,7 @@ def test_agent_events_append_only(two):
 import logging
 
 from . import db, faq, tools
+from .pack import get_pack
 
 TB = "00000000-0000-0000-0000-0000000000b3"
 VEC = [0.1] * 384
@@ -154,8 +155,8 @@ VEC = [0.1] * 384
 @pytest.fixture
 def tb():
     with db.system() as c:
-        c.execute(text("INSERT INTO tenants (id, slug, name, timezone) VALUES (:b, 'test-b3', 'B', 'UTC') "
-                       "ON CONFLICT DO NOTHING"), {"b": TB})
+        c.execute(text("INSERT INTO tenants (id, slug, name, timezone, pack_slug) VALUES (:b, 'test-b3', 'B', 'UTC', 'summit-roofing') "
+                       "ON CONFLICT (id) DO UPDATE SET pack_slug = EXCLUDED.pack_slug"), {"b": TB})
     return TB
 
 
@@ -188,7 +189,7 @@ def test_seed_faq_per_tenant(tb, monkeypatch):
     a = _count("faq_chunks", A)
     faq.seed_faq(tenant_id=tb)
     n = _count("faq_chunks", tb)
-    assert n == len(faq.FAQ) and _count("faq_chunks", A) == a
+    assert n == len(get_pack(tb).faq) and _count("faq_chunks", A) == a
     faq.seed_faq(tenant_id=tb)
     assert _count("faq_chunks", tb) == n
     with db.system() as c:

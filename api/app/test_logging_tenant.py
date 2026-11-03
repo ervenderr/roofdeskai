@@ -53,7 +53,7 @@ def test_handle_turn_stamps_and_resets(lines, monkeypatch):
     from .db import system
     from sqlalchemy import text
     with system() as c:
-        c.execute(text("INSERT INTO tenants (id, slug, name, timezone) VALUES (:t,'test-b4','B','UTC') ON CONFLICT DO NOTHING"), {"t": T})
+        c.execute(text("INSERT INTO tenants (id, slug, name, timezone, pack_slug) VALUES (:t,'test-b4','B','UTC','summit-roofing') ON CONFLICT (id) DO UPDATE SET pack_slug = EXCLUDED.pack_slug"), {"t": T})
     agent.handle_turn("hello", tenant_id=T)
     assert f"tenant={T} inside" in lines
     assert current_tenant.get() == "-"
