@@ -31,9 +31,9 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **PACK-07**: Pack-keyed caches include tenant and pack hash; no module-level business globals remain
 
 ### Qualification (QUAL)
-- [ ] **QUAL-01**: A lead is qualified by a rule interpreter reading `qualification.yaml` (in_list, yes_no, max_number, in_area) with pack-defined questions and disqualify text
-- [ ] **QUAL-02**: Service-word synonyms and the non-business word list come from the pack
-- [ ] **QUAL-03**: A differential test over a large lead grid shows zero differences between the old `qualification()` and the interpreter before the old path is deleted
+- [x] **QUAL-01**: A lead is qualified by a rule interpreter reading `qualification.yaml` (in_list, yes_no, max_number, in_area) with pack-defined questions and disqualify text
+- [x] **QUAL-02**: Service-word synonyms and the non-business word list come from the pack
+- [x] **QUAL-03**: A differential test over a large lead grid shows zero differences between the old `qualification()` and the interpreter before the old path is deleted
 
 ### Evals (EVAL)
 - [ ] **EVAL-01**: Operator can run evals per pack (`--pack`) with per-pack reports that never overwrite another pack's baseline
@@ -124,9 +124,9 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | PACK-05 | Phase 3 | Complete |
 | PACK-06 | Phase 3 | Complete |
 | PACK-07 | Phase 3 | Complete |
-| QUAL-01 | Phase 4 | Pending |
-| QUAL-02 | Phase 4 | Pending |
-| QUAL-03 | Phase 4 | Pending |
+| QUAL-01 | Phase 4 | Complete |
+| QUAL-02 | Phase 4 | Complete |
+| QUAL-03 | Phase 4 | Complete |
 | EVAL-01 | Phase 5 | Pending |
 | EVAL-02 | Phase 5 | Pending |
 | EVAL-03 | Phase 5 | Pending |

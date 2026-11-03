@@ -9,7 +9,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 - [x] **Phase 1: Baseline Freeze and Environment Isolation** - Frozen per-scenario baseline, flake tolerance, isolated branch environment, and the regression gate (completed 2026-11-03)
 - [x] **Phase 2: Tenants, Migrations and DB Plumbing** - Numbered migrations, tenant_id everywhere, `db.tx()`, tenant-stamped logs and events (completed 2026-11-03)
 - [x] **Phase 3: Pack Loader and Roofing Extraction** - Validated pack format; roofing constants, prompts and messages moved into pack #1 with zero behaviour change (completed 2026-11-03)
-- [ ] **Phase 4: Rule Interpreter** - Data-driven qualification proven identical to the old code, then old path deleted
+- [x] **Phase 4: Rule Interpreter** - Data-driven qualification proven identical to the old code, then old path deleted (completed 2026-11-03)
 - [ ] **Phase 5: Per-Pack Eval Runner and Dental Pack** - Per-pack reports, dental pack at 90%+ per category, no cross-tenant leakage
 - [ ] **Phase 6: Per-Tenant Keys and RLS Enforcement** - Hashed tenant keys, credential-derived tenant, enforced row-level security
 - [ ] **Phase 7: Engine Modules and Connectors** - Quote builder, capacity checker, connectors, daily brief, review responder, intake_event, each with deterministic evals
@@ -66,11 +66,11 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 **Plans**: 5 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — rules schema, loader validation, roofing YAML migration, compat properties
-- [ ] 04-02-PLAN.md — qualify.py interpreter, dual-run differential test, edit-without-code-change tests
-- [ ] 04-03-PLAN.md — switch agent.py and evals/runner.py to qualify.*, subset eval gate
-- [ ] 04-04-PLAN.md — relax ServiceType (own plan, droppable alone), subset eval gate
-- [ ] 04-05-PLAN.md — freeze diff digests, delete old path, full eval gate
+- [x] 04-01-PLAN.md — rules schema, loader validation, roofing YAML migration, compat properties
+- [x] 04-02-PLAN.md — qualify.py interpreter, dual-run differential test, edit-without-code-change tests
+- [x] 04-03-PLAN.md — switch agent.py and evals/runner.py to qualify.*, subset eval gate
+- [x] 04-04-PLAN.md — relax ServiceType (own plan, droppable alone), subset eval gate
+- [x] 04-05-PLAN.md — freeze diff digests, delete old path, full eval gate
 
 ### Phase 5: Per-Pack Eval Runner and Dental Pack
 **Goal**: A second business runs on the same code, scored separately, with no leakage between businesses.
@@ -151,7 +151,7 @@ Plans:
 | 1. Baseline Freeze and Environment Isolation | 3/3 | Complete    | 2026-11-03 |
 | 2. Tenants, Migrations and DB Plumbing | 5/5 | Complete    | 2026-11-03 |
 | 3. Pack Loader and Roofing Extraction | 5/5 | Complete    | 2026-11-03 |
-| 4. Rule Interpreter | 0/TBD | Not started | - |
+| 4. Rule Interpreter | 5/5 | Complete    | 2026-11-03 |
 | 5. Per-Pack Eval Runner and Dental Pack | 0/TBD | Not started | - |
 | 6. Per-Tenant Keys and RLS Enforcement | 0/TBD | Not started | - |
 | 7. Engine Modules and Connectors | 0/TBD | Not started | - |
