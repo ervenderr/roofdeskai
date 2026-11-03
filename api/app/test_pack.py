@@ -298,3 +298,139 @@ def test_handle_turn_missing_pack():
                        "(:t, 'test-nopack', 'N', 'UTC', NULL) ON CONFLICT DO NOTHING"), {"t": tid})
     with pytest.raises(PackError):
         agent.handle_turn("hello", tenant_id=tid)
+
+
+# ---- messages and calendar from the pack (plan 03-03) ----
+# Expected strings are literals copied from the pre-extraction f-strings; never derive them from pack values.
+
+def test_messages_booked_and_offer(roofing_pack):
+    m = roofing_pack.messages
+    assert m.booked.format(when="Wed Nov 04, 09:00 AM") == "You're booked for Wed Nov 04, 09:00 AM. We'll see you then!"
+    opts = "; ".join(f"{i}) {w}" for i, w in enumerate(["Wed Nov 04, 09:00 AM", "Wed Nov 04, 11:00 AM"], 1))
+    assert m.offer_slots.format(prefix=m.qualified_prefix, options=opts) == (
+        "Good news, you qualify for a free roof inspection! Here are the next openings: "
+        "1) Wed Nov 04, 09:00 AM; 2) Wed Nov 04, 11:00 AM. Which one works for you?")
+    assert m.offer_slots.format(prefix=m.slot_unavailable_prefix, options="1) X").startswith("Sorry, that time isn't available. Here are")
+
+
+def test_messages_owner_alert(roofing_pack):
+    m = roofing_pack.messages
+    kw = dict(name="Ann", when="W", phone="-", email="-", address="1 Main, Denver", need="repair")
+    assert m.owner_alert_subject.format(**kw) == "New booking: Ann (W)"
+    assert m.owner_alert_body.format(**kw) == ("Ann booked a free roof inspection for W.\nPhone: -\nEmail: -\n"
+                                               "Address: 1 Main, Denver\nNeed: repair")
+
+
+def test_messages_customer_email(roofing_pack):
+    from . import agent
+    m = roofing_pack.messages
+    assert m.customer_subject.format(when="W") == "Your inspection is booked: W"
+    body = (m.customer_intro.format(name="Ann", when="W") + agent.DEMO_NOTICE.format(business=roofing_pack.meta.business))
+    assert body == ("Hi Ann,\n\nYour free roof inspection is booked for W.\n\n"
+                    "This was a demo of RoofDesk AI with a sample company (Summit Roofing). No one will visit, "
+                    "and nothing was scheduled.\n\nTo try RoofDesk AI for your own business, reply to this email.\n\n")
+
+
+def test_messages_followup(roofing_pack):
+    m = roofing_pack.messages
+    kw = dict(greeting="Hi Ann,", business=roofing_pack.meta.business)
+    assert m.followup_subject.format(**kw) == "Your free roof inspection with Summit Roofing"
+    assert m.followup_body.format(**kw) == (
+        "Hi Ann,\n\nThanks for your interest in a free roof inspection. Whenever you're ready, "
+        "just reply to this email or message us and we'll find a time that works.\n\nSummit Roofing")
+
+
+def test_messages_brace_in_customer_name_is_a_value(roofing_pack, monkeypatch):
+    from . import agent
+    sent = []
+    monkeypatch.setattr(agent.mailer, "send", lambda to, s, b: sent.append((to, s, b)))
+    monkeypatch.setattr(agent, "_row", lambda *a, **k: dict(name="{evil} {0}", phone=None, email="a@b.co", address="x", service_type="repair"))
+    agent._notify_booking(1, "W", settings.default_tenant_id, roofing_pack)
+    assert any("{evil} {0}" in b for _, _, b in sent)
+
+
+def test_closed_states():
+    from . import agent
+    assert set(agent.CLOSED_STATES) == {"DONE", "DISQUALIFY", "ESCALATE"}
+
+
+def test_fmt_roofing(roofing_pack):
+    from . import agent
+    assert agent._fmt("2026-11-04T09:00:00+00:00", roofing_pack) == "Wed Nov 04, 09:00 AM"
+    assert agent._fmt("2026-11-06T16:00:00+00:00", roofing_pack) == "Fri Nov 06, 04:00 PM"
+
+
+FROZEN_NOWS = ["2026-11-02T10:00:00+00:00", "2026-11-06T10:00:00+00:00", "2026-11-07T10:00:00+00:00",
+               "2026-11-08T10:00:00+00:00", "2026-10-31T12:00:00+00:00", "2026-12-31T12:00:00+00:00",
+               "2026-11-03T23:59:00+00:00", "2026-11-04T00:00:00+00:00"]
+OLD_SLOT_SELECT = (
+    "SELECT d + make_interval(hours => h) AS s, d + make_interval(hours => h + 1) AS e "
+    "FROM generate_series(date_trunc('day', CAST(:now AS timestamptz)) + interval '1 day', "
+    "date_trunc('day', CAST(:now AS timestamptz)) + make_interval(days => :n), interval '1 day') d, unnest(:hours) h "
+    "WHERE extract(isodow FROM d) < 6")
+
+
+@pytest.mark.parametrize("now", FROZEN_NOWS)
+def test_slots_equivalence(roofing_pack, now):
+    from datetime import datetime
+    from .tools import slot_instants
+    with db.system() as c:
+        c.execute(text("SET LOCAL TimeZone='UTC'"))
+        old = [(r.s, r.e) for r in c.execute(text(OLD_SLOT_SELECT), {"now": now, "n": 14, "hours": [9, 11, 14, 16]})]
+    assert old and sorted(old) == sorted(slot_instants(roofing_pack.calendar, datetime.fromisoformat(now)))
+
+
+def _cal(**kw):
+    from .pack import Calendar
+    base = dict(timezone="Etc/UTC", slot_hours=(9, 11, 14, 16), slot_minutes=60, days_ahead=14, weekdays_only=True, buffer_minutes=0)
+    return Calendar(**{**base, **kw})
+
+
+@pytest.mark.parametrize("kw", [dict(slot_hours=(9, 11)), dict(slot_minutes=30), dict(days_ahead=7),
+                                dict(weekdays_only=False), dict(timezone="America/Denver"), dict(slot_minutes=150, buffer_minutes=0)])
+def test_slots_pack_edits(kw):
+    from datetime import datetime, timezone
+    from .tools import slot_instants
+    now = datetime(2026, 11, 2, 10, tzinfo=timezone.utc)
+    assert slot_instants(_cal(**kw), now) != slot_instants(_cal(), now)
+
+
+def test_slots_timezone_shift():
+    from datetime import datetime, timezone
+    from .tools import slot_instants
+    now = datetime(2026, 11, 2, 10, tzinfo=timezone.utc)
+    a = slot_instants(_cal(), now)[0][0]
+    b = slot_instants(_cal(timezone="America/Denver"), now)[0][0]
+    assert (b - a).total_seconds() == 7 * 3600  # MST on 2026-11-03
+
+
+def test_slots_buffer_drops_starts():
+    from datetime import datetime, timezone
+    from .tools import slot_instants
+    now = datetime(2026, 11, 2, 10, tzinfo=timezone.utc)
+    # 9-10, gap 1h to 11: buffer 120 drops 11, keeps 14 (4h after 10)
+    got = {s.hour for s, _ in slot_instants(_cal(buffer_minutes=120, days_ahead=1), now)}
+    assert got == {9, 14, 16}
+
+
+def test_ensure_slots_live():
+    from datetime import datetime
+    tid = "00000000-0000-0000-0000-0000000000c4"
+    with db.system() as c:
+        c.execute(text("INSERT INTO tenants (id, slug, name, timezone, pack_slug) VALUES "
+                       "(:t, 'test-slots', 'S', 'UTC', 'summit-roofing') ON CONFLICT (id) DO UPDATE SET pack_slug = EXCLUDED.pack_slug"), {"t": tid})
+    from .tools import ensure_slots, slot_instants
+    ensure_slots(tid)
+    with db.system() as c:
+        n1 = c.execute(text("SELECT count(*) FROM slots WHERE tenant_id=:t"), {"t": tid}).scalar()
+        seq1 = c.execute(text("SELECT last_value FROM slots_id_seq")).scalar()
+    ensure_slots(tid)
+    with db.system() as c:
+        n2 = c.execute(text("SELECT count(*) FROM slots WHERE tenant_id=:t"), {"t": tid}).scalar()
+        seq2 = c.execute(text("SELECT last_value FROM slots_id_seq")).scalar()
+        other = c.execute(text("SELECT count(*) FROM slots WHERE tenant_id=:t"), {"t": settings.default_tenant_id}).scalar()
+        now = c.execute(text("SELECT now()")).scalar()
+        have = sorted(r.start_time for r in c.execute(text("SELECT start_time FROM slots WHERE tenant_id=:t"), {"t": tid}))
+    assert n1 == n2 > 0 and seq1 == seq2 and other >= 0
+    want = sorted(s for s, _ in slot_instants(get_pack(tid).calendar, datetime.now(now.tzinfo)))
+    assert [h for h in have if h >= want[0]][:len(want)] == want
