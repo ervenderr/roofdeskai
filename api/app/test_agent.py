@@ -60,6 +60,21 @@ def test_renter_is_disqualified_and_cannot_book(monkeypatch):
     assert not ok
 
 
+def test_agent_uses_qualify_not_policy(monkeypatch):
+    def old(*a, **k):
+        raise AssertionError("old path called")
+    for fn in ("qualification", "missing_fields", "next_question"):
+        monkeypatch.setattr(agent.policy, fn, old)
+    script(monkeypatch, FULL, {"reply": "ok"})
+    cid, reply = agent.handle_turn(MSG)
+    assert "next openings" in reply and state(cid).state == "BOOK"
+    _, reply = agent.handle_turn("the first", cid)
+    assert tuple(state(cid)) == ("DONE", "booked")
+    script(monkeypatch, {"reply": "ok", "extracted": {"is_owner": False}})
+    cid, _ = agent.handle_turn("I rent")
+    assert tuple(state(cid)) == ("DISQUALIFY", "disqualified")
+
+
 def test_taken_slot_is_not_double_booked(monkeypatch):
     script(monkeypatch, FULL, {"reply": "ok"})
     cid, _ = agent.handle_turn(MSG)
