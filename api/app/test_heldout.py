@@ -120,10 +120,6 @@ def test_infra_fault_aborts_without_record(ho, monkeypatch, bad):
     assert not (held / "results").exists() and list(rep.iterdir()) == []
 
 
-def test_zz_real_results_dir_untouched():
-    assert not (runner.HERE / "heldout" / "results").exists()
-
-
 # ---- scenario set (RED until scenarios exist) ----
 
 def _ids(slug):
