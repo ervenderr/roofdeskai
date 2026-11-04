@@ -42,7 +42,7 @@ def reminder(tenant_id: str) -> str:
 
 
 def cross_tenant_check(tenant_id: str) -> list[str]:
-    """No-LLM isolation proof; returns problems (empty = pass)."""
+    """No-LLM isolation check; returns problems (empty = pass)."""
     own = {e.text for e in get_pack(tenant_id).faq}
     probe = sorted(own)[0] if own else ""
     got = tools.lookup_faq(probe, k=50, tenant_id=tenant_id)["chunks"]

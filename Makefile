@@ -36,5 +36,8 @@ g-eval:
 	$(GCOMPOSE) exec -e GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo unknown) $(if $(BASELINE_PATH),-e BASELINE_PATH=$(BASELINE_PATH)) api python -m evals.runner $(ARGS)
 eval-gate:
 	$(MAKE) g-eval ARGS="--gate $(ARGS)"
+new-business:
+	@test -n "$(PACK)" || (echo "usage: make new-business PACK=<slug>"; exit 2)
+	$(GCOMPOSE) exec -T api python -m scripts.new_business $(PACK)
 check-shared:
 	$(GCOMPOSE) exec -T api python -m scripts.check_shared
