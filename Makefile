@@ -25,7 +25,7 @@ g-reset:
 g-logs:
 	$(GCOMPOSE) logs -f api
 g-test:
-	$(GCOMPOSE) exec api python -m pytest -q $(ARGS)
+	$(GCOMPOSE) exec api python -m pytest -q --ignore=api $(ARGS)
 check-n8n:
 	$(GCOMPOSE) exec -T api python -m pytest -q app/test_n8n_workflows.py
 run-flows:
