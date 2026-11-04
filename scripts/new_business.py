@@ -52,7 +52,11 @@ def cross_tenant_check(tenant_id: str) -> list[str]:
         others = [str(r[0]) for r in c.execute(text("SELECT id FROM tenants WHERE pack_slug IS NOT NULL AND id <> :t"), {"t": tenant_id})]
     problems = []
     for o in others:
-        for q in sorted({e.text for e in get_pack(o).faq}):
+        try:
+            queries = sorted({e.text for e in get_pack(o).faq})
+        except PackError:  # a tenant whose pack is gone has no FAQ to probe with
+            continue
+        for q in queries:
             if not set(tools.lookup_faq(q, k=50, tenant_id=tenant_id)["chunks"]) <= own:
                 problems.append(f"lookup_faq for tenant {tenant_id} returned a chunk outside its own FAQ (query from tenant {o})")
                 break
