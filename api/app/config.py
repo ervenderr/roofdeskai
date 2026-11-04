@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     app_database_url: str = ""  # non-owner app_rw role (RLS applies); empty falls back to database_url, which assert_rls_enforced rejects
     app_db_password: str = ""
     public_demo_tenant_id: str = ""
+    retention_days: int = 0  # RETENTION_DAYS; 0 keeps everything
     default_tenant_id: str = "00000000-0000-0000-0000-000000000001"  # Summit Roofing; still used by triage and the admin legacy fallback
     local_llm_url: str = "http://host.docker.internal:11434/v1"
     local_llm_model: str = "llama3.1:8b"
