@@ -149,7 +149,15 @@ Plans:
   2. Anthropic can be selected as a provider with local still default, and scorecard runs use `providers=[anthropic]` with no fallback
   3. Connectors are callable as MCP servers wrapping the same adapter classes
   4. The venue pack (staff, group bookings) passes its own evals using quotes, capacity and intake
-**Plans**: TBD
+**Plans**: 7 plans
+Plans:
+- [ ] 10-01-PLAN.md — held-out scenarios (20) and --heldout tooling, committed before any run
+- [ ] 10-02-PLAN.md — run held-out once per pack, publish score
+- [ ] 10-03-PLAN.md — puzzle-peak venue pack, scenarios, module cases, address fallback
+- [ ] 10-04-PLAN.md — venue run, bounded tuning, baseline, pin, generated docs
+- [ ] 10-05-PLAN.md — optional Anthropic provider, pin, --providers flag (fakes only)
+- [ ] 10-06-PLAN.md — mcp 2.3 dependency and connector MCP server
+- [ ] 10-07-PLAN.md — final gates
 
 ## Progress
 
