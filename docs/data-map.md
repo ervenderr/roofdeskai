@@ -59,6 +59,7 @@ The chain tries providers in order and falls through on error. The prompt is not
 - `delete_subject`: `POST /admin/tenants/{tid}/subject/delete` (admin) and `POST /subject/delete` under the tenant router (tenant key). It erases by one identifier (email, phone digits, conversation external_id, draft contact email, intake person_key) and writes an audit event with a hash of the identifier and row counts only.
 - `delete_subject` is best-effort. It finds rows linked by lead email/phone, conversation `external_id`, draft `contact_email` / `customer_email` and intake `person_key`. Drafts are matched by `contact_email`/`customer_email` only; conversations with no lead and no matching `external_id` are not matched; free text inside messages, `events.detail` and tool call arguments is not scanned; phone matching compares digits only and does not normalise country prefixes. Backups, logs, n8n execution data and Mailpit are out of reach.
 - D-04 override: agent_events kept (append-only trigger, no PII by contract).
+- `eval_runs` and `eval_results` have no `tenant_id`; they hold scenario ids and pass/fail only (no personal data) and are not purged.
 
 ## Log masking
 

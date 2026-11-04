@@ -67,13 +67,13 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **WF-05**: A CI check fails if any n8n HTTP node calling the API lacks the tenant key header
 
 ### Onboarding, Docs, Privacy (OPS)
-- [ ] **OPS-01**: `make new-business` validates a pack, loads it and runs a smoke subset of evals with cross-tenant and escalation baselines
-- [ ] **OPS-02**: One SOP per workflow and a runbook are generated per pack, with a CI drift check
-- [ ] **OPS-03**: PII masking filter (email, phone) applies to all logs, with a unit-tested `mask()`
-- [ ] **OPS-04**: A retention setting really purges stored data and a `delete_subject` operation exists
-- [ ] **OPS-05**: A data-map document lists stores, processors and the dental health-data and cross-border caveats
-- [ ] **OPS-06**: A grep gate fails CI if `roof|Summit|Denver` appears in shared (non-pack) code
-- [ ] **OPS-07**: README shows a per-business scorecard and the workflow catalog
+- [x] **OPS-01**: `make new-business` validates a pack, loads it and runs a smoke subset of evals with cross-tenant and escalation baselines
+- [x] **OPS-02**: One SOP per workflow and a runbook are generated per pack, with a CI drift check
+- [x] **OPS-03**: PII masking filter (email, phone) applies to all logs, with a unit-tested `mask()`
+- [x] **OPS-04**: A retention setting really purges stored data and a `delete_subject` operation exists
+- [x] **OPS-05**: A data-map document lists stores, processors and the dental health-data and cross-border caveats
+- [x] **OPS-06**: A grep gate fails CI if `roof|Summit|Denver` appears in shared (non-pack) code
+- [x] **OPS-07**: README shows a per-business scorecard and the workflow catalog
 
 ### Optional Platform Extras (EXT)
 - [ ] **EXT-01**: Anthropic is an optional LLM provider (local stays default); scorecard runs pin `providers=[anthropic]` so fallback cannot contaminate scores
@@ -149,13 +149,13 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | WF-03 | Phase 8 | Complete |
 | WF-04 | Phase 8 | Complete |
 | WF-05 | Phase 8 | Complete |
-| OPS-01 | Phase 9 | Pending |
-| OPS-02 | Phase 9 | Pending |
-| OPS-03 | Phase 9 | Pending |
-| OPS-04 | Phase 9 | Pending |
-| OPS-05 | Phase 9 | Pending |
-| OPS-06 | Phase 9 | Pending |
-| OPS-07 | Phase 9 | Pending |
+| OPS-01 | Phase 9 | Complete |
+| OPS-02 | Phase 9 | Complete |
+| OPS-03 | Phase 9 | Complete |
+| OPS-04 | Phase 9 | Complete |
+| OPS-05 | Phase 9 | Complete |
+| OPS-06 | Phase 9 | Complete |
+| OPS-07 | Phase 9 | Complete |
 | EVAL-06 | Phase 10 | Pending |
 | EXT-01 | Phase 10 | Pending |
 | EXT-02 | Phase 10 | Pending |

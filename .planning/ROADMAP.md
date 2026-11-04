@@ -14,7 +14,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 - [x] **Phase 6: Per-Tenant Keys and RLS Enforcement** - Hashed tenant keys, credential-derived tenant, enforced row-level security (completed 2026-11-03)
 - [x] **Phase 7: Engine Modules and Connectors** - Quote builder, capacity checker, connectors, daily brief, review responder, intake_event, each with deterministic evals (completed 2026-11-03)
 - [x] **Phase 8: Tenant-Aware n8n** - 10 tenant-aware workflow files (3 migrated + 2 untenanted + 5 new), API-only operation, CI header check (completed 2026-11-03)
-- [ ] **Phase 9: Docs, PII/Retention and make new-business** - Masking, retention, data map, generated SOPs, onboarding command, grep gate, README
+- [x] **Phase 9: Docs, PII/Retention and make new-business** - Masking, retention, data map, generated SOPs, onboarding command, grep gate, README (completed 2026-11-04)
 - [ ] **Phase 10: Held-Out Eval and Optional Extras** - 20 held-out scenarios run once, then Anthropic provider, MCP connectors, venue pack
 
 ## Phase Details
@@ -163,5 +163,5 @@ Plans:
 | 6. Per-Tenant Keys and RLS Enforcement | 6/6 | Complete    | 2026-11-03 |
 | 7. Engine Modules and Connectors | 8/8 | Complete    | 2026-11-03 |
 | 8. Tenant-Aware n8n | 6/6 | Complete    | 2026-11-03 |
-| 9. Docs, PII/Retention and make new-business | 0/TBD | Not started | - |
+| 9. Docs, PII/Retention and make new-business | 6/6 | Complete    | 2026-11-04 |
 | 10. Held-Out Eval and Optional Extras | 0/TBD | Not started | - |
