@@ -211,7 +211,7 @@ def _notify_booking(lead_id: int, when: str, t: str, pack: Pack) -> None:
     messages = []
     if settings.owner_email:
         kw = dict(name=lead["name"], when=when, phone=lead["phone"] or "-", email=lead["email"] or "-",
-                  address=lead["address"], need=lead["service_type"])
+                  address=lead["address"] or "-", need=lead["service_type"])
         messages.append((settings.owner_email, m.owner_alert_subject.format(**kw), m.owner_alert_body.format(**kw)))
     if lead["email"]:
         messages.append((lead["email"], m.customer_subject.format(when=when),
