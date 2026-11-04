@@ -58,10 +58,13 @@ Latest run: **94/96 scenarios** (all 80 original scenarios pass; 14 of the 16 sp
 | Pack | Passed | By category |
 |---|---|---|
 | bright-smile-dental | 43/43 | disqualified 4/4, escalation 8/8, faq 5/5, injection 4/4, out_of_knowledge 4/4, out_of_order 3/3, qualified 4/4, slots 4/4, vague 3/3, voice 4/4 |
+| puzzle-peak | 33/33 | disqualified 3/3, escalation 5/5, faq 4/4, injection 3/3, out_of_knowledge 4/4, out_of_order 2/2, qualified 4/4, slots 3/3, vague 2/2, voice 3/3 |
 | summit-roofing | 94/96 | disqualified 10/10, escalation 8/8, faq 10/10, injection 8/8, out_of_knowledge 8/8, out_of_order 8/8, qualified 12/12, slots 6/6, vague 10/10, voice 14/16 |
 
-Module eval sets (case counts, not run results): brief 16 cases, capacity 13 cases, intake 17 cases, quote 27 cases, reviews 45 cases.
+Module eval sets (case counts, not run results): brief 16 cases, capacity 16 cases, intake 19 cases, quote 33 cases, reviews 45 cases.
 <!-- END GENERATED: scorecard -->
+
+The puzzle-peak venue pack (33/33 on the local 8B after 2 pack-only tuning rounds) prices group size through the services module rather than qualifying it in chat; the local timeout had to be raised to 240s (`LLM_TIMEOUT_S`) for its eval runs because one injection scenario takes about 50s on the 8B.
 
 ## Architecture
 
