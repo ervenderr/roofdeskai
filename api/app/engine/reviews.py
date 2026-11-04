@@ -35,7 +35,7 @@ def _allowed_contacts(pack: Pack) -> list[str]:
 
 
 def _unknown_vocab(reply: str, pack: Pack, review_text: str) -> bool:
-    """policy.answer_supported with extra vocabulary (policy.py stays untouched so roofing/dental cannot change)."""
+    """policy.answer_supported with extra vocabulary (policy.py stays untouched so packs cannot change)."""
     r = pack.meta.reviews
     known = " ".join([*(e.text for e in pack.faq), review_text, r.tone, r.signature, pack.meta.offer, pack.meta.kind, pack.meta.business])
     vocab = policy._tokens(known) | policy._GENERIC | REVIEW_GENERIC | set(pack.qualification.extra_stopwords)

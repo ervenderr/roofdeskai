@@ -7,5 +7,13 @@ services:
     ports: !override ["18025:8025", "11025:1025"]
   n8n:
     ports: !override ["15679:5678"]
+  api:
+    volumes:
+      - ./api:/srv/api:ro
+      - ./dashboard/app:/srv/dashboard/app:ro
+      - ./dashboard/components:/srv/dashboard/components:ro
+      - ./dashboard/lib:/srv/dashboard/lib:ro
+      - ./docs:/srv/docs
+      - ./README.md:/srv/README.md
   scraper:
     ports: !override ["18081:8080"]

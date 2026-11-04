@@ -61,7 +61,7 @@ def triage(message: str, profile: dict) -> TriageOut:
     """The model sorts and drafts; code decides when a person must look (legal/safety/anger, low confidence, sensitive category)."""
     category, confidence, draft = _ask(message, profile)
     facts = profile.get("facts", [])
-    pack = get_pack(settings.default_tenant_id)  # the default client profile's pack: roofing safety regex and stopwords
+    pack = get_pack(settings.default_tenant_id)  # the default client profile's pack: safety regex and stopwords
     if draft and (policy.unsupported_claim(draft, facts) or not policy.answer_supported(draft, facts, pack)):
         log.warning("triage: draft not supported by the profile facts; replaced")
         draft = SAFE_DRAFT
