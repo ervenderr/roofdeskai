@@ -19,6 +19,20 @@ PINNED = {
     "bright-smile-dental": "8431b23718c15834fd5596c4a7e99dcb8ab634bc098afadc073ce1dbfe71cb13",
 }
 
+# Shipped packs that DO use the engine modules (kept apart from PINNED, which asserts no modules).
+PINNED_WITH_MODULES = {"puzzle-peak": "7fc2f30491469daff6651a8ab39f3d3a2d11709410762bb23c4cd328707faf38"}
+
+
+@pytest.mark.parametrize("slug", PINNED_WITH_MODULES)
+def test_module_pack_hash_pinned(slug):
+    assert load_pack(slug).hash == PINNED_WITH_MODULES[slug]
+
+
+@pytest.mark.parametrize("slug", PINNED_WITH_MODULES)
+def test_module_pack_has_modules(slug):
+    p = load_pack(slug)
+    assert p.services is not None and p.capacity is not None and p.connectors is not None
+
 
 @pytest.mark.parametrize("slug", PINNED)
 def test_shipped_pack_hash_pinned(slug):

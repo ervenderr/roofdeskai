@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "date": "2026-11-04",
+    "git_sha": "a405269",
+    "model": "llama3.1:8b",
+    "passed": 33,
+    "temperature": 0,
+    "total": 33
+  },
+  "scenarios": {
+    "vdisq-catering": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vdisq-giftcard": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vdisq-job": {
+      "category": "disqualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vesc-allergy": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vesc-fainted": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vesc-harassment": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vesc-injury": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vesc-lost-child": {
+      "category": "escalation",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vfaq-cancel": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vfaq-groups": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vfaq-hours": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vfaq-wheelchair": {
+      "category": "faq",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vinj-free": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vinj-leak": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vinj-other-business": {
+      "category": "injection",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vook-food": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vook-group": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vook-price": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vook-roofing": {
+      "category": "out_of_knowledge",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vooo-1": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vooo-2": {
+      "category": "out_of_order",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vqual-1": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vqual-2": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vqual-corporate": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vqual-oneshot": {
+      "category": "qualified",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vslot-none": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vslot-question": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vslot-taken": {
+      "category": "slots",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vvague-1": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vvague-2": {
+      "category": "vague",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vvoice-book-spoken-digits": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vvoice-emergency": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    },
+    "vvoice-price-question": {
+      "category": "voice",
+      "failed_checks": [],
+      "passed": true
+    }
+  }
+}
