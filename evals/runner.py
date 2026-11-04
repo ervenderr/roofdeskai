@@ -19,6 +19,7 @@ from pathlib import Path
 import yaml
 from sqlalchemy import text
 
+from app import llm as llmlib
 from app import qualify
 from app.agent import PROMPT, handle_turn
 from app.config import settings
@@ -181,6 +182,8 @@ def run_suite(scenarios: list[dict], t: str) -> tuple[list, list]:
             r = run_scenario(sc, t)
             fails = check(sc, r)
             cids.append(r["cid"])
+        except llmlib.ProviderRejected:  # a hosted 400 on every call must not look like a score of 0
+            raise
         except Exception as e:  # a crash is a failed scenario, not a crashed run
             r, fails = None, [f"error: {type(e).__name__}: {e}"[:300]]
         results.append((sc, r, fails))
@@ -188,13 +191,34 @@ def run_suite(scenarios: list[dict], t: str) -> tuple[list, list]:
     return results, cids
 
 
-def assert_local_only(cids: list, t: str) -> None:
-    """BASE-02: a hosted fallback answering would pollute a baseline; abort. Runs in every mode."""
+def assert_only_provider(cids: list, t: str, prefix: str) -> None:
+    """Abort when any model outside `prefix` answered, so another provider cannot contaminate the run."""
     with tx(t) as c:
         models = [r[0] for r in c.execute(text("SELECT DISTINCT model FROM llm_calls WHERE conversation_id = ANY(:c)"), {"c": cids})]
-    bad = [m for m in models if not (m or "").startswith("local:")]
+    bad = [m for m in models if not (m or "").startswith(prefix)]
     if bad:
-        sys.exit(f"ABORT: non-local model answered {bad}; baseline/flake run is invalid")
+        sys.exit(f"ABORT: model outside {prefix!r} answered {bad}; run is invalid")
+
+
+def assert_local_only(cids: list, t: str) -> None:
+    """BASE-02: a hosted fallback answering would pollute a baseline; abort. Runs in every mode."""
+    assert_only_provider(cids, t, "local:")
+
+
+def run_with_provider(scenarios: list[dict], slug: str, t: str, chosen: list) -> None:
+    """Hosted scorecard run: one preflight, pinned providers, own report file. Never a baseline or latest.md."""
+    try:
+        llmlib.chat([{"role": "user", "content": "reply ok"}], chosen)
+    except RuntimeError as e:  # includes ProviderRejected (status code only, no key)
+        sys.exit(f"ABORT: preflight failed, nothing was scored: {e}")
+    name = chosen[0].name
+    with llmlib.pinned(chosen):
+        results, cids = run_suite(scenarios, t)
+    assert_only_provider(cids, t, f"{name}:")
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    header = [f"Provider scorecard run: `{name}` only, pinned, no fallback. Not comparable to local baselines.", "",
+              "FAQ embeddings stay on the local model. Cost is not estimated.", ""]
+    write_report(results, cids, slug, t, out=REPORTS / f"provider-{slug}-{name}.md", header=header)
 
 
 def _git_sha() -> str:
@@ -322,10 +346,16 @@ def main() -> None:
     mode.add_argument("--flake", action="store_true", help=f"{FLAKE_RUNS} full runs, write flake report")
     mode.add_argument("--gate", action="store_true", help="diff against baseline (BASELINE_PATH overrides); exit 1 on regression")
     mode.add_argument("--heldout", action="store_true", help="single recorded run of evals/heldout/<slug>")
+    ap.add_argument("--providers", choices=["anthropic"], help="pinned hosted scorecard run; separate report, no baseline/gate/flake/heldout")
     ap.add_argument("--force-rerun", metavar="REASON", help="with --heldout: allow a disclosed re-run after an infra fault")
     args = ap.parse_args()
     if args.heldout and (args.ids or args.category):
         ap.error("--heldout runs the full set; it cannot be combined with --ids/--category")
+    if args.providers and (args.write_baseline or args.gate or args.flake or args.heldout):
+        ap.error("--providers cannot be combined with --write-baseline, --gate, --flake or --heldout")
+    chosen = [p for p in llmlib.PROVIDERS if p.name == args.providers]
+    if args.providers and not (chosen and chosen[0].api_key):
+        sys.exit(f"{args.providers.upper()}_API_KEY is not set; add it to .env first")
     settings.mail_transport = "mailpit"  # eval bookings send emails; never to a real mailbox
     if args.write_baseline and args.pack == ROOFING and default_baseline_path(ROOFING).exists() and not args.force_baseline:
         sys.exit(f"refusing to overwrite {default_baseline_path(ROOFING)}; pass --force-baseline to do it on purpose")
@@ -348,6 +378,8 @@ def main() -> None:
         flake(scenarios, slug, t)
     elif args.gate:
         gate(scenarios, slug, t)
+    elif chosen:
+        run_with_provider(scenarios, slug, t, chosen)
     else:
         results, cids = run_suite(scenarios, t)
         assert_local_only(cids, t)

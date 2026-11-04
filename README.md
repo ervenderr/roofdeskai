@@ -52,6 +52,8 @@ Latest run: **94/96 scenarios** (all 80 original scenarios pass; 14 of the 16 sp
 
 **Held-out score.** 20 scenarios written and committed before any Phase 10 tuning, run once on the local model: **17/20** (roofing 10/12, dental 7/8). Three booking scenarios failed and were not fixed. These were authored by the same assistant that built the system with the dev sets visible, so they are held out from tuning, not independent. Details, SHAs and failures: [docs/heldout-eval.md](docs/heldout-eval.md).
 
+**Claude scorecard: not yet run.** An optional Anthropic provider exists (code and fake-client tests only). It is appended last to the live fallback chain, so whenever `ANTHROPIC_API_KEY` is set it becomes a live fallback for production chats (prompts and customer text leave the machine) after local and the other providers fail; leave the key blank to keep it off. To score it, set the key (and optionally `ANTHROPIC_MODEL`) in `.env`, accept the API cost, and run `make g-eval ARGS="--pack <slug> --providers anthropic"`. The run is pinned to Anthropic with no fallback, aborts loudly on a 400, and writes `evals/reports/provider-<slug>-anthropic.md` only (never a baseline or `latest.md`).
+
 ### Per-business scorecard
 
 <!-- BEGIN GENERATED: scorecard -->

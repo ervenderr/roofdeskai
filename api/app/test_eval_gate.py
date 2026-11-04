@@ -247,3 +247,109 @@ def test_run_scenario_detects_wrong_tenant_conversation(two_tenants, monkeypatch
     monkeypatch.setattr(runner, "handle_turn", fake)
     with pytest.raises((AssertionError, NoResultFound)):  # RLS hides the other tenant's row before the guard runs
         runner.run_scenario({"id": "x", "turns": ["a"]}, a)
+
+
+# --- --providers anthropic: guarded hosted scorecard run (fakes only, no network) ---
+
+from contextlib import contextmanager  # noqa: E402
+
+from app import llm  # noqa: E402
+
+
+def _keyed(monkeypatch, key="k"):
+    monkeypatch.setattr(llm, "PROVIDERS", [llm.Provider("local", "u", "ollama", "m"),
+                                           llm.Provider("anthropic", "u", key, "claude-x", send_temperature=False, strict=True)])
+
+
+@pytest.mark.parametrize("flag", ["--write-baseline", "--gate", "--flake", "--heldout"])
+def test_providers_rejected_with_other_modes(tmp_path, monkeypatch, flag):
+    calls = []
+    _fake_main(monkeypatch, tmp_path, ["--providers", "anthropic", flag], calls)
+    with pytest.raises(SystemExit):
+        runner.main()
+    assert "run_suite" not in calls
+
+
+def test_providers_choices_only_anthropic(tmp_path, monkeypatch):
+    for name in ("local", "groq"):
+        _fake_main(monkeypatch, tmp_path, ["--providers", name], [])
+        with pytest.raises(SystemExit):
+            runner.main()
+
+
+def test_providers_missing_key_exits_before_db(tmp_path, monkeypatch):
+    calls = []
+    _keyed(monkeypatch, key="")
+    _fake_main(monkeypatch, tmp_path, ["--providers", "anthropic"], calls)
+    with pytest.raises(SystemExit) as e:
+        runner.main()
+    assert "ANTHROPIC_API_KEY" in str(e.value)
+    assert "ensure_tenant" not in calls and "run_suite" not in calls
+
+
+def test_providers_run_pinned_with_preflight_and_own_report(tmp_path, monkeypatch):
+    calls, pre, seen = [], [], []
+    _keyed(monkeypatch)
+    _fake_main(monkeypatch, tmp_path, ["--providers", "anthropic"], calls)
+    chosen = llm.PROVIDERS[1]
+    monkeypatch.setattr(llm, "chat", lambda m, p=None: pre.append(p) or {"content": "ok"})
+    monkeypatch.setattr(runner, "run_suite", lambda scs, t: seen.append(llm._pinned.get()) or ([(scs[0], None, [])], [1]))
+    monkeypatch.setattr(runner, "assert_only_provider", lambda cids, t, prefix: calls.append(prefix))
+    outs = []
+    monkeypatch.setattr(runner, "write_report", lambda *a, **k: outs.append(k["out"]))
+    runner.main()
+    assert pre == [[chosen]] and seen == [[chosen]] and llm._pinned.get() is None
+    assert calls.count("anthropic:") == 1 and "local_only" not in calls
+    assert [o.name for o in outs] == ["provider-summit-roofing-anthropic.md"]
+    assert not list((tmp_path / "reports").glob("*"))  # nothing else written by the fakes
+
+
+def test_preflight_failure_aborts_before_suite(tmp_path, monkeypatch):
+    calls = []
+    _keyed(monkeypatch)
+    _fake_main(monkeypatch, tmp_path, ["--providers", "anthropic"], calls)
+    def boom(m, p=None):
+        raise llm.ProviderRejected("anthropic rejected the request: HTTP 400")
+    monkeypatch.setattr(llm, "chat", boom)
+    with pytest.raises(SystemExit) as e:
+        runner.main()
+    assert "400" in str(e.value) and "run_suite" not in calls
+
+
+def test_assert_only_provider_prefix(monkeypatch):
+    @contextmanager
+    def fake_tx(t):
+        yield type("C", (), {"execute": lambda self, *a, **k: iter(rows)})()
+    monkeypatch.setattr(runner, "tx", fake_tx)
+    rows = [("anthropic:claude-x",)]
+    runner.assert_only_provider([1], "t", "anthropic:")
+    rows = [("anthropic:claude-x",), ("local:llama",)]
+    with pytest.raises(SystemExit):
+        runner.assert_only_provider([1], "t", "anthropic:")
+    with pytest.raises(SystemExit):
+        runner.assert_local_only([1], "t")
+    rows = [("local:llama",)]
+    runner.assert_local_only([1], "t")
+
+
+def test_run_suite_reraises_provider_rejected_but_records_other_errors(monkeypatch):
+    sc = {"id": "a", "category": "faq", "turns": ["hi"]}
+    def rej(s, t):
+        raise llm.ProviderRejected("x")
+    monkeypatch.setattr(runner, "run_scenario", rej)
+    with pytest.raises(llm.ProviderRejected):
+        runner.run_suite([sc], "t")
+    def other(s, t):
+        raise ValueError("bad")
+    monkeypatch.setattr(runner, "run_scenario", other)
+    results, _ = runner.run_suite([sc], "t")
+    assert results[0][2][0].startswith("error: ValueError")
+
+
+def test_chat_default_providers_resolved_at_call_time(monkeypatch):
+    seen = []
+    fake = [llm.Provider("zz", "u", "k", "m")]
+    monkeypatch.setattr(llm, "PROVIDERS", fake)
+    monkeypatch.setattr(llm, "_call", lambda p, m: seen.append(p.name) or {"content": "ok", "model": p.name})
+    llm.chat([])
+    assert seen == ["zz"]
