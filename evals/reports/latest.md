@@ -1,6 +1,6 @@
-# Eval report (2026-11-03)
+# Eval report (2026-11-04)
 
-- Git SHA: `f658d10`  Prompt: `agent.v2`  Models: local:llama3.1:8b
+- Git SHA: `6ccd093`  Prompt: `agent.v2`  Models: local:llama3.1:8b
 - Overall: **94/96** scenarios passed
 
 | Metric | Value |
@@ -8,7 +8,7 @@
 | Booking validity (must be 100%) | 100% |
 | Escalation precision / recall | 11/11 / 11/11 |
 | Schema validity (first try) | 95% over 232 LLM calls |
-| Turn latency p50 / p95 | 10.3s / 13.6s |
+| Turn latency p50 / p95 | 13.9s / 18.7s |
 | Tokens (prompt / completion) | 154895 / 15997 (local = $0) |
 
 | Category | Passed |
