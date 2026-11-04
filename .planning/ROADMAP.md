@@ -4,7 +4,14 @@
 
 Turn the single-business Summit Roofing agent into a multi-business platform where a business is a validated config pack. The order protects the regression gate: freeze the baseline, add tenancy plumbing, extract roofing into pack #1, swap qualification to a data-driven interpreter, prove it with a second (dental) pack, lock down access with per-tenant keys and RLS, then add engine modules, tenant-aware n8n, docs/privacy/onboarding, and finally the held-out eval and optional extras. Roofing stays at 94/96 (same two failures) through Phase 5.
 
+## Milestones
+
+- ✅ **v1.0 RoofDesk Global** — Phases 1-10 (shipped 2026-11-04, local branch, not deployed)
+
 ## Phases
+
+<details>
+<summary>✅ v1.0 RoofDesk Global (Phases 1-10) — SHIPPED 2026-11-04</summary>
 
 - [x] **Phase 1: Baseline Freeze and Environment Isolation** - Frozen per-scenario baseline, flake tolerance, isolated branch environment, and the regression gate (completed 2026-11-03)
 - [x] **Phase 2: Tenants, Migrations and DB Plumbing** - Numbered migrations, tenant_id everywhere, `db.tx()`, tenant-stamped logs and events (completed 2026-11-03)
@@ -16,6 +23,8 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 - [x] **Phase 8: Tenant-Aware n8n** - 10 tenant-aware workflow files (3 migrated + 2 untenanted + 5 new), API-only operation, CI header check (completed 2026-11-03)
 - [x] **Phase 9: Docs, PII/Retention and make new-business** - Masking, retention, data map, generated SOPs, onboarding command, grep gate, README (completed 2026-11-04)
 - [x] **Phase 10: Held-Out Eval and Optional Extras** - 20 held-out scenarios run once, then Anthropic provider, MCP connectors, venue pack (completed 2026-11-04)
+
+</details>
 
 ## Phase Details
 
