@@ -232,6 +232,10 @@ curl -s -X POST localhost:5679/webhook/inbound-message -H 'content-type: applica
 
 The LLM client is provider-agnostic. If a provider is rate limited, times out or errors, the next one in the chain takes over, and the provider that answered is recorded on every call. Deploy notes (Cloudflare Pages, Neon, Resend, and so on) are in [`docs/deploy.md`](docs/deploy.md).
 
+Where data is stored, who processes it and how it is deleted: [`docs/data-map.md`](docs/data-map.md).
+
+Checks (run through the branch stack with `make g-up` first): `make g-test`, `make check-n8n`, `make check-shared`, `make gen-docs` (then confirm no diff), `make new-business PACK=<slug>`. There is no CI runner yet (no `.github/`), so these run by hand; CI wiring is deferred.
+
 ## Limitations and what I'd do next
 
 - The eval set is self-written and was tuned against; build a held-out set and measure the gap.
