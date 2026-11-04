@@ -39,5 +39,7 @@ eval-gate:
 new-business:
 	@test -n "$(PACK)" || (echo "usage: make new-business PACK=<slug>"; exit 2)
 	$(GCOMPOSE) exec -T api python -m scripts.new_business $(PACK)
+gen-docs:
+	$(GCOMPOSE) exec -T api python -m scripts.gen_docs
 check-shared:
 	$(GCOMPOSE) exec -T api python -m scripts.check_shared

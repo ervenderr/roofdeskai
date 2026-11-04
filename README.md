@@ -50,6 +50,17 @@ Latest run: **94/96 scenarios** (all 80 original scenarios pass; 14 of the 16 sp
 
 **Read this with the right amount of salt.** I wrote all 96 scenarios while building, and I fixed failures against those same scenarios, so this is a regression suite and not a held-out test. The first full run scored 74/80 (`evals/reports/baseline-80-agent.v2.md`). An unseen test set would score lower. Everything ran on one 8B model. Cost is "$0" because the model is local; hosted-API cost is not estimated.
 
+### Per-business scorecard
+
+<!-- BEGIN GENERATED: scorecard -->
+| Pack | Passed | By category |
+|---|---|---|
+| bright-smile-dental | 43/43 | disqualified 4/4, escalation 8/8, faq 5/5, injection 4/4, out_of_knowledge 4/4, out_of_order 3/3, qualified 4/4, slots 4/4, vague 3/3, voice 4/4 |
+| summit-roofing | 94/96 | disqualified 10/10, escalation 8/8, faq 10/10, injection 8/8, out_of_knowledge 8/8, out_of_order 8/8, qualified 12/12, slots 6/6, vague 10/10, voice 14/16 |
+
+Module eval sets (case counts, not run results): brief 16 cases, capacity 13 cases, intake 17 cases, quote 27 cases, reviews 45 cases.
+<!-- END GENERATED: scorecard -->
+
 ## Architecture
 
 ![How a message becomes a booking: demo page and n8n feed the FastAPI agent, which uses an LLM provider chain, Postgres and SMTP](docs/img/architecture.png)
@@ -60,7 +71,22 @@ Conversation states: `GREETING → COLLECT → (BOOK → DONE | NURTURE | DISQUA
 
 ### n8n flow
 
-`n8n/workflows/` is imported and activated automatically by `docker compose up` (image pinned to `n8nio/n8n:2.18.5`). Catalog: 3 tenant-aware workflows (this phase), 2 untenanted tools that stay on the admin key (`outreach-flow`, `error-handler`), and 5 new tenant-aware module workflows arriving in later plans. This supersedes the "6 existing / 11" wording in the ROADMAP.
+`n8n/workflows/` is imported and activated automatically by `docker compose up` (image pinned to `n8nio/n8n:2.18.5`).
+
+<!-- BEGIN GENERATED: catalog -->
+| Workflow | Name | Triggers | Tenant-aware | Nodes |
+|---|---|---|---|---|
+| capacity-check | Capacity check | webhook (path capacity-check), schedule, manual | yes | 21 |
+| daily-brief | Daily brief | schedule, manual | yes | 13 |
+| error-handler | Error handler | error trigger | no | 3 |
+| escalation-alert | Escalation alert | webhook (path escalation-alert), called by another workflow | yes | 6 |
+| followup-scheduler | Follow-up scheduler | schedule, manual | yes | 11 |
+| inbound-message | Lead flow (inbound to outcome) | webhook (path inbound-message) | yes | 16 |
+| intake-event | Intake event | webhook (path intake-event) | yes | 6 |
+| outreach-flow | Outreach flow (find, draft, send, reply) | webhook (path outreach-scrape), schedule, webhook (path outreach-import), schedule, schedule, webhook (path outreach-reply), schedule, schedule | no | 37 |
+| quote-request | Quote request | webhook (path quote-request), schedule, manual | yes | 22 |
+| review-reply | Review reply | webhook (path review-reply), schedule, manual | yes | 22 |
+<!-- END GENERATED: catalog -->
 
 - **Lead flow** (tenant-aware): webhook, normalize the SMS/GHL payload (it must carry `tenant_id`), call the agent with that tenant's key, send the reply immediately, then branch on the outcome: booked sends a confirmation email (business name from `GET /tenant/me`), escalated runs the Escalation alert workflow, nurture is left to the nightly scheduler.
 - **Follow-up scheduler** (nightly, tenant-aware): lists tenants with `GET /admin/tenants` (the only admin-key call), loops one tenant at a time with that tenant's key; nurture leads with no activity for 48 hours get a follow-up email, at most 3 per lead. Has a Manual Trigger twin for `n8n execute`.

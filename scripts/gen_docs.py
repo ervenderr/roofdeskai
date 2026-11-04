@@ -102,6 +102,45 @@ def render_all(businesses_dir: Path | None = None, workflows_dir: Path | None = 
     return dict(sorted(out.items()))
 
 
+def scorecard_block(businesses_dir: Path | None = None) -> str:
+    """Per-pack rows from each pack's committed baseline (default_baseline_path); nothing else in evals is read."""
+    rows = ["| Pack | Passed | By category |", "|---|---|---|"]
+    for slug in _slugs(businesses_dir or ROOT / "businesses"):
+        data = json.loads(default_baseline_path(slug).read_text(encoding="utf-8"))  # missing baseline raises
+        cats: dict[str, list[int]] = {}
+        for s in data["scenarios"].values():
+            c = cats.setdefault(s["category"], [0, 0])
+            c[0] += bool(s["passed"])
+            c[1] += 1
+        by_cat = ", ".join(f"{k} {v[0]}/{v[1]}" for k, v in sorted(cats.items()))
+        m = data["meta"]
+        rows.append(f"| {slug} | {m['passed']}/{m['total']} | {by_cat} |")
+    counts = ", ".join(
+        f"{m} {len(yaml.safe_load((ROOT / 'evals' / 'modules' / m / 'cases.yaml').read_text(encoding='utf-8')))} cases"
+        for m in MODULES)
+    return "\n".join(rows) + f"\n\nModule eval sets (case counts, not run results): {counts}."
+
+
+def catalog_block(workflows_dir: Path | None = None) -> str:
+    rows = ["| Workflow | Name | Triggers | Tenant-aware | Nodes |", "|---|---|---|---|---|"]
+    for w in _workflows(workflows_dir or ROOT / "n8n" / "workflows"):
+        aware = "yes" if "tenant key" in w["keys"] else "no"
+        rows.append(f"| {w['stem']} | {w['name']} | {', '.join(w['triggers']) or 'none'} | {aware} | {w['nodes']} |")
+    return "\n".join(rows)
+
+
+def _replace(text: str, name: str, body: str) -> str:
+    begin, end = f"<!-- BEGIN GENERATED: {name} -->", f"<!-- END GENERATED: {name} -->"
+    if text.count(begin) != 1 or text.count(end) != 1 or text.index(begin) > text.index(end):
+        raise ValueError(f"README marker for {name!r} missing or duplicated")
+    i, j = text.index(begin) + len(begin), text.index(end)
+    return text[:i] + "\n" + body + "\n" + text[j:]
+
+
+def render_readme(text: str) -> str:
+    return _replace(_replace(text, "scorecard", scorecard_block()), "catalog", catalog_block())
+
+
 def write_docs(docs: dict[str, str], root: Path = ROOT) -> None:
     for pack_dir in sorted({Path(k).parent for k in docs}):
         d = root / pack_dir
@@ -117,6 +156,8 @@ def write_docs(docs: dict[str, str], root: Path = ROOT) -> None:
 
 def main() -> int:
     write_docs(render_all())
+    readme = ROOT / "README.md"
+    readme.write_text(render_readme(readme.read_text(encoding="utf-8")), encoding="utf-8")
     return 0
 
 
