@@ -50,6 +50,8 @@ Latest run: **94/96 scenarios** (all 80 original scenarios pass; 14 of the 16 sp
 
 **Read this with the right amount of salt.** I wrote all 96 scenarios while building, and I fixed failures against those same scenarios, so this is a regression suite and not a held-out test. The first full run scored 74/80 (`evals/reports/baseline-80-agent.v2.md`). An unseen test set would score lower. Everything ran on one 8B model. Cost is "$0" because the model is local; hosted-API cost is not estimated.
 
+**Held-out score.** 20 scenarios written and committed before any Phase 10 tuning, run once on the local model: **17/20** (roofing 10/12, dental 7/8). Three booking scenarios failed and were not fixed. These were authored by the same assistant that built the system with the dev sets visible, so they are held out from tuning, not independent. Details, SHAs and failures: [docs/heldout-eval.md](docs/heldout-eval.md).
+
 ### Per-business scorecard
 
 <!-- BEGIN GENERATED: scorecard -->

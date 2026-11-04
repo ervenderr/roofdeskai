@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-04",
+  "local_only": true,
+  "model": "llama3.1:8b",
+  "passed": 7,
+  "precheck": "git diff --quiet 6fc701f HEAD -- api prompts businesses scripts evals/runner.py: exit 0",
+  "reruns": [],
+  "run_sha": "01f0fd9",
+  "scenarios": {
+    "ho-d-01": {
+      "failed_checks": [],
+      "passed": true
+    },
+    "ho-d-02": {
+      "failed_checks": [],
+      "passed": true
+    },
+    "ho-d-03": {
+      "failed_checks": [],
+      "passed": true
+    },
+    "ho-d-04": {
+      "failed_checks": [],
+      "passed": true
+    },
+    "ho-d-05": {
+      "failed_checks": [],
+      "passed": true
+    },
+    "ho-d-06": {
+      "failed_checks": [],
+      "passed": true
+    },
+    "ho-d-07": {
+      "failed_checks": [],
+      "passed": true
+    },
+    "ho-d-08": {
+      "failed_checks": [
+        "state COLLECT != DONE",
+        "outcome None != booked",
+        "lead_status new != booked",
+        "missing tool call book_appointment"
+      ],
+      "passed": false
+    }
+  },
+  "scenarios_sha": "6fc701f",
+  "scenarios_sha256": "471917eea903c10f7dc962763715bd8247688ccc3e8061954879d4e4623345a5",
+  "total": 8
+}
