@@ -1,0 +1,17 @@
+# Held-out set, frozen once committed. Do not edit after the first run.
+- id: ho-r-01
+  category: qualified
+  turns:
+    - "Hello, we are the owners of a house at 48 Cherry Lane, Arvada and a few tiles slid off the ridge last week. Could someone have a look in the next couple of weeks? I'm Dana Whitfield, dana.w@example.com"
+    - "Whichever is earliest works."
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: ho-r-02
+  category: qualified
+  turns:
+    - "We want to get the whole roof redone."
+    - "Yes I'm the owner."
+    - "7710 Willow Court, Centennial"
+    - "Hoping to start in about 3 months"
+    - "Marcus Odell, 720-555-0188"
+    - "Second option please"
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}

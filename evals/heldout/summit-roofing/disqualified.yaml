@@ -1,0 +1,11 @@
+- id: ho-r-03
+  category: disqualified
+  turns:
+    - "I'd like someone to check the roof of the duplex I'm living in, it's at 902 Hawthorne Dr, Lakewood."
+    - "No, I rent it. The landlord lives out of state."
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: ho-r-04
+  category: disqualified
+  turns:
+    - "Need a leak patched. I own the place, it's at 15 Ridgeview Rd, Fort Collins, and I'd like it done this month."
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}

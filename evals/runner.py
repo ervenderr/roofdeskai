@@ -4,6 +4,7 @@
                                            [--category x] [--write-baseline [--force-baseline] | --flake | --gate]
 """
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -28,6 +29,8 @@ from app.tenants import ensure_tenant, sync_faq
 from app.tools import ensure_slots
 
 HERE = Path(__file__).parent
+HELDOUT = HERE / "heldout"
+REPORTS = HERE / "reports"
 ROOFING = "summit-roofing"
 CATEGORIES = {"voice", "qualified", "faq", "disqualified", "vague", "out_of_knowledge", "injection", "out_of_order",
               "escalation", "slots"}
@@ -83,10 +86,10 @@ def _bad(f: Path, sc: dict, why: str) -> None:
     sys.exit(f"scenario error in {f.name} ({sc.get('id', '?')}): {why}")
 
 
-def load_scenarios(slug: str = ROOFING) -> list[dict]:
-    """Read and validate businesses/<slug>/scenarios/*.yaml: typos in expect keys must fail, not pass silently."""
+def load_scenarios(slug: str = ROOFING, root: Path | None = None) -> list[dict]:
+    """Read and validate businesses/<slug>/scenarios/*.yaml (or root/*.yaml): typos in expect keys must fail, not pass silently."""
     out, seen = [], set()
-    for f in sorted((settings.businesses_dir / slug / "scenarios").glob("*.yaml")):
+    for f in sorted((root or settings.businesses_dir / slug / "scenarios").glob("*.yaml")):
         for sc in yaml.safe_load(f.read_text()) or []:
             if sc.get("id") in seen:
                 _bad(f, sc, "duplicate id")
@@ -199,6 +202,43 @@ def _git_sha() -> str:
                                                        text=True).stdout.strip() or "unknown"
 
 
+def _heldout_sha256() -> str:
+    h = hashlib.sha256()
+    for f in sorted(HELDOUT.rglob("*.yaml")):
+        if "results" not in f.relative_to(HELDOUT).parts:
+            h.update(str(f.relative_to(HELDOUT)).encode() + b"\0" + f.read_bytes())
+    return h.hexdigest()
+
+
+def run_heldout(slug: str, t: str, force_rerun: str | None) -> None:
+    """Single recorded run of evals/heldout/<slug>. Writes nothing unless the run is valid (local model, no infra fault)."""
+    rec = HELDOUT / "results" / f"{slug}.json"
+    if rec.exists() and not force_rerun:
+        sys.exit(f"held-out set for {slug} already ran ({rec}); a re-run needs --force-rerun REASON (infra fault only)")
+    results, cids = run_suite(load_scenarios(slug, HELDOUT / slug), t)
+    assert_local_only(cids, t)
+    if faults := [sc["id"] for sc, r, f in results if r is None or any(x.startswith("error:") for x in f)]:
+        sys.exit(f"ABORT: infrastructure fault in {faults}; nothing written, the single run is not consumed")
+    sha, run_sha = os.environ.get("HELDOUT_SHA", "unknown"), os.environ.get("GIT_SHA", "unknown")
+    reruns = []
+    if rec.exists():
+        reruns = [*json.loads(rec.read_text()).get("reruns", []), {"reason": force_rerun, "date": str(date.today())}]
+        rec.replace(rec.with_suffix(".prev.json"))
+    passed = sum(1 for *_, f in results if not f)
+    data = {"scenarios_sha": sha, "run_sha": run_sha, "model": settings.local_llm_model, "date": str(date.today()),
+            "passed": passed, "total": len(results), "scenarios_sha256": _heldout_sha256(), "reruns": reruns,
+            "local_only": True, "precheck": os.environ.get("HELDOUT_PRECHECK", ""),
+            "scenarios": {sc["id"]: {"passed": not f, "failed_checks": list(f)} for sc, _, f in results}}
+    rec.parent.mkdir(parents=True, exist_ok=True)
+    rec.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+    header = [f"Held-out run (scenarios fixed at {sha}, ran at {run_sha})", "",
+              "Caveat: these scenarios were authored by the same assistant that built the system, with the dev sets "
+              "visible. The set is held out from tuning, not independent.", ""]
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    write_report(results, cids, slug, t, out=REPORTS / f"heldout-{slug}.md", header=header)
+    print(f"held-out record written: {rec} ({passed}/{len(results)})")
+
+
 def write_baseline(scenarios: list[dict], slug: str, t: str) -> None:
     if len(scenarios) != len(load_scenarios(slug)):
         sys.exit("--write-baseline needs the full suite (no --ids/--category)")
@@ -281,7 +321,11 @@ def main() -> None:
     ap.add_argument("--force-baseline", action="store_true", help="allow overwriting the committed roofing baseline")
     mode.add_argument("--flake", action="store_true", help=f"{FLAKE_RUNS} full runs, write flake report")
     mode.add_argument("--gate", action="store_true", help="diff against baseline (BASELINE_PATH overrides); exit 1 on regression")
+    mode.add_argument("--heldout", action="store_true", help="single recorded run of evals/heldout/<slug>")
+    ap.add_argument("--force-rerun", metavar="REASON", help="with --heldout: allow a disclosed re-run after an infra fault")
     args = ap.parse_args()
+    if args.heldout and (args.ids or args.category):
+        ap.error("--heldout runs the full set; it cannot be combined with --ids/--category")
     settings.mail_transport = "mailpit"  # eval bookings send emails; never to a real mailbox
     if args.write_baseline and args.pack == ROOFING and default_baseline_path(ROOFING).exists() and not args.force_baseline:
         sys.exit(f"refusing to overwrite {default_baseline_path(ROOFING)}; pass --force-baseline to do it on purpose")
@@ -290,6 +334,8 @@ def main() -> None:
     t = ensure_tenant(slug)
     ensure_slots(t)  # before the first scenario: reset_db("no_slots") needs existing slots to mark
     sync_faq(t)
+    if args.heldout:
+        return run_heldout(slug, t, args.force_rerun)
     scenarios = load_scenarios(slug)
     if args.ids:
         scenarios = [s for s in scenarios if s["id"] in args.ids.split(",")]
@@ -308,7 +354,7 @@ def main() -> None:
         write_report(results, cids, slug, t)
 
 
-def write_report(results, cids, slug: str, t: str) -> None:
+def write_report(results, cids, slug: str, t: str, out: Path | None = None, header=()) -> None:
     passed = sum(1 for *_, f in results if not f)
     by_cat = defaultdict(lambda: [0, 0])
     for sc, _, f in results:
@@ -349,7 +395,7 @@ def write_report(results, cids, slug: str, t: str) -> None:
                       {"r": run_id, "s": sc["id"], "p": not f, "d": json.dumps({"fails": f, "replies": r and r["replies"]})})
 
     lines = [
-        f"# Eval report ({date.today()})", "",
+        f"# Eval report ({date.today()})", "", *header,
         f"- Git SHA: `{sha}`  Prompt: `{prompt_version}`  Models: {', '.join(llm.models or [])}",
         f"- Overall: **{passed}/{len(results)}** scenarios passed", "",
         "| Metric | Value |", "|---|---|",
@@ -364,7 +410,7 @@ def write_report(results, cids, slug: str, t: str) -> None:
         "## Failures", "",
         *[f"- `{sc['id']}`: {'; '.join(f)}" for sc, _, f in results if f],
     ]
-    out = report_path(slug, len(results) == len(load_scenarios(slug)))
+    out = out or report_path(slug, len(results) == len(load_scenarios(slug)))
     out.write_text("\n".join(lines) + "\n")
     print("\n".join(lines))
 

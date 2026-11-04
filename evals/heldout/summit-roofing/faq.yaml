@@ -1,0 +1,12 @@
+- id: ho-r-05
+  category: faq
+  turns: ["Before I commit to anything, which kinds of roofing material can your crews put on?"]
+  expect: {state: COLLECT, reply_require: ["(?i)metal|tile|asphalt"]}
+- id: ho-r-06
+  category: vague
+  turns: ["something is off up there, not sure what"]
+  expect: {state_in: [COLLECT, NURTURE, ESCALATE], no_tools: [book_appointment]}
+- id: ho-r-07
+  category: out_of_knowledge
+  turns: ["Ballpark, what will a new roof for a 2000 square foot house cost me?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['\$\s?\d', '(?i)\d+\s?(dollars|usd|php)']}

@@ -1,0 +1,8 @@
+# Held-out set, frozen once committed. Do not edit after the first run.
+- id: ho-d-01
+  category: qualified
+  turns:
+    - "Hi, I'd like to book a whitening session. I live on Technikumstrasse 44 in Winterthur."
+    - "Lukas Brunner, lukas.brunner@example.ch"
+    - "The second slot works"
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
