@@ -2,15 +2,17 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 
-from . import auth
+from . import auth, retention
+from .config import settings
 from .db import system
 from .pack import PackError
 from .tenants import ensure_tenant
 
 router = APIRouter(prefix="/admin/tenants", dependencies=[Depends(auth.require_admin)])
+retention_router = APIRouter(prefix="/admin/retention", dependencies=[Depends(auth.require_admin)])
 
 
 class KeyIn(BaseModel):
@@ -19,6 +21,16 @@ class KeyIn(BaseModel):
 
 class TenantIn(BaseModel):
     pack_slug: str = Field(min_length=1, max_length=100)
+
+
+class RetentionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    tenant: str | None = None
+
+
+class SubjectIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    identifier: str  # length checked in retention.delete_subject_http so a 422 never echoes it
 
 
 def _tenant(tid: str) -> str:
@@ -66,3 +78,19 @@ def rotate(tid: str, kid: int, body: KeyIn | None = None):
 def revoke(tid: str, kid: int):
     auth.revoke_key(_tenant(tid), kid)
     return {"revoked": kid}
+
+
+@router.post("/{tid}/subject/delete")
+def subject_delete(tid: str, body: SubjectIn):
+    return retention.delete_subject_http(_tenant(tid), body.identifier)
+
+
+@retention_router.post("/run")
+def retention_run(body: RetentionIn):
+    days = settings.retention_days
+    if days <= 0:
+        return {"retention_days": days, "disabled": True, "tenants": {}}
+    if body.tenant:
+        tid = _tenant(body.tenant)
+        return {"retention_days": days, "disabled": False, "tenants": {tid: retention.purge_tenant(tid, days)}}
+    return {"retention_days": days, "disabled": False, "tenants": retention.purge_all(days)}

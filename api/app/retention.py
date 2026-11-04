@@ -4,6 +4,7 @@ import logging
 import re
 from datetime import datetime, timedelta, timezone
 
+from fastapi import HTTPException
 from sqlalchemy import text
 
 from . import db
@@ -99,3 +100,11 @@ def delete_subject(tenant_id: str, identifier: str) -> dict[str, int]:
         db.record_event(c, t, None, "subject_deleted", {"id_hash": hashlib.sha256(v.lower().encode()).hexdigest()[:16], "counts": counts})
     log.info("subject deleted tenant=%s counts=%s", tenant_id, counts)
     return counts
+
+
+def delete_subject_http(tenant_id: str, identifier: str) -> dict[str, int]:
+    """Route wrapper: a bad identifier is a bare 422, never echoed back."""
+    try:
+        return delete_subject(tenant_id, identifier)
+    except ValueError:
+        raise HTTPException(422, "invalid identifier") from None

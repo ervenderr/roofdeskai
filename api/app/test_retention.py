@@ -287,3 +287,94 @@ def test_record_event_payload_keys_are_allowlisted():
                               and any(c is call for c in ast.walk(n))}
                     assert any((f.name, o) in EXEMPT for o in owners), f"non-literal record_event payload in {f.name}"
     assert seen >= 7
+
+
+# ---- endpoints and script ----
+from fastapi.testclient import TestClient  # noqa: E402
+
+from scripts import retention as cli  # noqa: E402
+
+from . import auth  # noqa: E402
+from .config import settings  # noqa: E402
+from .main import app  # noqa: E402
+
+ADMIN = {"X-Admin-Key": "test-key"}
+
+
+@pytest.fixture
+def client(monkeypatch):
+    monkeypatch.setattr(settings, "admin_api_key", "test-key")
+    return TestClient(app)
+
+
+def test_retention_run_with_tenant_purges_only_it(client, monkeypatch):
+    monkeypatch.setattr(settings, "retention_days", 30)
+    a, b = _tenant(), _tenant()
+    _seed_all(a)
+    _seed_all(b)
+    r = client.post("/admin/retention/run", json={"tenant": a}, headers=ADMIN)
+    assert r.status_code == 200 and r.json()["tenants"][a]["conversations"] == 4 and list(r.json()["tenants"]) == [a]
+    assert _n(a, "conversations") == 3 and _n(b, "conversations") == 7
+
+
+def test_retention_run_without_tenant_uses_purge_all(client, monkeypatch):
+    seen = []
+    monkeypatch.setattr(settings, "retention_days", 45)
+    monkeypatch.setattr(retention, "list_tenant_ids", lambda: ["x"])
+    monkeypatch.setattr(retention, "purge_all", lambda days: seen.append(days) or {"x": {"leads": 0}})
+    r = client.post("/admin/retention/run", json={}, headers=ADMIN)
+    assert r.status_code == 200 and seen == [45] and r.json()["tenants"] == {"x": {"leads": 0}}
+
+
+def test_retention_run_disabled_is_explicit_noop(client, monkeypatch):
+    monkeypatch.setattr(settings, "retention_days", 0)
+    monkeypatch.setattr(retention, "purge_all", lambda d: pytest.fail("purge_all must not run"))
+    monkeypatch.setattr(retention, "purge_tenant", lambda *a: pytest.fail("purge_tenant must not run"))
+    r = client.post("/admin/retention/run", json={}, headers=ADMIN)
+    assert r.status_code == 200 and r.json() == {"retention_days": 0, "disabled": True, "tenants": {}}
+
+
+def test_retention_run_needs_admin_key(client):
+    t = _tenant()
+    tenant_key = {"X-API-Key": auth.issue_key(t)["key"]}
+    assert client.post("/admin/retention/run", json={}).status_code in (401, 403)
+    assert client.post("/admin/retention/run", json={}, headers=tenant_key).status_code in (401, 403)
+
+
+def test_tenant_subject_delete_scoped_to_key_tenant(client):
+    a, b = _tenant(), _tenant()
+    ra, rb = _seed_subject(a), _seed_subject(b)
+    h = {"X-API-Key": auth.issue_key(a)["key"]}
+    r = client.post("/tenant/subject/delete", json={"identifier": "jane.doe@example.com"}, headers=h)
+    assert r.status_code == 200 and r.json()["leads"] == 1
+    assert ra["lead"] not in _ids(a, "leads") and rb["lead"] in _ids(b, "leads")
+
+
+@pytest.mark.parametrize("bad", ["", "   ", "y" * 300])
+def test_tenant_subject_delete_rejects_bad_identifier_without_echo(client, bad):
+    h = {"X-API-Key": auth.issue_key(_tenant())["key"]}
+    r = client.post("/tenant/subject/delete", json={"identifier": bad}, headers=h)
+    assert r.status_code == 422 and (not bad.strip() or bad not in r.text)
+
+
+def test_tenant_subject_delete_needs_key(client):
+    assert client.post("/tenant/subject/delete", json={"identifier": "a@b.co"}).status_code == 401
+
+
+def test_admin_subject_delete_explicit_tenant(client):
+    a, b = _tenant(), _tenant()
+    ra, rb = _seed_subject(a), _seed_subject(b)
+    r = client.post(f"/admin/tenants/{a}/subject/delete", json={"identifier": "jane.doe@example.com"}, headers=ADMIN)
+    assert r.status_code == 200 and r.json()["leads"] == 1 and rb["lead"] in _ids(b, "leads")
+    assert client.post(f"/admin/tenants/{uuid.uuid4()}/subject/delete", json={"identifier": "a@b.co"}, headers=ADMIN).status_code == 404
+    assert client.post(f"/admin/tenants/{a}/subject/delete", json={"identifier": "a@b.co"}).status_code in (401, 403)
+
+
+def test_cli_purges_given_tenant_and_disabled_message(capsys, monkeypatch):
+    t = _tenant()
+    _seed_all(t)
+    monkeypatch.setattr(settings, "retention_days", 0)
+    cli.main([])
+    assert "retention disabled (RETENTION_DAYS=0)" in capsys.readouterr().out and _n(t, "conversations") == 7
+    cli.main(["--days", "30", "--tenant", t])
+    assert _n(t, "conversations") == 3 and t in capsys.readouterr().out
