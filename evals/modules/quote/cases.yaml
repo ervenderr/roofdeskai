@@ -106,3 +106,29 @@
   input: {service_id: private_event, qty: 1, customer_type: consumer}
   text: "Your private event on 12.07.2026 at 18:00 for 12 guests costs CHF 600.00."
   expect: ok
+
+# puzzle-peak services (same CHF prices as above). Hand-computed: 35.00 x qty, tiers at 10 (10%) and 20 (15%).
+- id: pp-tier-9-no-discount
+  pack: puzzle-peak
+  input: {service_id: escape_room, qty: 9, customer_type: consumer}
+  expect: {total: "315.00", lines: [{ref: escape_room, amount: "315.00"}]}
+- id: pp-tier-10-gets-10pct
+  pack: puzzle-peak
+  input: {service_id: escape_room, qty: 10, customer_type: consumer}
+  expect: {total: "315.00", lines: [{ref: escape_room, amount: "350.00"}, {ref: group_discount, amount: "-35.00"}]}
+- id: pp-tier-19-still-10pct
+  pack: puzzle-peak
+  input: {service_id: escape_room, qty: 19, customer_type: consumer}
+  expect: {total: "598.50", lines: [{ref: escape_room, amount: "665.00"}, {ref: group_discount, amount: "-66.50"}]}
+- id: pp-tier-20-gets-15pct
+  pack: puzzle-peak
+  input: {service_id: escape_room, qty: 20, customer_type: consumer}
+  expect: {total: "595.00", lines: [{ref: escape_room, amount: "700.00"}, {ref: group_discount, amount: "-105.00"}]}
+- id: pp-corporate-surcharge-on-discounted-subtotal
+  pack: puzzle-peak
+  input: {service_id: escape_room, qty: 10, customer_type: corporate}
+  expect: {total: "378.00", lines: [{ref: escape_room, amount: "350.00"}, {ref: group_discount, amount: "-35.00"}, {ref: customer_surcharge, amount: "63.00"}]}
+- id: pp-unpriced-vip-needs-human
+  pack: puzzle-peak
+  input: {service_id: vip_experience, qty: 4}
+  expect: {needs_human: {reason: missing_price, missing: [price]}}

@@ -90,3 +90,16 @@
   expect:
     people: [{person_key: a@x.com, name: Ann, waiver_at: "2026-07-01T10:00:00+00:00"}]
     errors: [{event: waiver, field: name, msg: invalid}]
+
+# puzzle-peak intake mapping (same shape as the fixture): waiver/checkin key on guest.email then guest.phone; result on guest.email.
+- id: pp-waiver-then-checkin-one-person
+  pack: puzzle-peak
+  events:
+    - {event: waiver, payload: {guest: {email: "Zoe@Example.com", name: Zoe}, signed_at: "2026-07-01T10:00:00+00:00"}}
+    - {event: checkin, payload: {guest: {email: zoe@example.com}, arrived_at: "2026-07-02T10:00:00+00:00"}}
+  expect: {people: [{person_key: zoe@example.com, name: Zoe, waiver_at: "2026-07-01T10:00:00+00:00", checkin_at: "2026-07-02T10:00:00+00:00"}]}
+- id: pp-result-maps-fields
+  pack: puzzle-peak
+  events:
+    - {event: result, payload: {guest: {email: zoe@example.com}, finished_at: "2026-07-02T11:00:00+00:00", game: {score: 120, time: 3300}, team: {name: Peak}}}
+  expect: {people: [{person_key: zoe@example.com, result: {score: 120, team: Peak, time_seconds: 3300}}]}
