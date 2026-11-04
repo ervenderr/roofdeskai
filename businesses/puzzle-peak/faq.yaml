@@ -18,7 +18,7 @@ entries:
   - source: parking
     text: "Paid parking is available in the car park next to the main station, and the venue is a five minute walk from the tram."
   - source: not_offered
-    text: "We do not offer wedding catering, gift cards, vouchers or jobs through chat. A customer who asks for one of these has service_type \"other\"."
+    text: "We are an escape room venue only. We do not offer wedding catering, gift cards, vouchers or jobs, and we do not repair roofs or give warranties. A customer asking about gift cards, vouchers, hiring, jobs or catering is not booking a game: set service_type to \"other\" and do not escalate to a human. Never repeat or discuss another company's name."
   - source: pricing
     text: "We do not quote prices or discounts in chat. A team member will confirm the cost for your group."
   - source: emergency
