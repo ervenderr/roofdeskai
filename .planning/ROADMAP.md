@@ -15,7 +15,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 - [x] **Phase 7: Engine Modules and Connectors** - Quote builder, capacity checker, connectors, daily brief, review responder, intake_event, each with deterministic evals (completed 2026-11-03)
 - [x] **Phase 8: Tenant-Aware n8n** - 10 tenant-aware workflow files (3 migrated + 2 untenanted + 5 new), API-only operation, CI header check (completed 2026-11-03)
 - [x] **Phase 9: Docs, PII/Retention and make new-business** - Masking, retention, data map, generated SOPs, onboarding command, grep gate, README (completed 2026-11-04)
-- [ ] **Phase 10: Held-Out Eval and Optional Extras** - 20 held-out scenarios run once, then Anthropic provider, MCP connectors, venue pack
+- [x] **Phase 10: Held-Out Eval and Optional Extras** - 20 held-out scenarios run once, then Anthropic provider, MCP connectors, venue pack (completed 2026-11-04)
 
 ## Phase Details
 
@@ -151,13 +151,13 @@ Plans:
   4. The venue pack (staff, group bookings) passes its own evals using quotes, capacity and intake
 **Plans**: 7 plans
 Plans:
-- [ ] 10-01-PLAN.md — held-out scenarios (20) and --heldout tooling, committed before any run
-- [ ] 10-02-PLAN.md — run held-out once per pack, publish score
-- [ ] 10-03-PLAN.md — puzzle-peak venue pack, scenarios, module cases, address fallback
-- [ ] 10-04-PLAN.md — venue run, bounded tuning, baseline, pin, generated docs
-- [ ] 10-05-PLAN.md — optional Anthropic provider, pin, --providers flag (fakes only)
-- [ ] 10-06-PLAN.md — mcp 2.3 dependency and connector MCP server
-- [ ] 10-07-PLAN.md — final gates
+- [x] 10-01-PLAN.md — held-out scenarios (20) and --heldout tooling, committed before any run
+- [x] 10-02-PLAN.md — run held-out once per pack, publish score
+- [x] 10-03-PLAN.md — puzzle-peak venue pack, scenarios, module cases, address fallback
+- [x] 10-04-PLAN.md — venue run, bounded tuning, baseline, pin, generated docs
+- [x] 10-05-PLAN.md — optional Anthropic provider, pin, --providers flag (fakes only)
+- [x] 10-06-PLAN.md — mcp 2.3 dependency and connector MCP server
+- [x] 10-07-PLAN.md — final gates
 
 ## Progress
 
@@ -172,4 +172,4 @@ Plans:
 | 7. Engine Modules and Connectors | 8/8 | Complete    | 2026-11-03 |
 | 8. Tenant-Aware n8n | 6/6 | Complete    | 2026-11-03 |
 | 9. Docs, PII/Retention and make new-business | 6/6 | Complete    | 2026-11-04 |
-| 10. Held-Out Eval and Optional Extras | 0/TBD | Not started | - |
+| 10. Held-Out Eval and Optional Extras | 7/7 | Complete    | 2026-11-04 |

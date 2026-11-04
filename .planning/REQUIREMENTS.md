@@ -41,7 +41,7 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **EVAL-03**: Dental pack has ~40 scenarios across the ten categories; no category under 90% and emergency escalation recall 100%
 - [x] **EVAL-04**: Cross-tenant retrieval and two-tenant interleaved scenarios prove no leakage between packs
 - [x] **EVAL-05**: Each new engine module has its own deterministic eval set
-- [ ] **EVAL-06**: 20 held-out scenarios are written before tuning, run once, and the score is published even if low
+- [x] **EVAL-06**: 20 held-out scenarios are written before tuning, run once, and the score is published even if low
 
 ### Access Control (SEC)
 - [x] **SEC-01**: Operator can issue, rotate and revoke per-tenant API keys; keys are hashed at rest and shown once
@@ -76,9 +76,9 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 - [x] **OPS-07**: README shows a per-business scorecard and the workflow catalog
 
 ### Optional Platform Extras (EXT)
-- [ ] **EXT-01**: Anthropic is an optional LLM provider (local stays default); scorecard runs pin `providers=[anthropic]` so fallback cannot contaminate scores
-- [ ] **EXT-02**: Connectors are exposed as MCP servers (mcp 2.x) wrapping the same adapter classes
-- [ ] **EXT-03**: Third pack (venue/experience business with staff and group bookings) exercises quotes, capacity and intake and passes its own evals
+- [x] **EXT-01**: Anthropic is an optional LLM provider (local stays default); scorecard runs pin `providers=[anthropic]` so fallback cannot contaminate scores
+- [x] **EXT-02**: Connectors are exposed as MCP servers (mcp 2.x) wrapping the same adapter classes
+- [x] **EXT-03**: Third pack (venue/experience business with staff and group bookings) exercises quotes, capacity and intake and passes its own evals
 
 ## v2 Requirements (deferred)
 
@@ -156,10 +156,10 @@ Actor note: "Operator" = the RoofDesk owner (Erven). "Business owner" = a tenant
 | OPS-05 | Phase 9 | Complete |
 | OPS-06 | Phase 9 | Complete |
 | OPS-07 | Phase 9 | Complete |
-| EVAL-06 | Phase 10 | Pending |
-| EXT-01 | Phase 10 | Pending |
-| EXT-02 | Phase 10 | Pending |
-| EXT-03 | Phase 10 | Pending |
+| EVAL-06 | Phase 10 | Complete |
+| EXT-01 | Phase 10 | Complete |
+| EXT-02 | Phase 10 | Complete |
+| EXT-03 | Phase 10 | Complete |
 
 **Coverage:** v1 requirements: 53 total, 53 mapped, 0 unmapped
 
