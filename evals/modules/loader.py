@@ -11,6 +11,7 @@ import app
 from app.engine import brief as brief_mod
 from app.engine import capacity as cap_mod
 from app.engine import connectors, intake, quote, quote_text, reviews
+from app.config import settings
 from app.pack import Pack, load_pack
 
 HERE = Path(__file__).parent
@@ -74,7 +75,9 @@ def load_cases(module: str) -> list[dict]:
 
 
 def _pack(c: dict) -> Pack:
-    return load_pack(c.get("pack", DEFAULT_PACK), base=PACKS)
+    slug = c.get("pack", DEFAULT_PACK)
+    # fixtures first (demo-venue), then the real packs
+    return load_pack(slug, base=PACKS if (PACKS / slug).is_dir() else settings.businesses_dir)
 
 
 def _dt(s: str) -> datetime:
