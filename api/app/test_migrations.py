@@ -119,3 +119,13 @@ def test_007_applied_idempotent(scratch_db):
     with scratch_db.begin() as c:
         for t in ("drafts", "capacity_flags", "brief_runs", "intake_people"):
             assert c.execute(text("SELECT relforcerowsecurity FROM pg_class WHERE relname=:t"), {"t": t}).scalar() is True, t
+
+
+def test_008_applied_idempotent(scratch_db):
+    bootstrap.bootstrap_schema(scratch_db)
+    assert "008_retention_grants" in _versions(scratch_db)
+    assert bootstrap.apply_migrations(scratch_db) == []
+    with scratch_db.begin() as c:
+        for t in ("drafts", "capacity_flags", "brief_runs"):
+            assert c.execute(text("SELECT has_table_privilege('app_rw', :t, 'DELETE')"), {"t": t}).scalar() is True, t
+        assert c.execute(text("SELECT has_table_privilege('app_rw', 'agent_events', 'DELETE')")).scalar() is False
