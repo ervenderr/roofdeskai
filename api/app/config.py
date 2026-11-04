@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     nvidia_api_key: str = ""
     openrouter_api_key: str = ""
     gemini_api_key: str = ""
+    anthropic_api_key: str = ""  # optional; when set, anthropic is a live fallback appended last in llm.PROVIDERS
+    anthropic_model: str = "claude-haiku-4-5-20251001"  # cheap tier; override with ANTHROPIC_MODEL
     tts_model: str = "gemini-2.5-flash-preview-tts"
     tts_voice: str = "Kore"
     stt_model: str = "gemini-2.5-flash"
