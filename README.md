@@ -243,6 +243,16 @@ Where data is stored, who processes it and how it is deleted: [`docs/data-map.md
 
 Checks (run through the branch stack with `make g-up` first): `make g-test`, `make check-n8n`, `make check-shared`, `make gen-docs` (then confirm no diff), `make new-business PACK=<slug>`. There is no CI runner yet (no `.github/`), so these run by hand; CI wiring is deferred.
 
+### Connectors over MCP
+
+The four mock connectors (`fetch_sheet`, `fetch_accounting`, `fetch_bookings`, `fetch_ads`) are also MCP tools on stdio. Each takes `tenant` (pack slug) and `day` (`YYYY-MM-DD`) and returns the same result the daily brief sees. The data is MOCK and every result says `source: mock`. Start it from the API container (the client must pass the container environment through):
+
+```
+docker compose -p roofdesk-global -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.global.yml exec -T api python -m scripts.mcp_server
+```
+
+Any pack slug can be read, so add auth before exposing this over HTTP. There is no FastAPI mount.
+
 ## Limitations and what I'd do next
 
 - The eval set is self-written and was tuned against; build a held-out set and measure the gap.
