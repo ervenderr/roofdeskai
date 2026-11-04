@@ -284,15 +284,15 @@ Not a rename phase. Notes: new tenant rows persist in the dev DB after `new-busi
 | A4 | `services.yaml` vip_experience entry is complete in the fixture (my cat output looked truncated at `unit: per_person`, probably missing price; test_quote covers it) | 5 | Real pack must give it a price or the quote returns NeedsHuman, which may be intended |
 | A5 | "call 144" Swiss emergency wording | 5 | carried open item |
 
-## Open Questions (with recommended answers)
+## Open Questions (RESOLVED)
 
-1. **Heldout via runner flag vs scenario copy.** Recommend `--heldout` in `runner.py` (Section 1). The runner change is shared code but touches no prompts; disclose it in the held-out doc as "tooling added before the run; measured system otherwise as of Phase 9". Commit tooling and scenarios together in plan 1 so the recorded scenarios SHA is the exact tree that runs.
-2. **Replace vs skip `assert_local_only` for anthropic.** Recommend replace with `assert_only_provider("anthropic:")` (satisfies D-05's intent, keeps the guard).
-3. **`Address: None`.** Recommend the one-line `or "-"` in `agent._notify_booking` and a test; roofing/dental unaffected (verify with gate). If the user wants zero shared-code change in plan 3, accept "None" and note it.
-4. **Venue slug.** Recommend `puzzle-peak` (not `demo-venue`).
-5. **Is the held-out score "one number"?** Two runs (roofing 12, dental 8) each once; publish combined X/20 plus per-pack. Neither pack is run twice.
-6. **Should `ANTHROPIC` be in default `PROVIDERS` at all?** Recommend yes, appended last (skipped without a key), so `llm.PROVIDERS` lookups by name work for `--providers`. If the user prefers zero chance of hosted Claude answering production chats, build the provider only inside the runner instead.
-7. **Do scenarios in `evals/heldout/` need to be mounted?** `./evals:/srv/evals` is already a rw mount in the base compose; the global override does not remove it. [VERIFIED docker-compose.yml].
+1. **RESOLVED: `--heldout` runner flag, tooling and scenarios committed together in 10-01. Heldout via runner flag vs scenario copy.** Recommend `--heldout` in `runner.py` (Section 1). The runner change is shared code but touches no prompts; disclose it in the held-out doc as "tooling added before the run; measured system otherwise as of Phase 9". Commit tooling and scenarios together in plan 1 so the recorded scenarios SHA is the exact tree that runs.
+2. **RESOLVED: replaced by `assert_only_provider("anthropic:")`, `--providers` limited to anthropic (10-05). Replace vs skip `assert_local_only` for anthropic.** Recommend replace with `assert_only_provider("anthropic:")` (satisfies D-05's intent, keeps the guard).
+3. **RESOLVED: one-line `or "-"` in `agent._notify_booking` with a byte-equality test (10-03). `Address: None`.** Recommend the one-line `or "-"` in `agent._notify_booking` and a test; roofing/dental unaffected (verify with gate). If the user wants zero shared-code change in plan 3, accept "None" and note it.
+4. **RESOLVED: `puzzle-peak`. Venue slug.** Recommend `puzzle-peak` (not `demo-venue`).
+5. **RESOLVED: combined X/20 plus per-pack split, each pack run once (10-02). Is the held-out score "one number"?** Two runs (roofing 12, dental 8) each once; publish combined X/20 plus per-pack. Neither pack is run twice.
+6. **RESOLVED: yes, appended last and skipped without a key; README states it becomes a live fallback whenever the key is set (10-05). Should `ANTHROPIC` be in default `PROVIDERS` at all?** Recommend yes, appended last (skipped without a key), so `llm.PROVIDERS` lookups by name work for `--providers`. If the user prefers zero chance of hosted Claude answering production chats, build the provider only inside the runner instead.
+7. **RESOLVED: no change needed, `./evals:/srv/evals` is already mounted. Do scenarios in `evals/heldout/` need to be mounted?** `./evals:/srv/evals` is already a rw mount in the base compose; the global override does not remove it. [VERIFIED docker-compose.yml].
 
 ## Environment Availability
 
@@ -304,6 +304,8 @@ Not a rename phase. Notes: new tenant rows persist in the dev DB after `new-busi
 | ANTHROPIC_API_KEY | real scorecard | not provided | D-06: documented command only |
 
 ## Validation Architecture
+
+**Waiver:** no VALIDATION.md is produced for Phase 10. It is waived project-wide, as in phases 1 to 9; the per-requirement test map below plus the 10-07 serial gates are the validation record.
 
 | Property | Value |
 |----------|-------|
