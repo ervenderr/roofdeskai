@@ -1,0 +1,13 @@
+# disqualified.yaml
+- id: vdisq-catering
+  category: disqualified
+  turns: ["Can you cater our wedding?"]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: vdisq-giftcard
+  category: disqualified
+  turns: ["Do you sell gift cards? I'd like to buy one."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}
+- id: vdisq-job
+  category: disqualified
+  turns: ["Are you hiring? I'm looking for a job as a game master."]
+  expect: {state: DISQUALIFY, outcome: disqualified, lead_status: disqualified, no_tools: [book_appointment]}

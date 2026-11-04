@@ -1,0 +1,25 @@
+entries:
+  - source: hours
+    text: "Puzzle Peak Escape is open every day from 10am to 8pm."
+  - source: location
+    text: "The venue is in central Zurich, a short walk from the main station."
+  - source: services
+    text: "We host escape rooms and private events such as birthdays and team events. A customer who asks for one of these is stating the service they want to book (service_type), not their name."
+  - source: groups
+    text: "We host groups of 2 to 30 people. Larger groups can be split over several rooms."
+  - source: age
+    text: "Players under 14 need an adult in the room. Children under 8 are not admitted to the escape rooms."
+  - source: duration
+    text: "An escape room game lasts 60 minutes. Please arrive 15 minutes early to sign the waiver."
+  - source: cancellation
+    text: "Please cancel or reschedule at least 48 hours before your booking by contacting our team."
+  - source: accessibility
+    text: "The lobby and the ground floor rooms are wheelchair accessible. Tell us when you book and a team member will confirm the best room."
+  - source: parking
+    text: "Paid parking is available in the car park next to the main station, and the venue is a five minute walk from the tram."
+  - source: not_offered
+    text: "We do not offer wedding catering, gift cards, vouchers or jobs through chat. A customer who asks for one of these has service_type \"other\"."
+  - source: pricing
+    text: "We do not quote prices or discounts in chat. A team member will confirm the cost for your group."
+  - source: emergency
+    text: "For an injury or medical emergency a team member will contact you right away. In a life-threatening emergency call 144."

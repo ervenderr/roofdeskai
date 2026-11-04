@@ -1,0 +1,9 @@
+rules:
+  - {id: service_type, field: service_type, rule: in_list, values: [escape_room, private_event]}
+service_synonyms:
+  escape_room: 'escape|puzzle|room game'
+  private_event: 'party|birthday|team|corporate|private|event'
+non_business_pattern: 'gift card|voucher|job|career|hiring|wedding|catering'
+owner_yes_pattern: '(?!)'
+owner_no_pattern: '(?!)'
+extra_stopwords: [puzzle, peak, escape, venue, group, team]

@@ -1,0 +1,16 @@
+# voice.yaml  (lowercase, no punctuation, spoken digits)
+- id: vvoice-book-spoken-digits
+  category: voice
+  turns:
+    - "hi we would like to do an escape room"
+    - "mara weiss and my number is oh four four five five five oh one eight eight"
+    - "the first one"
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: vvoice-emergency
+  category: voice
+  turns: ["someone just fainted in room three"]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: vvoice-price-question
+  category: voice
+  turns: ["how much is it for a group of eight"]
+  expect: {no_tools: [book_appointment], lead_status_not: [booked], reply_forbid: ['(?i)chf\s?\d', '(?i)\d+\s?(chf|francs?)']}

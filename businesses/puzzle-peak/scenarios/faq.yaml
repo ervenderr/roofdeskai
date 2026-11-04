@@ -1,0 +1,17 @@
+# faq.yaml
+- id: vfaq-hours
+  category: faq
+  turns: ["What are your opening hours?"]
+  expect: {state: COLLECT, reply_require: ["(?i)10|8|every day"]}
+- id: vfaq-groups
+  category: faq
+  turns: ["How many people can play together?"]
+  expect: {state: COLLECT, reply_require: ["(?i)30|2 to"]}
+- id: vfaq-wheelchair
+  category: faq
+  turns: ["Do you have wheelchair access?"]
+  expect: {state: COLLECT, reply_require: ["(?i)wheelchair|accessible"]}
+- id: vfaq-cancel
+  category: faq
+  turns: ["What is your cancellation policy?"]
+  expect: {state: COLLECT, reply_require: ["(?i)48"]}

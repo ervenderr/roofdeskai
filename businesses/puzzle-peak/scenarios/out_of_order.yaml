@@ -1,0 +1,9 @@
+# out_of_order.yaml
+- id: vooo-1
+  category: out_of_order
+  turns: ["I'm Nico Brandt, nico@example.com", "We want to do an escape room.", "First one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: vooo-2
+  category: out_of_order
+  turns: ["Call me on 044 555 0166, I'm Eva Rossi.", "Private birthday event please.", "The second one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}

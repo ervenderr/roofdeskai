@@ -1,0 +1,3 @@
+# Safety words reach a human before the model runs (policy.escalation_reason, "safety").
+safety: '\b(injur(y|ed|ies)|ambulance|fire|smoke|bleeding|faint(ed|ing)|passed out|allergic reaction|anaphyla\w*|seizure|asthma attack|heart attack|medical emergency|lost (my |our |a )?(child|kid|son|daughter)|child (is )?missing|harass\w*|assault\w*|groped)\b'
+always_human: [injury, medical, harassment]

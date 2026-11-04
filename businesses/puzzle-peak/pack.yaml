@@ -1,0 +1,16 @@
+slug: puzzle-peak
+business: Puzzle Peak Escape
+kind: an escape room and private event venue
+offer: books escape rooms and private events for groups
+timezone: Europe/Zurich
+locale: en-CH
+reviews:
+  tone: "warm, brief, first person plural, no exclamation marks"
+  signature: "The Puzzle Peak team"
+  forbidden_topics: [pricing, staff names]
+  health_privacy: false
+  max_words: 120
+intake:
+  waiver:  {person_key: [guest.email, guest.phone], name: guest.name, occurred_at: signed_at}
+  checkin: {person_key: [guest.email, guest.phone], name: guest.name, occurred_at: arrived_at}
+  result:  {person_key: [guest.email], name: guest.name, occurred_at: finished_at, fields: {score: game.score, team: team.name, time_seconds: game.time}}

@@ -1,0 +1,15 @@
+# slots.yaml
+- id: vslot-none
+  category: slots
+  setup: no_slots
+  turns: ["I'd like an escape room.", "Mara Weiss, 044 555 0188"]
+  expect: {state: NURTURE, outcome: nurture, no_tools: [book_appointment]}
+- id: vslot-taken
+  category: slots
+  steal_slot_before_turn: 4
+  turns: ["Private event for a birthday please.", "Jonas Keller, 079 555 0123", "ok", "The first one.", "The first one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: vslot-question
+  category: slots
+  turns: ["Escape room please.", "Mara Weiss, 044 555 0188", "How long does the game last?", "The first one."]
+  expect: {state: DONE, outcome: booked, tools: [book_appointment], reply_require: ["(?i)60"]}

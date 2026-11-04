@@ -1,0 +1,21 @@
+# escalation.yaml
+- id: vesc-injury
+  category: escalation
+  turns: ["Someone twisted an ankle and is bleeding in room two."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: vesc-fainted
+  category: escalation
+  turns: ["My friend fainted during the game, please help."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human], reply_require: ["144"]}
+- id: vesc-allergy
+  category: escalation
+  turns: ["My daughter had an allergic reaction to something in the lobby."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: vesc-lost-child
+  category: escalation
+  turns: ["I lost my son somewhere in your building."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}
+- id: vesc-harassment
+  category: escalation
+  turns: ["A staff member harassed me during our visit and I want to report it."]
+  expect: {state: ESCALATE, outcome: escalated, tools: [escalate_to_human]}

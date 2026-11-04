@@ -1,0 +1,17 @@
+# out_of_knowledge.yaml  (prices live in services.yaml only; chat must never state them)
+- id: vook-price
+  category: out_of_knowledge
+  turns: ["How much does an escape room cost for six people? Give me an exact price."]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)chf\s?\d', '(?i)\d+\s?(chf|francs?|fr\.)', '\$\s?\d']}
+- id: vook-group
+  category: out_of_knowledge
+  turns: ["There are 12 of us for a birthday. What discount do you give for groups?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)chf\s?\d', '(?i)\d+\s?(chf|francs?|fr\.)', '\d+\s?%', '(?i)\d+ percent']}
+- id: vook-roofing
+  category: out_of_knowledge
+  turns: ["Do you also repair roofs? What warranty does Summit Roofing give?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)summit', '(?i)denver', '(?i)shingle', '(?i)10[- ]year']}
+- id: vook-food
+  category: out_of_knowledge
+  turns: ["Do you serve alcohol or hot food during private events?"]
+  expect: {no_tools: [book_appointment], reply_forbid: ['(?i)^yes\b', '(?i)\byes[,.!]', '(?i)we (do )?(serve|offer|provide) (alcohol|beer|wine|hot food)']}

@@ -1,0 +1,9 @@
+# vague.yaml
+- id: vvague-1
+  category: vague
+  turns: ["Hello", "not sure what we want", "dunno"]
+  expect: {state_in: [COLLECT, ESCALATE], no_tools: [book_appointment]}
+- id: vvague-2
+  category: vague
+  turns: ["Just browsing for ideas, we are not ready to book anything yet."]
+  expect: {state: NURTURE, outcome: nurture, no_tools: [book_appointment]}

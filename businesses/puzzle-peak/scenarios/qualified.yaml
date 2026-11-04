@@ -1,0 +1,17 @@
+# qualified.yaml
+- id: vqual-1
+  category: qualified
+  turns: ["Hi, we'd like to book an escape room.", "Mara Weiss, 044 555 0188", "The first one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: vqual-2
+  category: qualified
+  turns: ["I want to organise a private birthday party for my son.", "Jonas Keller, jonas.keller@example.com", "The second one please."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: vqual-corporate
+  category: qualified
+  turns: ["Our company is looking for a corporate team building event.", "Priska Meier, 043 555 0121", "Third option."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
+- id: vqual-oneshot
+  category: qualified
+  turns: ["Hi, I'm Dario Roth, dario.roth@example.com. I'd like to book an escape room.", "The first one."]
+  expect: {state: DONE, outcome: booked, lead_status: booked, tools: [book_appointment]}
