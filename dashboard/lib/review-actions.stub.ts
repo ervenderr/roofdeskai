@@ -12,3 +12,6 @@ export async function startScrape(_prev: string | null, _form: FormData): Promis
 export async function logCall(_id: number, _form: FormData): Promise<void> {
   throw new Error("the static demo is read-only")
 }
+export async function decideDraft(_kind: unknown, _id: unknown, _action: unknown): Promise<void> {
+  throw new Error("the static demo is read-only")
+}

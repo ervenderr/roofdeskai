@@ -2,8 +2,9 @@ import fs from "node:fs"
 import path from "node:path"
 import { cookies } from "next/headers"
 import { notFound, redirect } from "next/navigation"
+import { decisionOutcome, type DraftAction, type DraftKind } from "./drafts"
 import { SESSION_COOKIE, unseal, type Session } from "./session"
-import type { CallItem, Campaign, ConversationDetail, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem, ScrapeRun } from "./types"
+import type { CallItem, Campaign, ConversationDetail, Draft, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem, ScrapeRun } from "./types"
 
 const API = process.env.API_URL
 
@@ -38,10 +39,11 @@ export async function getSession(): Promise<Session | null> {
 const authHeaders = (s: Session): Record<string, string> =>
   s.kind === "tenant" ? { "X-API-Key": s.key } : { "X-Admin-Key": s.key }
 
-async function call(route: string, init: RequestInit = {}, opts: { operator?: boolean } = {}): Promise<Response> {
+async function call(route: string, init: RequestInit = {}, opts: { operator?: boolean; tenant?: boolean } = {}): Promise<Response> {
   const s = await getSession()
   if (!s) redirect("/login")
   if (opts.operator && s.kind !== "operator") notFound()
+  if (opts.tenant && s.kind !== "tenant") notFound()
   const res = await fetch(`${API}${route}`, {
     ...init, cache: "no-store", headers: { ...(init.headers as Record<string, string> | undefined), ...authHeaders(s) },
   })
@@ -49,7 +51,7 @@ async function call(route: string, init: RequestInit = {}, opts: { operator?: bo
   return res
 }
 
-async function api<T>(route: string, opts: { operator?: boolean; nullOn404?: boolean } = {}): Promise<T> {
+async function api<T>(route: string, opts: { operator?: boolean; tenant?: boolean; nullOn404?: boolean } = {}): Promise<T> {
   const res = await call(route, {}, opts)
   if (opts.nullOn404 && res.status === 404) return null as T
   if (!res.ok) throw new Error(`API ${route} returned ${res.status}`)
@@ -123,4 +125,29 @@ export async function logCallOutcome(id: number, outcome: string, note: string):
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ outcome, note }),
   }, { operator: true })
   if (!res.ok) throw new Error(`API call log returned ${res.status}`)
+}
+
+/** Tenant-only page gate: no session -> login, operator or module not enabled -> 404. Live mode only. */
+export async function requireTenantModule(module: string): Promise<void> {
+  const s = await getSession()
+  if (!s) redirect("/login")
+  if (s.kind !== "tenant" || !s.modules.includes(module)) notFound()
+}
+
+export async function getDrafts(kind: DraftKind): Promise<Draft[]> {
+  const body = await api<unknown>(`/drafts?kind=${encodeURIComponent(kind)}`, { tenant: true })
+  if (!Array.isArray(body)) throw new Error("API /drafts returned an unexpected body") // body holds PII, never log it
+  return body as Draft[]
+}
+
+/** Record an approve/reject decision. Nothing is sent or posted. Server-side only; live mode only. */
+export async function decideTenantDraft(id: number, action: DraftAction): Promise<"ok" | "conflict" | "missing"> {
+  if (!isLive) throw new Error("the static demo is read-only")
+  const res = await call(`/drafts/${id}/${action}`, { method: "POST" }, { tenant: true })
+  const outcome = decisionOutcome(res.status)
+  if (!outcome) {
+    console.error(`draft ${action} returned ${res.status}`)
+    throw new Error(`API draft ${action} returned ${res.status}`)
+  }
+  return outcome
 }

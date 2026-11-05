@@ -1,3 +1,4 @@
+import type { DraftKind, DraftStatus } from "./drafts"
 export type EvalMetrics = {
   booking_validity: number; escalation_precision: number; escalation_recall: number; schema_validity: number
   llm_calls: number; latency_p50_s: number; latency_p95_s: number; prompt_tokens: number; completion_tokens: number
@@ -54,4 +55,21 @@ export type CallItem = {
   id: number; name: string; category: string | null; city: string | null; phone: string; score: number; status: string
   website: string | null; maps_url: string | null; rating: number | string | null; review_count: number | null
   call_outcome: string | null; call_note: string | null; talking_points: string[]; opener: string
+}
+
+export type QuoteLine = { kind?: string; ref?: string; label: string; qty?: number | string; unit_price?: string | null; amount: string }
+export type QuotePayload = {
+  contact_email?: string; customer_email?: string
+  request?: { service_id?: string; qty?: number; add_on_ids?: string[]; customer_type?: string }
+  needs_human?: { reason: string; missing?: string[] }
+  quote?: { currency: string; total: string; lines: QuoteLine[] }
+  email_text?: string | null; check_failures?: string[]
+}
+export type ReviewPayload = {
+  review_text?: string; rating?: number; platform?: string
+  reply_text?: string; violations?: string[]; attempts?: number
+}
+export type Draft = {
+  id: number; kind: DraftKind; status: DraftStatus; payload: QuotePayload | ReviewPayload
+  created_at: string; decided_at: string | null
 }
