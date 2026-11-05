@@ -24,9 +24,11 @@ v1.0 turns the single-business agent into a platform. Everything specific to a b
 | Ops | `make new-business PACK=<slug>`, PII masking in logs, retention and `delete_subject`, generated SOPs and runbook per pack (`docs/generated/`), a grep gate that keeps business words out of shared code. |
 | Evals | Per-pack runs and baselines, a regression gate, flake reports, module evals, a held-out set, and a pinned-provider mode for scoring Claude. |
 
-![RoofDesk Global explainer: packs, isolation, model proposes and code decides, engine modules, evals, onboarding](docs/media/roofdesk-global-explainer.gif)
+![RoofDesk Global walkthrough: packs, isolation, no guessed prices, n8n flows, dashboard, scores, onboarding](docs/media/roofdesk-global-switchboard.gif)
 
-[Watch the explainer with sound (MP4, 50 s)](docs/media/roofdesk-global-explainer.mp4)
+[Watch the walkthrough with sound (MP4, 61 s)](docs/media/roofdesk-global-switchboard.mp4)
+
+**Where the front end and n8n fit.** The Next.js dashboard (`dashboard/`) is the owner view: chats, funnel, latency, eval trend, outreach and transcripts. v1.0 did not change it, so it is still the single-business dashboard: not tenant-aware, and with no screen for drafts, quotes or capacity flags (those are reached through the API and n8n). n8n (`n8n/workflows/`, 10 files) only triggers and sends: inbound messages, escalation alerts, follow-ups, quote and review drafts, capacity checks, the daily brief and intake events all call the API with the tenant's key, and the API makes every decision.
 
 Roofing stayed at 94/96 with the same two failures through every step. Not deployed: v1.0 lives on the `roofdesk-global` branch and the live demo is unchanged. Open issues and tech debt: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`.
 
