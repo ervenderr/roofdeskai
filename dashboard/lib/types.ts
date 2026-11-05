@@ -73,3 +73,14 @@ export type Draft = {
   id: number; kind: DraftKind; status: DraftStatus; payload: QuotePayload | ReviewPayload
   created_at: string; decided_at: string | null
 }
+
+export type CapacityFlag = {
+  flag_key: string; kind: string; shift_id: number | string; shift_date: string
+  details: Record<string, unknown>
+  first_flagged_at: string; reflagged_at: string | null; resolved_at: string | null
+}
+export type BriefSource = { name: string; source: string; ok: boolean; error: string | null; metrics: Record<string, string> }
+// html is deliberately omitted: it is never rendered
+export type BriefPayload = { local_date: string; text: string; sources: BriefSource[] }
+export type BriefRun = { run_date: string; created_at: string }
+export type BriefResponse = { latest: BriefPayload | null; runs: BriefRun[] }

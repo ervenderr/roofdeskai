@@ -3,8 +3,9 @@ import path from "node:path"
 import { cookies } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { decisionOutcome, type DraftAction, type DraftKind } from "./drafts"
+import { flagsRoute, isBriefResponse } from "./ops"
 import { SESSION_COOKIE, unseal, type Session } from "./session"
-import type { CallItem, Campaign, ConversationDetail, Draft, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem, ScrapeRun } from "./types"
+import type { BriefResponse, CallItem, CapacityFlag, Campaign, ConversationDetail, Draft, ConversationRow, Metrics, OutreachMetrics, Prospect, ProspectDetail, QueueItem, ScrapeRun } from "./types"
 
 const API = process.env.API_URL
 
@@ -138,6 +139,18 @@ export async function getDrafts(kind: DraftKind): Promise<Draft[]> {
   const body = await api<unknown>(`/drafts?kind=${encodeURIComponent(kind)}`, { tenant: true })
   if (!Array.isArray(body)) throw new Error("API /drafts returned an unexpected body") // body holds PII, never log it
   return body as Draft[]
+}
+
+export async function getCapacityFlags(all: boolean): Promise<CapacityFlag[]> {
+  const body = await api<unknown>(flagsRoute(all), { tenant: true })
+  if (!Array.isArray(body)) throw new Error("API /capacity/flags returned an unexpected body")
+  return body as CapacityFlag[]
+}
+
+export async function getBrief(): Promise<BriefResponse> {
+  const body = await api<unknown>("/daily-brief", { tenant: true })
+  if (!isBriefResponse(body)) throw new Error("API /daily-brief returned an unexpected body") // never log the body
+  return body as unknown as BriefResponse
 }
 
 /** Record an approve/reject decision. Nothing is sent or posted. Server-side only; live mode only. */
