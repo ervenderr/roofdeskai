@@ -35,4 +35,11 @@ const items = [...NAV, { href: "/x", label: "X", module: "capacity" }, { href: "
 const hrefs = navFor(tenant, items).map((n) => n.href)
 assert.ok(hrefs.includes("/x") && !hrefs.includes("/y"))
 
+const dental = { ...tenant, modules: ["services", "reviews"] }
+assert.ok(["/quotes", "/reviews"].every((h) => navFor(dental).map((n) => n.href).includes(h)))
+for (const s of [tenant, operator, null]) {
+  const h = navFor(s).map((n) => n.href)
+  assert.ok(!h.includes("/quotes") && !h.includes("/reviews"))
+}
+
 console.log("session check ok")

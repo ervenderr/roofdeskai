@@ -46,6 +46,8 @@ export const NAV: NavItem[] = [
   { href: "/prospects", label: "Prospects", operatorOnly: true },
   { href: "/outreach", label: "Outreach", operatorOnly: true },
   { href: "/calls", label: "Calls", operatorOnly: true },
+  { href: "/quotes", label: "Quotes", module: "services" },
+  { href: "/reviews", label: "Reviews", module: "reviews" },
 ]
 
 /** Null session (static demo) counts as operator with no modules. */
