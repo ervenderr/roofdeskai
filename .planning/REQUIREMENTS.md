@@ -22,11 +22,11 @@
 
 ### Drafts
 
-- [ ] **DRAFT-01**: Owner can see quote drafts with status, customer and line items/total from `GET /drafts`
-- [ ] **DRAFT-02**: A `needs_human` quote shows the reason and the missing fields
-- [ ] **DRAFT-03**: Owner can approve or reject a pending quote draft; nothing is sent
-- [ ] **DRAFT-04**: Owner can see review reply drafts, including blocked ones with their violation codes
-- [ ] **DRAFT-05**: Owner can approve or reject a pending review reply; nothing is posted
+- [x] **DRAFT-01**: Owner can see quote drafts with status, customer and line items/total from `GET /drafts`
+- [x] **DRAFT-02**: A `needs_human` quote shows the reason and the missing fields
+- [x] **DRAFT-03**: Owner can approve or reject a pending quote draft; nothing is sent
+- [x] **DRAFT-04**: Owner can see review reply drafts, including blocked ones with their violation codes
+- [x] **DRAFT-05**: Owner can approve or reject a pending review reply; nothing is posted
 
 ### Capacity and brief
 
@@ -62,7 +62,7 @@
 | AUTH-01..07 | Phase 11 | Pending |
 | KEEP-01 | Phase 11 | Pending |
 | KEEP-02 | Phase 13 | Pending |
-| DRAFT-01..05 | Phase 12 | Pending |
+| DRAFT-01..05 | Phase 12 | Complete |
 | CAP-01, BRF-01, BRF-02 | Phase 13 | Pending |
 | ISO-01 | Phase 13 | Pending |
 

@@ -172,7 +172,7 @@ Plans:
 ## v1.1 Tenant-aware dashboard
 
 - [x] **Phase 11: Sign-in and Tenant Shell** - Key login, encrypted session, tenant header, existing pages on the tenant key
-- [ ] **Phase 12: Quote and Review Drafts** - Draft lists with approve/reject on the existing `/drafts` API
+- [x] **Phase 12: Quote and Review Drafts** - Draft lists with approve/reject on the existing `/drafts` API
 - [ ] **Phase 13: Capacity, Daily Brief and Isolation** - Flags screen, brief read API and screen, two-tenant test, snapshot demo intact
 
 ### Phase 11: Sign-in and Tenant Shell
@@ -205,8 +205,8 @@ Plans:
 
 Plans:
 - [x] 12-01-PLAN.md — Draft helpers, nav items, tenant-only data calls and decideDraft action
-- [ ] 12-02-PLAN.md — /quotes and /reviews screens with approve/reject
-- [ ] 12-03-PLAN.md — Live end-to-end checks on the branch stack plus browser checkpoint
+- [x] 12-02-PLAN.md — /quotes and /reviews screens with approve/reject
+- [x] 12-03-PLAN.md — Live end-to-end checks on the branch stack plus browser checkpoint
 
 ### Phase 13: Capacity, Daily Brief and Isolation
 **Goal**: Owners see capacity flags and the daily brief, and isolation between tenants is proven end to end.
@@ -235,3 +235,4 @@ Plans:
 | 9. Docs, PII/Retention and make new-business | 6/6 | Complete    | 2026-11-04 |
 | 10. Held-Out Eval and Optional Extras | 7/7 | Complete    | 2026-11-04 |
 | 11. Sign-in and Tenant Shell | 3/3 | Complete | 2026-11-05 |
+| 12. Quote and Review Drafts | 3/3 | Complete | 2026-11-05 |
