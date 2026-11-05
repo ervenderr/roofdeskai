@@ -155,3 +155,57 @@ def test_due_skips_broken_pack(client, h, venue_tenant, roofing_tenant, monkeypa
     monkeypatch.setattr(brief_routes, "get_pack", flaky)
     r = client.post("/daily-brief/due", headers=ADMIN)
     assert r.status_code == 200 and venue_tenant in [d["tenant_id"] for d in r.json()["due"]]
+
+
+# ---- GET /daily-brief (BRF-01) ----
+def test_get_brief_empty(client, h):
+    r = client.get("/daily-brief", headers=h)
+    assert r.status_code == 200, r.text
+    assert r.json() == {"latest": None, "runs": []}
+
+
+def test_get_brief_after_post(client, h):
+    posted = client.post("/daily-brief", headers=h)
+    assert posted.status_code == 200, posted.text
+    r = client.get("/daily-brief", headers=h)
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert j["latest"] == posted.json()
+    assert len(j["runs"]) == 1 and set(j["runs"][0]) == {"run_date", "created_at"}
+    assert j["runs"][0]["run_date"] == "2026-07-01"
+    datetime.fromisoformat(j["runs"][0]["created_at"])
+
+
+def test_get_brief_keeps_14_newest(client, h, venue_tenant):
+    with db.system() as c:
+        for i in range(1, 17):
+            c.execute(text("INSERT INTO brief_runs (tenant_id, run_date, payload) VALUES (:t, :d, CAST(:p AS jsonb))"),
+                      {"t": venue_tenant, "d": f"2026-06-{i:02d}", "p": f'{{"n": {i}}}'})
+    r = client.get("/daily-brief", headers=h)
+    assert r.status_code == 200, r.text
+    j = r.json()
+    dates = [x["run_date"] for x in j["runs"]]
+    assert len(dates) == 14 and dates == sorted(dates, reverse=True) and dates[0] == "2026-06-16"
+    assert j["latest"] == {"n": 16}
+
+
+def test_get_brief_module_and_auth(client, h, roofing_tenant):
+    key = auth.issue_key(roofing_tenant)["key"]
+    r = client.get("/daily-brief", headers={"X-API-Key": key})
+    assert r.status_code == 404 and r.json()["detail"] == "module not enabled"
+    assert client.get("/daily-brief", headers=ADMIN).status_code == 401
+
+
+def test_get_brief_shows_unavailable_source(client, h):
+    assert client.post("/daily-brief", headers=h).status_code == 200
+    r = client.get("/daily-brief", headers=h)
+    assert r.status_code == 200, r.text
+    srcs = r.json()["latest"]["sources"]
+    ads = [s for s in srcs if s["name"] == "ads"]
+    assert ads and ads[0]["ok"] is False and ads[0]["error"]
+    assert all(s["source"] == "mock" for s in srcs)
+
+
+def test_get_due_is_not_a_route_collision(client, h):
+    assert client.get("/daily-brief/due", headers=h).status_code == 405
+    assert client.post("/daily-brief/due", headers=h).status_code == 200
