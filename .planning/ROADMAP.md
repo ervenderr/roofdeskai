@@ -185,7 +185,12 @@ Plans:
   3. Visiting any page signed out redirects to login; Sign out clears the session
   4. Overview and conversations render for the roofing tenant using that tenant's key; calls, outreach and prospects (operator tools) show only in an admin-key operator session and are hidden from tenant sessions
   5. Nav hides screens for modules the signed-in pack does not enable
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — Session seal/unseal (AES-256-GCM) and per-request credential in lib/data.ts
+- [ ] 11-02-PLAN.md — Login page, sign-in/sign-out actions, tenant header and nav gating
+- [ ] 11-03-PLAN.md — Live end-to-end checks on the branch stack plus browser checkpoint
 
 ### Phase 12: Quote and Review Drafts
 **Goal**: Owners can review and decide quote and review-reply drafts in the browser.
