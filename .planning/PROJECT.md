@@ -16,7 +16,7 @@ Source spec: `RoofDesk Global Platform Spec.md` (Nov 3, 2026). Repo: `ervenderr/
 - New screens: quote drafts (approve/reject), review reply drafts, capacity flags, daily brief
 - Local only; no deploy, no push
 
-**Key context:** The dashboard has a static-snapshot demo mode and a live mode that uses one shared admin key. Only `GET /capacity/flags` and `GET /tenant/me` exist as tenant read routes; quotes, review drafts and briefs need read endpoints added to the API.
+**Key context:** The dashboard has a static-snapshot demo mode and a live mode that uses one shared admin key. Tenant read routes already exist for `GET /tenant/me`, `GET /capacity/flags` and the `/drafts` queue (list, get, approve, reject); only the daily brief needs a new read endpoint.
 
 ## Core Value
 

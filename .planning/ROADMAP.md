@@ -7,6 +7,7 @@ Turn the single-business Summit Roofing agent into a multi-business platform whe
 ## Milestones
 
 - ✅ **v1.0 RoofDesk Global** — Phases 1-10 (shipped 2026-11-04, local branch, not deployed)
+- 🚧 **v1.1 Tenant-aware dashboard** — Phases 11-13 (planning)
 
 ## Phases
 
@@ -167,6 +168,47 @@ Plans:
 - [x] 10-05-PLAN.md — optional Anthropic provider, pin, --providers flag (fakes only)
 - [x] 10-06-PLAN.md — mcp 2.3 dependency and connector MCP server
 - [x] 10-07-PLAN.md — final gates
+
+## v1.1 Tenant-aware dashboard
+
+- [ ] **Phase 11: Sign-in and Tenant Shell** - Key login, encrypted session, tenant header, existing pages on the tenant key
+- [ ] **Phase 12: Quote and Review Drafts** - Draft lists with approve/reject on the existing `/drafts` API
+- [ ] **Phase 13: Capacity, Daily Brief and Isolation** - Flags screen, brief read API and screen, two-tenant test, snapshot demo intact
+
+### Phase 11: Sign-in and Tenant Shell
+**Goal**: An owner signs in with their tenant key and sees their own business, with the old roofing pages still working.
+**Depends on**: Phase 10
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, KEEP-01
+**Success Criteria** (what must be TRUE):
+  1. Pasting a valid key on the login page lands on the overview with the business name in the header; a wrong or revoked key shows an error and no session
+  2. Page source, client JS bundles and URLs never contain the key; the cookie is httpOnly and encrypted
+  3. Visiting any page signed out redirects to login; Sign out clears the session
+  4. Overview, conversations, calls, outreach and prospects render for the roofing tenant using that tenant's key
+  5. Nav hides screens for modules the signed-in pack does not enable
+**Plans**: TBD
+
+### Phase 12: Quote and Review Drafts
+**Goal**: Owners can review and decide quote and review-reply drafts in the browser.
+**Depends on**: Phase 11
+**Requirements**: DRAFT-01, DRAFT-02, DRAFT-03, DRAFT-04, DRAFT-05
+**Success Criteria** (what must be TRUE):
+  1. Quote drafts list with status, items and total; a `needs_human` draft shows reason and missing fields
+  2. Approving or rejecting a pending draft changes its status on the next load, and nothing is sent or posted
+  3. Review reply drafts list, with blocked ones showing violation codes
+  4. A draft from another tenant never appears
+**Plans**: TBD
+
+### Phase 13: Capacity, Daily Brief and Isolation
+**Goal**: Owners see capacity flags and the daily brief, and isolation between tenants is proven end to end.
+**Depends on**: Phase 12
+**Requirements**: CAP-01, BRF-01, BRF-02, ISO-01, KEEP-02
+**Success Criteria** (what must be TRUE):
+  1. Capacity screen shows open flags by default and all flags on toggle
+  2. A tenant-scoped `GET` returns the latest brief and recent runs; the screen shows mock data labelled and unavailable sources
+  3. A test signed in as two tenants shows each only its own drafts, flags and brief
+  4. The static snapshot demo still builds and renders without sign-in
+  5. Roofing eval gate and `make g-test` still pass
+**Plans**: TBD
 
 ## Progress
 
