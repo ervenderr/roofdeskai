@@ -17,7 +17,7 @@
 
 ### Existing pages
 
-- [ ] **KEEP-01**: Overview, conversations, calls, outreach and prospects still render for the roofing tenant after sign-in
+- [ ] **KEEP-01**: Overview and conversations (with transcripts) render for a tenant-key session; calls, outreach and prospects (admin-only operator tools with no tenant column) stay reachable only in an operator session started by pasting the admin key, and are hidden from tenant sessions
 - [ ] **KEEP-02**: The static snapshot demo mode still builds and renders without sign-in
 
 ### Drafts

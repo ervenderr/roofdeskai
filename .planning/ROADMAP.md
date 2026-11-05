@@ -183,7 +183,7 @@ Plans:
   1. Pasting a valid key on the login page lands on the overview with the business name in the header; a wrong or revoked key shows an error and no session
   2. Page source, client JS bundles and URLs never contain the key; the cookie is httpOnly and encrypted
   3. Visiting any page signed out redirects to login; Sign out clears the session
-  4. Overview, conversations, calls, outreach and prospects render for the roofing tenant using that tenant's key
+  4. Overview and conversations render for the roofing tenant using that tenant's key; calls, outreach and prospects (operator tools) show only in an admin-key operator session and are hidden from tenant sessions
   5. Nav hides screens for modules the signed-in pack does not enable
 **Plans**: TBD
 
