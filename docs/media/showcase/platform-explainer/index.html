@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>RoofDesk Global Explainer</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --bg: #0c0b07;
+        --bg2: #1a1810;
+        --chalk: #ffc800;
+        --soft: #ffe27a;
+        --green: #4ade80;
+        --red: #ff8a7a;
+        --ink: #f6efd2;
+        --dim: #c9bf92;
+        --card: #211e13;
+        --line: rgba(255, 255, 255, 0.16);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root {
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        font-family: system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+        color: var(--ink);
+        background: linear-gradient(135deg, var(--bg2) 0%, var(--bg) 70%);
+      }
+      .glow { position: absolute; border-radius: 50%; filter: blur(140px); }
+      #glow-a { width: 800px; height: 800px; left: -260px; top: -240px; background: #ffc800; opacity: 0.2; }
+      #glow-b { width: 560px; height: 560px; right: -160px; bottom: -200px; background: #8f6a00; opacity: 0.28; }
+      .scene { position: absolute; inset: 0; }
+      .stage { position: absolute; inset: 0; }
+
+      .kicker { position: absolute; left: 110px; top: 90px; font-size: 30px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--chalk); }
+      .title { position: absolute; left: 110px; top: 140px; width: 1700px; font-size: 84px; line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; }
+      .title em { font-style: normal; color: var(--chalk); }
+      .note { position: absolute; left: 110px; bottom: 80px; width: 1700px; font-size: 34px; line-height: 1.35; color: var(--dim); }
+
+      .card { position: absolute; background: var(--card); border: 3px solid var(--line); border-radius: 24px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+      .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+
+      /* hook */
+      .hook-line { position: absolute; left: 140px; right: 140px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+      #h1 { top: 250px; font-size: 130px; color: #a79f78; }
+      #h2 { top: 420px; font-size: 130px; color: var(--ink); }
+      #h2 em { font-style: normal; color: var(--chalk); }
+      .biz { position: absolute; top: 640px; padding: 22px 38px; border-radius: 999px; font-size: 38px; font-weight: 700; background: rgba(255,200,0,0.1); border: 3px solid rgba(255,200,0,0.5); color: var(--soft); }
+
+      /* pack */
+      .tree { left: 110px; top: 330px; width: 760px; height: 600px; padding: 36px 44px; font-size: 34px; line-height: 1.6; }
+      .tree .row { opacity: 0; }
+      .tree .dir { color: var(--chalk); font-weight: 700; }
+      .tree .f { color: var(--ink); padding-left: 42px; }
+      .yaml { left: 940px; top: 330px; width: 870px; height: 420px; padding: 36px 44px; font-size: 32px; line-height: 1.55; color: var(--ink); }
+      .yaml .k { color: var(--chalk); }
+      .yaml .v { color: var(--soft); }
+      .yaml .ln { opacity: 0; display: block; white-space: pre; }
+      .typo { position: absolute; left: 940px; top: 800px; padding: 18px 30px; border-radius: 18px; font-size: 30px; font-weight: 700; background: rgba(255,138,122,0.12); border: 3px solid rgba(255,138,122,0.6); color: var(--red); opacity: 0; }
+
+      /* tenants */
+      .tenant { top: 340px; width: 520px; height: 400px; padding: 34px; }
+      .tenant h3 { font-size: 40px; font-weight: 800; color: var(--chalk); margin-bottom: 14px; }
+      .tenant p { font-size: 30px; color: var(--dim); line-height: 1.45; }
+      .tenant .key { margin-top: 26px; padding: 14px 20px; border-radius: 12px; background: rgba(255,255,255,0.06); font-size: 28px; color: var(--soft); }
+      #t1 { left: 110px; } #t2 { left: 700px; } #t3 { left: 1290px; }
+      .lock { position: absolute; top: 790px; left: 110px; right: 110px; height: 90px; border-radius: 20px; border: 3px dashed rgba(74,222,128,0.6); color: var(--green); font-size: 36px; font-weight: 700; display: flex; align-items: center; justify-content: center; opacity: 0; }
+
+      /* flow */
+      .node { position: absolute; top: 400px; width: 380px; height: 250px; padding: 30px; border-radius: 24px; background: var(--card); border: 3px solid var(--line); }
+      .node h3 { font-size: 40px; font-weight: 800; margin-bottom: 12px; }
+      .node p { font-size: 28px; color: var(--dim); line-height: 1.4; }
+      .node.model h3 { color: #a79f78; }
+      .node.code { border-color: rgba(255,200,0,0.7); }
+      .node.code h3 { color: var(--chalk); }
+      .node.ok { border-color: rgba(74,222,128,0.7); }
+      .node.ok h3 { color: var(--green); }
+      #n1 { left: 110px; } #n2 { left: 570px; } #n3 { left: 1030px; } #n4 { left: 1430px; }
+      .arrow { position: absolute; top: 505px; height: 8px; border-radius: 4px; background: var(--chalk); width: 0; }
+      #a1 { left: 495px; } #a2 { left: 955px; }
+      .reject { position: absolute; left: 1030px; top: 700px; width: 780px; padding: 22px 30px; border-radius: 18px; font-size: 32px; font-weight: 700; color: var(--red); background: rgba(255,138,122,0.12); border: 3px solid rgba(255,138,122,0.55); opacity: 0; }
+
+      /* modules */
+      .mod { width: 540px; height: 230px; padding: 30px; }
+      .mod h3 { font-size: 40px; font-weight: 800; color: var(--chalk); margin-bottom: 10px; }
+      .mod p { font-size: 28px; color: var(--dim); line-height: 1.4; }
+      #m1 { left: 110px; top: 330px; } #m2 { left: 690px; top: 330px; } #m3 { left: 1270px; top: 330px; }
+      #m4 { left: 110px; top: 590px; } #m5 { left: 690px; top: 590px; } #m6 { left: 1270px; top: 590px; }
+      .approve { position: absolute; left: 110px; top: 870px; padding: 18px 34px; border-radius: 999px; font-size: 34px; font-weight: 700; color: var(--green); background: rgba(74,222,128,0.1); border: 3px solid rgba(74,222,128,0.55); opacity: 0; }
+
+      /* scores */
+      .bar-row { position: absolute; left: 110px; right: 110px; height: 110px; }
+      .bar-row .lbl { position: absolute; left: 0; top: 28px; width: 520px; font-size: 38px; font-weight: 700; }
+      .bar-row .track { position: absolute; left: 560px; top: 30px; width: 900px; height: 50px; border-radius: 25px; background: rgba(255,255,255,0.08); overflow: hidden; }
+      .bar-row .fill { height: 100%; width: 0; border-radius: 25px; background: var(--chalk); }
+      .bar-row .fill.green { background: var(--green); }
+      .bar-row .fill.warn { background: var(--soft); }
+      .bar-row .num { position: absolute; left: 1490px; top: 20px; font-size: 58px; font-weight: 800; letter-spacing: -0.02em; }
+      #b1 { top: 330px; } #b2 { top: 450px; } #b3 { top: 570px; } #b4 { top: 690px; }
+
+      /* terminal */
+      .term { left: 110px; top: 190px; width: 1700px; height: 720px; padding: 40px 54px; font-size: 36px; line-height: 1.7; }
+      .term .ln { opacity: 0; display: block; white-space: pre; }
+      .term .p { color: var(--chalk); }
+      .term .good { color: var(--green); }
+      .term .d { color: var(--dim); }
+
+      /* end */
+      #end-logo { position: absolute; left: 160px; top: 260px; width: 300px; height: 300px; }
+      #end-name { position: absolute; left: 520px; top: 240px; font-size: 140px; font-weight: 800; letter-spacing: -0.04em; }
+      #end-sub { position: absolute; left: 524px; top: 420px; font-size: 52px; font-weight: 600; color: var(--chalk); }
+      #end-line { position: absolute; left: 524px; top: 530px; width: 1250px; font-size: 38px; line-height: 1.4; color: var(--ink); }
+      #end-honest { position: absolute; left: 524px; top: 720px; width: 1250px; font-size: 30px; line-height: 1.4; color: var(--dim); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="50.5">
+      <div class="glow" id="glow-a"></div>
+      <div class="glow" id="glow-b"></div>
+
+      <!-- 1 hook -->
+      <section id="s1" class="clip scene" data-start="0" data-duration="4.6" data-track-index="1">
+        <div class="stage" id="s1-stage">
+          <div class="hook-line" id="h1">One agent.</div>
+          <div class="hook-line" id="h2">Any <em>business.</em></div>
+          <div class="biz" id="bz1" style="left: 140px">Roofing</div>
+          <div class="biz" id="bz2" style="left: 400px">Dental clinic</div>
+          <div class="biz" id="bz3" style="left: 800px">Escape-room venue</div>
+        </div>
+      </section>
+
+      <!-- 2 packs -->
+      <section id="s2" class="clip scene" data-start="4.2" data-duration="7.4" data-track-index="2">
+        <div class="stage" id="s2-stage">
+          <div class="kicker">Config packs</div>
+          <div class="title">A business is a <em>folder</em>,<br />not a code change</div>
+          <div class="card tree mono" id="tree">
+            <div class="row dir">businesses/puzzle-peak/</div>
+            <div class="row f">pack.yaml</div>
+            <div class="row f">services.yaml</div>
+            <div class="row f">capacity.yaml</div>
+            <div class="row f">qualification.yaml</div>
+            <div class="row f">faq.yaml</div>
+            <div class="row f">messages.yaml</div>
+            <div class="row f">scenarios/</div>
+          </div>
+          <div class="card yaml mono" id="yaml">
+            <span class="ln"><span class="k">rule:</span> <span class="v">in_list</span></span>
+            <span class="ln"><span class="k">field:</span> <span class="v">service</span></span>
+            <span class="ln"><span class="k">allowed:</span></span>
+            <span class="ln">  - <span class="v">escape_room</span></span>
+            <span class="ln">  - <span class="v">team_event</span></span>
+          </div>
+          <div class="typo" id="typo">A typo fails at load, not mid-chat</div>
+        </div>
+      </section>
+
+      <!-- 3 tenants -->
+      <section id="s3" class="clip scene" data-start="11.2" data-duration="7.0" data-track-index="3">
+        <div class="stage" id="s3-stage">
+          <div class="kicker">Isolation</div>
+          <div class="title">Each business sees <em>only its own</em> data</div>
+          <div class="card tenant" id="t1"><h3>summit-roofing</h3><p>leads, slots, chats</p><div class="key mono">key rd_live_…a41</div></div>
+          <div class="card tenant" id="t2"><h3>bright-smile</h3><p>leads, slots, chats</p><div class="key mono">key rd_live_…c07</div></div>
+          <div class="card tenant" id="t3"><h3>puzzle-peak</h3><p>leads, slots, chats</p><div class="key mono">key rd_live_…92e</div></div>
+          <div class="lock" id="lock">Tenant comes from the key, enforced by row-level security</div>
+        </div>
+      </section>
+
+      <!-- 4 model proposes -->
+      <section id="s4" class="clip scene" data-start="17.8" data-duration="7.0" data-track-index="4">
+        <div class="stage" id="s4-stage">
+          <div class="kicker">The rule</div>
+          <div class="title">The model proposes. <em>The code decides.</em></div>
+          <div class="node model" id="n1"><h3>Customer</h3><p>"I own 15 Pine St, want a repair soon"</p></div>
+          <div class="arrow" id="a1"></div>
+          <div class="node model" id="n2"><h3>Model</h3><p>Extracts facts, writes the wording</p></div>
+          <div class="arrow" id="a2"></div>
+          <div class="node code" id="n3"><h3>Code</h3><p>Checks facts, applies rules, runs the state machine</p></div>
+          <div class="node ok" id="n4"><h3>Booking</h3><p>Only code can book or escalate</p></div>
+          <div class="reject" id="reject">Bad output? Rejected, escalated to a human</div>
+        </div>
+      </section>
+
+      <!-- 5 modules -->
+      <section id="s5" class="clip scene" data-start="24.4" data-duration="7.0" data-track-index="5">
+        <div class="stage" id="s5-stage">
+          <div class="kicker">Engine modules</div>
+          <div class="title">Code does the <em>numbers</em></div>
+          <div class="card mod" id="m1"><h3>Quote builder</h3><p>Decimal math. Missing price asks a human.</p></div>
+          <div class="card mod" id="m2"><h3>Capacity</h3><p>Flags over and understaffed shifts.</p></div>
+          <div class="card mod" id="m3"><h3>Daily brief</h3><p>One page, owner's local time.</p></div>
+          <div class="card mod" id="m4"><h3>Review replies</h3><p>Post-check blocks refunds and blame.</p></div>
+          <div class="card mod" id="m5"><h3>Intake events</h3><p>One record per person, idempotent.</p></div>
+          <div class="card mod" id="m6"><h3>Connectors</h3><p>Mock sheet, accounting, bookings, ads.</p></div>
+          <div class="approve" id="approve">Drafts wait for human approval. Nothing auto-sends.</div>
+        </div>
+      </section>
+
+      <!-- 6 scores -->
+      <section id="s6" class="clip scene" data-start="31.0" data-duration="7.2" data-track-index="6">
+        <div class="stage" id="s6-stage">
+          <div class="kicker">Evals</div>
+          <div class="title">Measured on <em>every</em> change</div>
+          <div class="bar-row" id="b1"><div class="lbl">Summit Roofing</div><div class="track"><div class="fill" data-pct="97.9"></div></div><div class="num" data-to="94" data-of="96">0</div></div>
+          <div class="bar-row" id="b2"><div class="lbl">Bright Smile Dental</div><div class="track"><div class="fill green" data-pct="100"></div></div><div class="num" data-to="43" data-of="43">0</div></div>
+          <div class="bar-row" id="b3"><div class="lbl">Puzzle Peak</div><div class="track"><div class="fill green" data-pct="100"></div></div><div class="num" data-to="33" data-of="33">0</div></div>
+          <div class="bar-row" id="b4"><div class="lbl">Held-out, run once</div><div class="track"><div class="fill warn" data-pct="85"></div></div><div class="num" data-to="17" data-of="20">0</div></div>
+          <div class="note">Self-written suites on a local 8B model. The held-out set was also written by the builder, so it is held out from tuning, not independent.</div>
+        </div>
+      </section>
+
+      <!-- 7 onboarding -->
+      <section id="s7" class="clip scene" data-start="37.8" data-duration="7.0" data-track-index="7">
+        <div class="stage" id="s7-stage">
+          <div class="kicker">Onboarding</div>
+          <div class="card term mono" id="term">
+            <span class="ln"><span class="p">$</span> make new-business PACK=puzzle-peak</span>
+            <span class="ln d">validating pack ...</span>
+            <span class="ln"><span class="good">ok</span>  pack loads, schema clean</span>
+            <span class="ln"><span class="good">ok</span>  tenant registered, FAQ seeded</span>
+            <span class="ln"><span class="good">ok</span>  escalation and injection smoke: 8 scenarios</span>
+            <span class="ln"><span class="good">ok</span>  cross-tenant check: no leakage</span>
+            <span class="ln d">reminder: add the tenant to TENANT_API_KEYS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8 end -->
+      <section id="s8" class="clip scene" data-start="44.4" data-duration="6.1" data-track-index="8">
+        <div class="stage" id="s8-stage">
+          <img id="end-logo" src="assets/logo.svg" alt="" />
+          <div id="end-name">RoofDesk Global</div>
+          <div id="end-sub">One agent. A config pack per business.</div>
+          <div id="end-line">Roofing held at 94/96 through the whole migration.</div>
+          <div id="end-honest">v1.0 lives on the roofdesk-global branch. Not deployed. All data is synthetic.</div>
+        </div>
+      </section>
+
+      <audio id="bgm" src="assets/bgm.mp3" data-start="0" data-duration="50.5" data-track-index="20" data-volume="0.85"></audio>
+      <audio id="w1" src="assets/whoosh.mp3" data-start="4.1" data-duration="0.6" data-track-index="21" data-volume="0.35"></audio>
+      <audio id="w2" src="assets/whoosh.mp3" data-start="11.1" data-duration="0.6" data-track-index="22" data-volume="0.35"></audio>
+      <audio id="w3" src="assets/whoosh.mp3" data-start="17.7" data-duration="0.6" data-track-index="23" data-volume="0.35"></audio>
+      <audio id="w4" src="assets/whoosh.mp3" data-start="24.3" data-duration="0.6" data-track-index="24" data-volume="0.35"></audio>
+      <audio id="w5" src="assets/whoosh.mp3" data-start="30.9" data-duration="0.6" data-track-index="25" data-volume="0.35"></audio>
+      <audio id="w6" src="assets/whoosh.mp3" data-start="37.7" data-duration="0.6" data-track-index="26" data-volume="0.35"></audio>
+      <audio id="w7" src="assets/whoosh.mp3" data-start="44.3" data-duration="0.6" data-track-index="27" data-volume="0.35"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const IN = { y: 60, opacity: 0 };
+      const OUT = (id, at) => tl.to(`#${id}-stage`, { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, at);
+      const head = (id, t0) => {
+        tl.fromTo(`#${id} .kicker`, { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, t0 + 0.1);
+        tl.fromTo(`#${id} .title`, IN, { y: 0, opacity: 1, duration: 0.7, ease: "expo.out" }, t0 + 0.25);
+      };
+
+      tl.to("#glow-a", { x: 200, y: 160, duration: 50.5, ease: "none" }, 0);
+      tl.to("#glow-b", { x: -180, y: -140, duration: 50.5, ease: "none" }, 0);
+
+      // 1 hook
+      tl.fromTo("#h1", IN, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 0.2);
+      tl.fromTo("#h2", { scale: 0.8, opacity: 0, transformOrigin: "0% 50%" }, { scale: 1, opacity: 1, duration: 0.7, ease: "back.out(1.6)" }, 1.0);
+      ["#bz1", "#bz2", "#bz3"].forEach((b, i) => tl.fromTo(b, { y: 40, opacity: 0, scale: 0.7 }, { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "back.out(2)" }, 2.0 + i * 0.35));
+      OUT("s1", 4.2);
+
+      // 2 packs
+      head("s2", 4.2);
+      tl.fromTo("#tree", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.7, ease: "power4.out" }, 4.9);
+      tl.to("#tree .row", { opacity: 1, duration: 0.3, stagger: 0.28 }, 5.3);
+      tl.fromTo("#yaml", { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.7, ease: "power4.out" }, 5.4);
+      tl.to("#yaml .ln", { opacity: 1, duration: 0.3, stagger: 0.35 }, 6.2);
+      tl.fromTo("#typo", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, 9.0);
+      OUT("s2", 11.2);
+
+      // 3 tenants
+      head("s3", 11.2);
+      ["#t1", "#t2", "#t3"].forEach((t, i) => tl.fromTo(t, { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power4.out" }, 12.0 + i * 0.4));
+      tl.fromTo("#lock", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.6)" }, 14.6);
+      OUT("s3", 17.8);
+
+      // 4 flow
+      head("s4", 17.8);
+      tl.fromTo("#n1", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 18.5);
+      tl.to("#a1", { width: 70, duration: 0.5, ease: "power2.out" }, 19.1);
+      tl.fromTo("#n2", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 19.5);
+      tl.to("#a2", { width: 70, duration: 0.5, ease: "power2.out" }, 20.1);
+      tl.fromTo("#n3", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 20.5);
+      tl.fromTo("#n4", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 21.5);
+      tl.fromTo("#reject", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 22.6);
+      OUT("s4", 24.4);
+
+      // 5 modules
+      head("s5", 24.4);
+      ["#m1", "#m2", "#m3", "#m4", "#m5", "#m6"].forEach((m, i) => tl.fromTo(m, { y: 60, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.5)" }, 25.1 + i * 0.35));
+      tl.fromTo("#approve", { scale: 0.7, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, 28.4);
+      OUT("s5", 31.0);
+
+      // 6 scores
+      head("s6", 31.0);
+      [["#b1", 31.9], ["#b2", 32.5], ["#b3", 33.1], ["#b4", 33.7]].forEach(([id, t]) => {
+        const fill = document.querySelector(id + " .fill");
+        const num = document.querySelector(id + " .num");
+        const to = +num.dataset.to, of = num.dataset.of, o = { v: 0 };
+        tl.fromTo(id, { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, t);
+        tl.fromTo(fill, { width: "0%" }, { width: fill.dataset.pct + "%", duration: 1.2, ease: "power2.out" }, t + 0.2);
+        tl.fromTo(o, { v: 0 }, { v: to, duration: 1.2, ease: "power2.out", onUpdate: () => { num.textContent = Math.round(o.v) + "/" + of; } }, t + 0.2);
+      });
+      tl.fromTo("#s6 .note", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 35.6);
+      OUT("s6", 37.8);
+
+      // 7 onboarding
+      tl.fromTo("#s7 .kicker", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 37.9);
+      tl.fromTo("#term", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: "power4.out" }, 38.1);
+      tl.to("#term .ln", { opacity: 1, duration: 0.2, stagger: 0.7 }, 38.9);
+      OUT("s7", 44.4);
+
+      // 8 end
+      tl.fromTo("#end-logo", { scale: 0.5, opacity: 0, rotation: -10 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)" }, 44.5);
+      tl.fromTo("#end-name", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 44.75);
+      tl.fromTo("#end-sub", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 45.0);
+      tl.fromTo("#end-line", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 45.25);
+      tl.fromTo("#end-honest", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 0.6, ease: "power3.out" }, 45.5);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

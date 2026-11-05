@@ -10,6 +10,26 @@ The business is **Summit Roofing**, a made-up company. Every name, number and ad
 
 > **Key design rule: the model proposes, the code decides.** The LLM extracts facts and writes FAQ answers. Plain code validates every output, runs the conversation state machine, applies the qualification rules, and is the only thing allowed to book, update a lead or escalate. A bad generation cannot book a bad slot.
 
+## RoofDesk Global: one agent, many businesses
+
+v1.0 turns the single-business agent into a platform. Everything specific to a business lives in a **config pack** (`businesses/<slug>/`, YAML checked by Pydantic with `extra="forbid"`, so a typo fails at load, not mid-chat). Onboarding a business is a pack, not a code change. Three packs ship: `summit-roofing`, `bright-smile-dental` and `puzzle-peak` (a fictional venue with staff and group bookings).
+
+| Piece | What it does |
+|---|---|
+| Packs | Services, prices, hours, qualification rules, FAQ, escalation words, reply templates, calendar. Prompts are templated from the pack; the roofing render is byte-identical to before. |
+| Rule interpreter | Four rule types (`in_list`, `yes_no`, `max_number`, `in_area`) read from `qualification.yaml`; proven identical to the old hard-coded code on a large lead grid. |
+| Tenants | One Postgres, `tenant_id` on every table, row-level security enforced for a non-owner role. Per-tenant API keys (`X-API-Key`, stored as sha256, shown once). The tenant comes from the key, never the request body. |
+| Engine modules | Quote builder (Decimal math, a missing price asks a human, never guesses), capacity checker, mock connectors, daily brief, review responder, `intake_event`. Drafts wait for human approval; nothing is auto-sent or auto-posted. |
+| n8n | 10 workflow files, tenant-aware. They trigger and send; every decision is in FastAPI, and `scripts/run_flows.py` runs the same flows with n8n switched off. |
+| Ops | `make new-business PACK=<slug>`, PII masking in logs, retention and `delete_subject`, generated SOPs and runbook per pack (`docs/generated/`), a grep gate that keeps business words out of shared code. |
+| Evals | Per-pack runs and baselines, a regression gate, flake reports, module evals, a held-out set, and a pinned-provider mode for scoring Claude. |
+
+![RoofDesk Global explainer: packs, isolation, model proposes and code decides, engine modules, evals, onboarding](docs/media/roofdesk-global-explainer.gif)
+
+[Watch the explainer with sound (MP4, 50 s)](docs/media/roofdesk-global-explainer.mp4)
+
+Roofing stayed at 94/96 with the same two failures through every step. Not deployed: v1.0 lives on the `roofdesk-global` branch and the live demo is unchanged. Open issues and tech debt: `.planning/milestones/v1.0-MILESTONE-AUDIT.md`.
+
 ## What it looks like
 
 ```
@@ -255,8 +275,8 @@ Any pack slug can be read, so add auth before exposing this over HTTP. There is 
 
 ## Limitations and what I'd do next
 
-- The eval set is self-written and was tuned against; build a held-out set and measure the gap.
-- One model so far. Run the suite through a second model and publish a side-by-side scorecard.
+- The dev eval set is self-written and was tuned against. A 20-scenario held-out set scored 17/20, but the same assistant wrote it, so get an independent set.
+- One model so far. The Claude scorecard is wired but not run (needs an API key and cost approval).
 - Hosted-API cost is not estimated, only local ($0).
 - No real SMS or phone integration; the channel is simulated by a webhook. Voice works in the browser only.
 - The spoken-style scenarios were tuned against too (14/16); the two failures are an over-long explanation and an indecisive customer.
