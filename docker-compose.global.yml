@@ -8,6 +8,8 @@ services:
   n8n:
     ports: !override ["15679:5678"]
   api:
+    # host-run dashboard needs the API; loopback only
+    ports: !override ["127.0.0.1:18000:8000"]
     volumes:
       - ./api:/srv/api:ro
       - ./dashboard/app:/srv/dashboard/app:ro
