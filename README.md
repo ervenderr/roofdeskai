@@ -251,7 +251,7 @@ make eval-outreach              # the outbound copywriter check, about a minute
 | API | http://localhost:8000 (`/docs`, `/health`) |
 | n8n | http://localhost:5679 |
 | Mailpit (caught emails) | http://localhost:8025 |
-| Dashboard | `cd dashboard && npm i && API_URL=http://localhost:8000 ADMIN_API_KEY=dev-admin-key npm run dev` then http://localhost:3100 |
+| Dashboard | `cd dashboard && npm i && API_URL=http://localhost:8000 SESSION_SECRET=<32+ random chars> npm run dev` then sign in at http://localhost:3100/login with a tenant key or the admin key (operator) |
 
 Try it:
 ```bash

@@ -40,6 +40,7 @@ header.top .brand img { width: 28px; height: 28px; display: block; }
 header.top nav { display: flex; gap: 16px; }
 header.top nav a { color: var(--ink-2); text-decoration: none; }
 header.top nav a:hover { color: var(--ink); }
+header.top .signout { border: 0; background: transparent; color: var(--ink-2); cursor: pointer; font: inherit; font-size: 13px; }
 .badge { margin-left: auto; font-size: 12px; color: var(--ink-2); background: var(--chip); padding: 3px 10px; border-radius: 999px; }
 h1 { font-size: 22px; letter-spacing: -0.01em; margin: 0 0 4px; }
 h2 { font-size: 15px; margin: 0 0 12px; }
