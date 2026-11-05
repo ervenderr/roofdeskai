@@ -6,6 +6,18 @@ RoofDesk is an AI lead-booking agent (chat + voice) with evals, outbound, n8n wo
 
 Source spec: `RoofDesk Global Platform Spec.md` (Nov 3, 2026). Repo: `ervenderr/roofdeskai`, master.
 
+## Current Milestone: v1.1 Tenant-aware dashboard
+
+**Goal:** Give owners a front end for RoofDesk Global: sign in as one business and see its own data, including the v1.0 engine output that today only exists in the API and n8n.
+
+**Target features:**
+- Sign in with a tenant API key (checked server-side; the key never reaches the browser); every page shows only that tenant's data
+- Existing roofing pages (overview, conversations, calls, outreach, prospects) keep working
+- New screens: quote drafts (approve/reject), review reply drafts, capacity flags, daily brief
+- Local only; no deploy, no push
+
+**Key context:** The dashboard has a static-snapshot demo mode and a live mode that uses one shared admin key. Only `GET /capacity/flags` and `GET /tenant/me` exist as tenant read routes; quotes, review drafts and briefs need read endpoints added to the API.
+
 ## Core Value
 
 Onboarding a new business is a config pack, not a code change, and the roofing pack keeps scoring 94/96 on evals while it moves.
@@ -95,4 +107,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-03 after initialization*
+*Last updated: 2026-11-05 after v1.1 milestone start*
