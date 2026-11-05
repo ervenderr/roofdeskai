@@ -29,7 +29,7 @@ assert.throws(() => unseal(tok, "short"))
 
 // nav
 assert.equal(navFor(null).length, 5)
-assert.deepEqual(navFor(tenant).map((n) => n.href), ["/", "/conversations"])
+assert.deepEqual(navFor(tenant).map((n) => n.href), ["/", "/conversations", "/capacity"])
 assert.equal(navFor(operator).length, 5)
 const items = [...NAV, { href: "/x", label: "X", module: "capacity" }, { href: "/y", label: "Y", module: "reviews" }]
 const hrefs = navFor(tenant, items).map((n) => n.href)
@@ -40,6 +40,16 @@ assert.ok(["/quotes", "/reviews"].every((h) => navFor(dental).map((n) => n.href)
 for (const s of [tenant, operator, null]) {
   const h = navFor(s).map((n) => n.href)
   assert.ok(!h.includes("/quotes") && !h.includes("/reviews"))
+}
+
+const cap = { ...tenant, modules: ["capacity", "connectors"] }
+const ch = navFor(cap).map((n) => n.href)
+assert.ok(ch.includes("/capacity") && ch.includes("/brief") && !ch.includes("/quotes"))
+const sh = navFor({ ...tenant, modules: ["services"] }).map((n) => n.href)
+assert.ok(!sh.includes("/capacity") && !sh.includes("/brief"))
+for (const s of [operator, null]) {
+  const h = navFor(s).map((n) => n.href)
+  assert.ok(!h.includes("/capacity") && !h.includes("/brief"))
 }
 
 console.log("session check ok")

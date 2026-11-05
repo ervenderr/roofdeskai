@@ -48,6 +48,8 @@ export const NAV: NavItem[] = [
   { href: "/calls", label: "Calls", operatorOnly: true },
   { href: "/quotes", label: "Quotes", module: "services" },
   { href: "/reviews", label: "Reviews", module: "reviews" },
+  { href: "/capacity", label: "Capacity", module: "capacity" },
+  { href: "/brief", label: "Daily brief", module: "connectors" },
 ]
 
 /** Null session (static demo) counts as operator with no modules. */
