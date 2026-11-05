@@ -2,12 +2,14 @@ import path from "node:path"
 
 // EXPORT=1 builds a static site (Cloudflare Pages) that reads data/snapshot.json instead of the live API.
 // Server Actions (the Approve/Reject buttons) are not allowed in a static export, so that module is stubbed.
+// Same for sign-in/sign-out (session-actions); the static demo has no login.
 const nextConfig = process.env.EXPORT
   ? {
       output: "export",
       images: { unoptimized: true },
       webpack(config, { webpack }) {
         config.plugins.push(new webpack.NormalModuleReplacementPlugin(/review-actions$/, path.resolve("lib/review-actions.stub.ts")))
+        config.plugins.push(new webpack.NormalModuleReplacementPlugin(/session-actions$/, path.resolve("lib/session-actions.stub.ts")))
         return config
       },
     }
