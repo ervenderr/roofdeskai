@@ -1,4 +1,4 @@
-"""POST /daily-brief (tenant key, idempotent per tenant-local date) and POST /daily-brief/due (scope: tenant or admin)."""
+"""GET /daily-brief (latest brief + 14 newest runs), POST /daily-brief (tenant key, idempotent per tenant-local date) and POST /daily-brief/due (scope: tenant or admin)."""
 import json
 import logging
 from datetime import date, datetime, timedelta, timezone
@@ -40,6 +40,16 @@ def _payload(pack: Pack, tenant: str, local: date) -> dict:
             "disagreements": list(b.disagreements),
             "sources": [{"name": r.name, "source": r.source, "ok": r.ok, "error": r.error,
                          "metrics": {k: str(v) for k, v in r.metrics.items()}} for r in results]}
+
+
+@router.get("")
+def latest_brief(tenant: str = Depends(require_tenant)) -> dict:
+    require_module(get_pack(tenant).connectors, "connectors")
+    with tx(tenant) as c:  # explicit tenant filter; RLS is the backstop
+        rows = c.execute(text("SELECT run_date, created_at, payload FROM brief_runs WHERE tenant_id=:t "
+                              "ORDER BY run_date DESC LIMIT 14"), {"t": tenant}).all()
+    return {"latest": rows[0].payload if rows else None,
+            "runs": [{"run_date": r.run_date.isoformat(), "created_at": r.created_at.isoformat()} for r in rows]}
 
 
 @router.post("")

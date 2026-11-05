@@ -207,5 +207,6 @@ def test_get_brief_shows_unavailable_source(client, h):
 
 
 def test_get_due_is_not_a_route_collision(client, h):
-    assert client.get("/daily-brief/due", headers=h).status_code == 405
+    # the "/" StaticFiles mount answers unmatched GETs, so 404 (not 405); the point is GET /due is not the GET "" handler
+    assert client.get("/daily-brief/due", headers=h).status_code in (404, 405)
     assert client.post("/daily-brief/due", headers=h).status_code == 200
