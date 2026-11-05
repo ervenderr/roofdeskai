@@ -201,7 +201,12 @@ Plans:
   2. Approving or rejecting a pending draft changes its status on the next load, and nothing is sent or posted
   3. Review reply drafts list, with blocked ones showing violation codes
   4. A draft from another tenant never appears
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 12-01-PLAN.md — Draft helpers, nav items, tenant-only data calls and decideDraft action
+- [ ] 12-02-PLAN.md — /quotes and /reviews screens with approve/reject
+- [ ] 12-03-PLAN.md — Live end-to-end checks on the branch stack plus browser checkpoint
 
 ### Phase 13: Capacity, Daily Brief and Isolation
 **Goal**: Owners see capacity flags and the daily brief, and isolation between tenants is proven end to end.
