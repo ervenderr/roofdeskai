@@ -173,7 +173,7 @@ Plans:
 
 - [x] **Phase 11: Sign-in and Tenant Shell** - Key login, encrypted session, tenant header, existing pages on the tenant key
 - [x] **Phase 12: Quote and Review Drafts** - Draft lists with approve/reject on the existing `/drafts` API
-- [ ] **Phase 13: Capacity, Daily Brief and Isolation** - Flags screen, brief read API and screen, two-tenant test, snapshot demo intact
+- [x] **Phase 13: Capacity, Daily Brief and Isolation** - Flags screen, brief read API and screen, two-tenant test, snapshot demo intact
 
 ### Phase 11: Sign-in and Tenant Shell
 **Goal**: An owner signs in with their tenant key and sees their own business, with the old roofing pages still working.
@@ -218,7 +218,13 @@ Plans:
   3. A test signed in as two tenants shows each only its own drafts, flags and brief
   4. The static snapshot demo still builds and renders without sign-in
   5. Roofing eval gate and `make g-test` still pass
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [x] 13-01-PLAN.md
+- [x] 13-02-PLAN.md
+- [x] 13-03-PLAN.md
+- [x] 13-04-PLAN.md
 
 ## Progress
 

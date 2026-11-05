@@ -18,7 +18,7 @@
 ### Existing pages
 
 - [ ] **KEEP-01**: Overview and conversations (with transcripts) render for a tenant-key session; calls, outreach and prospects (admin-only operator tools with no tenant column) stay reachable only in an operator session started by pasting the admin key, and are hidden from tenant sessions
-- [ ] **KEEP-02**: The static snapshot demo mode still builds and renders without sign-in
+- [x] **KEEP-02**: The static snapshot demo mode still builds and renders without sign-in
 
 ### Drafts
 
@@ -30,13 +30,13 @@
 
 ### Capacity and brief
 
-- [ ] **CAP-01**: Owner can see capacity flags (open by default, toggle to all) from `GET /capacity/flags`
-- [ ] **BRF-01**: API exposes the latest daily brief and recent runs for the tenant (`GET`, tenant-scoped, RLS-covered)
-- [ ] **BRF-02**: Owner can read the latest daily brief, with mock data labelled and unavailable sources shown
+- [x] **CAP-01**: Owner can see capacity flags (open by default, toggle to all) from `GET /capacity/flags`
+- [x] **BRF-01**: API exposes the latest daily brief and recent runs for the tenant (`GET`, tenant-scoped, RLS-covered)
+- [x] **BRF-02**: Owner can read the latest daily brief, with mock data labelled and unavailable sources shown
 
 ### Isolation
 
-- [ ] **ISO-01**: A test signs in as two tenants and proves each sees only its own drafts, flags and brief
+- [x] **ISO-01**: A test signs in as two tenants and proves each sees only its own drafts, flags and brief
 
 ## Future Requirements
 
@@ -61,9 +61,9 @@
 |-------------|-------|--------|
 | AUTH-01..07 | Phase 11 | Pending |
 | KEEP-01 | Phase 11 | Pending |
-| KEEP-02 | Phase 13 | Pending |
+| KEEP-02 | Phase 13 | Complete |
 | DRAFT-01..05 | Phase 12 | Complete |
-| CAP-01, BRF-01, BRF-02 | Phase 13 | Pending |
-| ISO-01 | Phase 13 | Pending |
+| CAP-01, BRF-01, BRF-02 | Phase 13 | Complete |
+| ISO-01 | Phase 13 | Complete |
 
 **Coverage:** 17 requirements, 17 mapped, 0 unmapped.

@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-11-03)
 
 ## Current Position
 
-Phase: 12 complete (Quote and Review Drafts); next: Phase 13
+Phase: 13 complete (Capacity, Daily Brief and Isolation); milestone phases done
 Plan: —
 Status: Phase 12 verified (human_needed: needs_human review view optional)
 Last activity: 2026-11-05 — Milestone v1.1 started
