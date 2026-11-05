@@ -7,17 +7,17 @@
 
 ### Sign-in and tenant shell
 
-- [ ] **AUTH-01**: Owner can sign in on a login page by pasting their tenant API key
-- [ ] **AUTH-02**: A wrong or revoked key shows a plain error and creates no session
-- [ ] **AUTH-03**: Signed-in session lives in an encrypted httpOnly cookie; the key is never in page HTML, client JS or the URL
-- [ ] **AUTH-04**: Any page without a session redirects to the login page
-- [ ] **AUTH-05**: Owner can sign out, which clears the session
-- [ ] **AUTH-06**: Header shows the business name from `GET /tenant/me`, and the nav hides screens for modules the pack does not enable
-- [ ] **AUTH-07**: Every dashboard data call uses the signed-in tenant's key, so one tenant never sees another's rows
+- [x] **AUTH-01**: Owner can sign in on a login page by pasting their tenant API key
+- [x] **AUTH-02**: A wrong or revoked key shows a plain error and creates no session
+- [x] **AUTH-03**: Signed-in session lives in an encrypted httpOnly cookie; the key is never in page HTML, client JS or the URL
+- [x] **AUTH-04**: Any page without a session redirects to the login page
+- [x] **AUTH-05**: Owner can sign out, which clears the session
+- [x] **AUTH-06**: Header shows the business name from `GET /tenant/me`, and the nav hides screens for modules the pack does not enable
+- [x] **AUTH-07**: Every dashboard data call uses the signed-in tenant's key, so one tenant never sees another's rows
 
 ### Existing pages
 
-- [ ] **KEEP-01**: Overview and conversations (with transcripts) render for a tenant-key session; calls, outreach and prospects (admin-only operator tools with no tenant column) stay reachable only in an operator session started by pasting the admin key, and are hidden from tenant sessions
+- [x] **KEEP-01**: Overview and conversations (with transcripts) render for a tenant-key session; calls, outreach and prospects (admin-only operator tools with no tenant column) stay reachable only in an operator session started by pasting the admin key, and are hidden from tenant sessions
 - [x] **KEEP-02**: The static snapshot demo mode still builds and renders without sign-in
 
 ### Drafts
@@ -59,8 +59,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01..07 | Phase 11 | Pending |
-| KEEP-01 | Phase 11 | Pending |
+| AUTH-01..07 | Phase 11 | Complete |
+| KEEP-01 | Phase 11 | Complete |
 | KEEP-02 | Phase 13 | Complete |
 | DRAFT-01..05 | Phase 12 | Complete |
 | CAP-01, BRF-01, BRF-02 | Phase 13 | Complete |
