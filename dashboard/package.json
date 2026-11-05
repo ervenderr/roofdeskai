@@ -6,7 +6,7 @@
     "build": "next build",
     "export": "EXPORT=1 next build",
     "start": "next start -p 3100",
-    "check": "node lib/session.check.mjs && node lib/drafts.check.mjs && node lib/ops.check.mjs"
+    "check": "node lib/session.check.mjs && node lib/drafts.check.mjs && node lib/ops.check.mjs && node lib/ratelimit.check.mjs"
   },
   "dependencies": {
     "next": "^15.1.0",

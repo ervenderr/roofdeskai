@@ -8,9 +8,10 @@ const MESSAGES: Record<string, string> = {
   error: "That key did not work. Check it and try again.",
   down: "Could not reach the API. Try again in a moment.",
   expired: "Your session ended or the key was revoked. Sign in again.",
+  limited: "Too many attempts. Wait a few minutes and try again.",
 }
 
-export default async function Login({ searchParams }: { searchParams: Promise<{ error?: string; down?: string; expired?: string }> }) {
+export default async function Login({ searchParams }: { searchParams: Promise<{ error?: string; down?: string; expired?: string; limited?: string }> }) {
   if (!process.env.EXPORT) await connection()
   if (!isLive) {
     return (
@@ -22,7 +23,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   }
   const q = await searchParams
   if (!q.expired && (await getSession())) redirect("/")
-  const msg = q.error ? MESSAGES.error : q.down ? MESSAGES.down : q.expired ? MESSAGES.expired : null
+  const msg = q.error ? MESSAGES.error : q.down ? MESSAGES.down : q.expired ? MESSAGES.expired : q.limited ? MESSAGES.limited : null
   return (
     <>
       <h1>Sign in</h1>
