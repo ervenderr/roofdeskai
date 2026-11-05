@@ -171,7 +171,7 @@ Plans:
 
 ## v1.1 Tenant-aware dashboard
 
-- [ ] **Phase 11: Sign-in and Tenant Shell** - Key login, encrypted session, tenant header, existing pages on the tenant key
+- [x] **Phase 11: Sign-in and Tenant Shell** - Key login, encrypted session, tenant header, existing pages on the tenant key
 - [ ] **Phase 12: Quote and Review Drafts** - Draft lists with approve/reject on the existing `/drafts` API
 - [ ] **Phase 13: Capacity, Daily Brief and Isolation** - Flags screen, brief read API and screen, two-tenant test, snapshot demo intact
 
@@ -188,9 +188,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Session seal/unseal (AES-256-GCM) and per-request credential in lib/data.ts
-- [ ] 11-02-PLAN.md — Login page, sign-in/sign-out actions, tenant header and nav gating
-- [ ] 11-03-PLAN.md — Live end-to-end checks on the branch stack plus browser checkpoint
+- [x] 11-01-PLAN.md — Session seal/unseal (AES-256-GCM) and per-request credential in lib/data.ts
+- [x] 11-02-PLAN.md — Login page, sign-in/sign-out actions, tenant header and nav gating
+- [x] 11-03-PLAN.md — Live end-to-end checks on the branch stack plus browser checkpoint
 
 ### Phase 12: Quote and Review Drafts
 **Goal**: Owners can review and decide quote and review-reply drafts in the browser.
@@ -229,3 +229,4 @@ Plans:
 | 8. Tenant-Aware n8n | 6/6 | Complete    | 2026-11-03 |
 | 9. Docs, PII/Retention and make new-business | 6/6 | Complete    | 2026-11-04 |
 | 10. Held-Out Eval and Optional Extras | 7/7 | Complete    | 2026-11-04 |
+| 11. Sign-in and Tenant Shell | 3/3 | Complete | 2026-11-05 |
